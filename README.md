@@ -32,9 +32,9 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
 ## Building/Usage
 Clone or get this repository as a Git submodule
 ```bash
-git clone https://github.com/pkhead/cbeepsyn
+git clone https://github.com/pkhead/cbeepsynth
 # or
-git submodule add https://github.com/pkhead/cbeepsyn
+git submodule add https://github.com/pkhead/cbeepsynth
 ```
 
 A Lua 5.1+ interpreter is needed if you wish to regenerate the FM algorithm code. Simply run:
@@ -42,16 +42,23 @@ A Lua 5.1+ interpreter is needed if you wish to regenerate the FM algorithm code
 lua fm_algo_gen.lua
 ```
 
-### Usage as a CMake library
+### Use as a CMake static library
 ```cmake
 # include the library
-add_subdirectory(deps/cbeepsyn)
+set(BEEPBOX_SYNTH_BUILD_STATIC 1)
+add_subdirectory(deps/cbeepsynth)
 
 # link with the library
 target_link_libraries(your_target PRIVATE beepbox_synth_static)
+```
 
-# or you can do so statically...
-target_link_libraries(your_target PRIVATE beepbox_synth_shared)
+### Create a shared library
+```bash
+mkdir build
+cd build
+cmake -DBEEPBOX_SYNTH_BUILD_SHARED=1 ..
+cmake --build .
+# it will create a shared object named beepboxsynth
 ```
 
 ## Credits

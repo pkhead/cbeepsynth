@@ -24,13 +24,16 @@ typedef struct bpbx_inst_s {
 
     uint8_t transition_type;
     uint8_t chord_type;
-    int pitch_shift; // aka coarse detune
+    double pitch_shift; // aka coarse detune
     double detune; // aka fine detune
 
     struct {
-        double depth;
+        uint8_t preset;
+
+        double depth; // in beepbox code, this was quantized to increments of 0.04
         double speed;
         double delay;
+        
         uint8_t type;
     } vibrato;
 

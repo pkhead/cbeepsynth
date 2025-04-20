@@ -37,6 +37,31 @@ const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned in
     }
 }
 
+unsigned int bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
+    switch (type) {
+        case BPBX_INSTFX_TRANSITION_TYPE:
+            return BPBX_PARAM_ENABLE_TRANSITION_TYPE;
+
+        case BPBX_INSTFX_CHORD_TYPE:
+            return BPBX_PARAM_ENABLE_CHORD_TYPE;
+
+        case BPBX_INSTFX_PITCH_SHIFT:
+            return BPBX_PARAM_ENABLE_PITCH_SHIFT;
+
+        case BPBX_INSTFX_DETUNE:
+            return BPBX_PARAM_ENABLE_DETUNE;
+
+        case BPBX_INSTFX_VIBRATO:
+            return BPBX_PARAM_ENABLE_VIBRATO;
+
+        case BPBX_INSTFX_NOTE_FILTER:
+            return BPBX_PARAM_ENABLE_NOTE_FILTER;
+
+        default:
+            return UINT32_MAX;
+    }
+}
+
 bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     init_wavetables();
 

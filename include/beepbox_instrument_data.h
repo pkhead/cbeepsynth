@@ -18,7 +18,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _beepbox_instrument_data_h_
 
 #define BPBX_INST_MAX_VOICES 16
-#define BPBX_BASE_PARAM_COUNT 81
+#define BPBX_BASE_PARAM_COUNT 82
 
 typedef enum {
     // basic params
@@ -44,6 +44,7 @@ typedef enum {
 
     // vibrato params
     BPBX_PARAM_ENABLE_VIBRATO,
+    BPBX_PARAM_VIBRATO_PRESET,
     BPBX_PARAM_VIBRATO_DEPTH,
     BPBX_PARAM_VIBRATO_SPEED,
     BPBX_PARAM_VIBRATO_DELAY,

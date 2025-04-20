@@ -84,6 +84,15 @@ typedef enum {
 } bpbx_chord_type_e;
 
 typedef enum {
+    BPBX_VIBRATO_PRESET_NONE,
+    BPBX_VIBRATO_PRESET_LIGHT,
+    BPBX_VIBRATO_PRESET_DELAYED,
+    BPBX_VIBRATO_PRESET_HEAVY,
+    BPBX_VIBRATO_PRESET_SHAKY,
+    BPBX_VIBRATO_PRESET_CUSTOM
+} bpbx_vibrato_preset_e;
+
+typedef enum {
     BPBX_FILTER_TYPE_LP,
     BPBX_FILTER_TYPE_HP,
     BPBX_FILTER_TYPE_NOTCH
@@ -194,6 +203,8 @@ BEEPBOX_API int bpbx_inst_set_param_double(bpbx_inst_s* inst, int index, double 
 
 BEEPBOX_API int bpbx_inst_get_param_int(const bpbx_inst_s* inst, int index, int *value);
 BEEPBOX_API int bpbx_inst_get_param_double(const bpbx_inst_s* inst, int index, double *value);
+
+BEEPBOX_API unsigned int bpbx_effect_toggle_param(bpbx_instfx_type_e type);
 
 BEEPBOX_API const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index);
 

@@ -40,6 +40,7 @@ static const char *bool_enum_values[] = {"Off", "On"};
 static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};
 static const char *filt_type_enum[] = {"Low pass", "High pass", "Notch"};
 static const char *chord_type_values[] = {"Simultaneous", "Strum", "Arpeggio", "Custom Interval"};
+static const char *vibrato_preset_values[] = {"None", "Light", "Delayed", "Heavy", "Shaky", "Custom"};
 static const char *vibrato_values[] = {"Normal", "Shaky"};
 
 #define FILTER_MAX_FREQ 33
@@ -134,7 +135,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Pitch Shift (st)",
         .group = "Effects/Pitch Shift",
 
-        .type = BPBX_PARAM_INT,
+        .type = BPBX_PARAM_DOUBLE,
         .min_value = -12,
         .max_value = 12,
     },
@@ -154,7 +155,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Detune (c)",
         .group = "Effects/Detune",
 
-        .type = BPBX_PARAM_INT,
+        .type = BPBX_PARAM_DOUBLE,
         .min_value = -200,
         .max_value = 200,
     },
@@ -171,12 +172,23 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .name = "Vibrato Preset",
+        .group = "Effects/Vibrato",
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BPBX_PARAM_UINT8,
+        .min_value = 0,
+        .max_value = 5,
+        .enum_values = vibrato_preset_values
+    },
+    {
         .name = "Vibrato Depth",
         .group = "Effects/Vibrato",
 
+        // in beepbox code, this was quantized to increments of 0.04
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = 50,
+        .max_value = 2,
         .enum_values = bool_enum_values
     },
     {
@@ -888,6 +900,7 @@ size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
 
     // vibrato
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_VIBRATO]),
+    offsetof(bpbx_inst_s, vibrato.preset),
     offsetof(bpbx_inst_s, vibrato.depth),
     offsetof(bpbx_inst_s, vibrato.speed),
     offsetof(bpbx_inst_s, vibrato.delay),

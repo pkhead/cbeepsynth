@@ -93,6 +93,11 @@ typedef enum {
 } bpbx_vibrato_preset_e;
 
 typedef enum {
+    BPBX_VIBRATO_TYPE_NORMAL,
+    BPBX_VIBRATO_TYPE_SHAKY
+} bpbx_vibrato_type_e;
+
+typedef enum {
     BPBX_FILTER_TYPE_LP,
     BPBX_FILTER_TYPE_HP,
     BPBX_FILTER_TYPE_NOTCH
@@ -169,6 +174,13 @@ typedef struct {
 } bpbx_inst_param_info_s;
 
 typedef struct {
+    double depth; // in beepbox code, this was quantized to increments of 0.04
+    double speed;
+    int delay; // in ticks, I think?
+    uint8_t type;
+} bpbx_vibrato_params_s;
+
+typedef struct {
     float *out_samples;
     size_t frame_count;
     
@@ -197,10 +209,10 @@ BEEPBOX_API const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type,
 
 BEEPBOX_API bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e inst_type);
 BEEPBOX_API void bpbx_inst_destroy(bpbx_inst_s* inst);
-
 BEEPBOX_API bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst);
 
 BEEPBOX_API void bpbx_inst_set_sample_rate(bpbx_inst_s *inst, double sample_rate);
+BEEPBOX_API void bpbx_transport_begin_playback(bpbx_inst_s *inst, double beat, double bpm);
 
 BEEPBOX_API int bpbx_inst_set_param_int(bpbx_inst_s* inst, int index, int value);
 BEEPBOX_API int bpbx_inst_set_param_double(bpbx_inst_s* inst, int index, double value);
@@ -232,6 +244,7 @@ BEEPBOX_API void bpbx_inst_midi_off(bpbx_inst_s *inst, int key, int velocity);
 // if you know the length of each note, and the result of this is negative,
 // call midi_off that positive number of samples before the note actually ends.
 BEEPBOX_API double bpbx_samples_fade_out(double setting, double bpm, double sample_rate);
+BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params);
 
 BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx);
 

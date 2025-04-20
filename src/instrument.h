@@ -27,15 +27,8 @@ typedef struct bpbx_inst_s {
     double pitch_shift; // aka coarse detune
     double detune; // aka fine detune
 
-    struct {
-        uint8_t preset;
-
-        double depth; // in beepbox code, this was quantized to increments of 0.04
-        double speed;
-        double delay;
-        
-        uint8_t type;
-    } vibrato;
+    uint8_t vibrato_preset;
+    bpbx_vibrato_params_s vibrato;
 
     filter_group_s note_filter;
     filter_group_s eq;
@@ -44,9 +37,15 @@ typedef struct bpbx_inst_s {
         fm_inst_s *fm;
     };
 
+    int frame_counter;
+
     // envelopes
     uint8_t envelope_count;
     bpbx_envelope_s envelopes[BPBX_MAX_ENVELOPE_COUNT];
+
+    // this is in seconds
+    double vibrato_time_start;
+    double vibrato_time_end;
 
     double mod_x;
     double mod_y;
@@ -56,6 +55,7 @@ typedef struct bpbx_inst_s {
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);
+double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar);
 
 bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT];
 size_t base_param_offsets[BPBX_BASE_PARAM_COUNT];

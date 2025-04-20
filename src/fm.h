@@ -24,12 +24,15 @@ typedef struct {
 } fm_voice_opstate_s;
 
 typedef struct {
+    uint8_t triggered; // triggered, but not active until the next tick
     uint8_t active;
     uint8_t released;
     uint16_t key;
     
     float volume;
-    size_t remaining_samples;
+
+    uint8_t has_prev_vibrato;
+    double prev_vibrato;
     
     double expression;
     double expression_delta;

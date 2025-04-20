@@ -104,6 +104,7 @@ void fm_init(fm_inst_s *inst) {
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         inst->voices[i].active = FALSE;
+        inst->voices[i].triggered = FALSE;
     }
 
     inst->algorithm = 0;
@@ -129,17 +130,18 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
     int voice_index = 0;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        if (fm->voices[i].active) continue;
+        if (fm->voices[i].triggered) continue;
         voice_index = i;
         break;
     }
 
     fm_voice_s *voice = fm->voices + voice_index;
     *voice = (fm_voice_s) {
-        .active = TRUE,
+        .triggered = TRUE,
         .released = FALSE,
         .key = key < 0 ? 0 : (uint16_t)key,
         .volume = velocity_f,
+        .has_prev_vibrato = FALSE
     };
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -163,7 +165,7 @@ void fm_midi_off(bpbx_inst_s *inst, int key, int velocity) {
     
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         fm_voice_s *voice = &fm->voices[i];
-        if (voice->active && !voice->released && voice->key == key) {
+        if (voice->triggered && !voice->released && voice->key == key) {
             voice->released = 1;
             break;
         }
@@ -179,6 +181,7 @@ typedef struct {
     double sample_rate;
     double cur_beat;
     double mod_x, mod_y, mod_w;
+    bpbx_vibrato_params_s *vibrato_params;
 
     uint8_t envelope_count;
     bpbx_envelope_s *envelopes;
@@ -193,6 +196,10 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     voice->time2_ticks = voice->time_ticks + 1.0;
     voice->time_secs = voice->time2_secs;
     voice->time2_secs = voice->time_secs + samples_per_tick / compute_data.sample_rate;
+
+    // const double ticks_into_bar = compute_data.cur_beat * PARTS_PER_BEAT / TICKS_PER_PART;
+    // const double part_time_start = (double)ticks_into_bar / TICKS_PER_PART;
+    // const double part_time_end = (double)(ticks_into_bar + 1) / TICKS_PER_PART;
 
     // update envelope computer modulation
     update_envelope_modulation(&voice->env_computer, compute_data.mod_x, compute_data.mod_y, compute_data.mod_w);
@@ -222,6 +229,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
         if (voice->ticks_since_release >= ticks) {
             voice->active = FALSE;
+            voice->triggered = FALSE;
         }
     } else {
         // fade in beginning of note
@@ -247,6 +255,49 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
         interval_start += compute_data.base_inst->detune * env_start / 100.0;
         interval_end += compute_data.base_inst->detune * env_end / 100.0;
+    }
+
+    // vibrato
+    if (compute_data.base_inst->active_effects[BPBX_INSTFX_VIBRATO]) {
+        const bpbx_vibrato_params_s vibrato_params = *compute_data.vibrato_params;
+
+        int delay_ticks = vibrato_params.delay * 2;
+
+        // i don't get the calculations beepbox/jummbox does.
+        // i just did my own thing. It sounds the same i think.
+        double vibrato_phase_tick = compute_data.cur_beat * PARTS_PER_BEAT * TICKS_PER_PART;
+        vibrato_phase_tick *= vibrato_params.speed;
+
+        const double vibrato_time_start = compute_data.base_inst->vibrato_time_start;
+        const double vibrato_time_end = compute_data.base_inst->vibrato_time_end;
+
+        double vibrato_start;
+        if (voice->has_prev_vibrato) {
+            vibrato_start = voice->prev_vibrato;
+        } else {
+            double lfo_start = get_lfo_amplitude(vibrato_params.type, vibrato_time_start);
+            const double vibrato_depth_envelope_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+            vibrato_start = vibrato_params.depth * lfo_start * vibrato_depth_envelope_start;
+
+            if (delay_ticks > 0.0) {
+                const int ticks_until_vibrato_start = delay_ticks - voice->time_ticks;
+                vibrato_start *= max(0.0, min(1.0, 1.0 - ticks_until_vibrato_start / 2.0));
+            }
+        }
+
+        double lfo_end = get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
+        const double vibrato_depth_envelope_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+        double vibrato_end = vibrato_params.depth * lfo_end * vibrato_depth_envelope_end;
+        if (delay_ticks > 0.0) {
+            const int ticks_until_vibrato_end = delay_ticks - voice->time2_ticks;
+            vibrato_end *= max(0.0, min(1.0, 1.0 - ticks_until_vibrato_end / 2.0));
+        }
+
+        voice->has_prev_vibrato = TRUE;
+        voice->prev_vibrato = vibrato_end;
+
+        interval_start += vibrato_start;
+        interval_end += vibrato_end;
     }
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -340,6 +391,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
 void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     const double sample_rate = src_inst->sample_rate;
+    const double sample_len = 1.0 / sample_rate;
     const size_t frame_count = run_ctx->frame_count;
     float *const out_samples = run_ctx->out_samples;
     const double beat = run_ctx->beat;
@@ -359,20 +411,29 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     const double mod_w = run_ctx->mod_wheel;
 
     // zero-initialize sample data
-    memset(out_samples, 0, frame_count * 2 * sizeof(float));
+    //memset(out_samples, 0, frame_count * 2 * sizeof(float));
     
     double inst_volume = inst_volume_to_mult(src_inst->volume);
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        fm_voice_s *voice = inst.voices + i;
-        if (!voice->active) continue;
+    //const double secs_per_tick = samples_per_tick * sample_len;
+    for (size_t frame = 0; frame < run_ctx->frame_count; frame++) {
+        float *out_l = &out_samples[frame * 2];
+        float *out_r = &out_samples[frame * 2 + 1];
 
-        size_t buffer_idx = 0;
-        size_t frame = 0;
+        if (++src_inst->frame_counter >= (size_t)samples_per_tick) {
+            src_inst->frame_counter = 0;
 
-        while (frame < frame_count) {
-            if (voice->remaining_samples == 0) {
-                voice->remaining_samples += (size_t)ceil(samples_per_tick);
+            // update vibrato lfo
+            bpbx_vibrato_params_s vibrato = src_inst->vibrato;
+            bpbx_vibrato_preset_params(src_inst->vibrato_preset, &vibrato);
+
+            src_inst->vibrato_time_start = src_inst->vibrato_time_end;
+            src_inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
+
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+                fm_voice_s *voice = inst.voices + i;
+                if (!voice->triggered) continue;
+                voice->active = TRUE;
 
                 compute_voice(&inst, voice, (tone_compute_s) {
                     .base_inst = src_inst,
@@ -384,51 +445,52 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
                     .envelope_count = src_inst->envelope_count,
                     .envelopes = src_inst->envelopes,
                     .cur_beat = beat,
+                    .vibrato_params = &vibrato,
 
                     .mod_x = mod_x,
                     .mod_y = mod_y,
                     .mod_w = mod_w
                 });
             }
+        }
 
+        *out_l = 0.0f;
+        *out_r = 0.0f;
+
+        for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+            fm_voice_s *voice = inst.voices + i;
+            if (!voice->active) continue;
+            
             // convert to operable values
             for (int op = 0; op < FM_OP_COUNT; op++) {
                 voice->op_states[op].phase *= SINE_WAVE_LENGTH;
                 voice->op_states[op].phase_delta *= SINE_WAVE_LENGTH;
             }
             
-            size_t end_frame = frame + voice->remaining_samples;
-            if (end_frame > frame_count) end_frame = frame_count;
-            //assert((int64_t)end_frame - frame >= 0);
-            size_t run_length = end_frame - frame;
+            // process this frame
+            float sample = (float) (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
 
-            for (; frame < end_frame; frame++) {      
-                float sample = (float) (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
+            voice->op_states[0].phase += voice->op_states[0].phase_delta;
+            voice->op_states[1].phase += voice->op_states[1].phase_delta;
+            voice->op_states[2].phase += voice->op_states[2].phase_delta;
+            voice->op_states[3].phase += voice->op_states[3].phase_delta;
 
-                voice->op_states[0].phase += voice->op_states[0].phase_delta;
-                voice->op_states[1].phase += voice->op_states[1].phase_delta;
-                voice->op_states[2].phase += voice->op_states[2].phase_delta;
-                voice->op_states[3].phase += voice->op_states[3].phase_delta;
+            voice->op_states[0].phase_delta *= voice->op_states[0].phase_delta_scale;
+            voice->op_states[1].phase_delta *= voice->op_states[1].phase_delta_scale;
+            voice->op_states[2].phase_delta *= voice->op_states[2].phase_delta_scale;
+            voice->op_states[3].phase_delta *= voice->op_states[3].phase_delta_scale;
 
-                voice->op_states[0].phase_delta *= voice->op_states[0].phase_delta_scale;
-                voice->op_states[1].phase_delta *= voice->op_states[1].phase_delta_scale;
-                voice->op_states[2].phase_delta *= voice->op_states[2].phase_delta_scale;
-                voice->op_states[3].phase_delta *= voice->op_states[3].phase_delta_scale;
+            voice->op_states[0].expression += voice->op_states[0].expression_delta;
+            voice->op_states[1].expression += voice->op_states[1].expression_delta;
+            voice->op_states[2].expression += voice->op_states[2].expression_delta;
+            voice->op_states[3].expression += voice->op_states[3].expression_delta;
+            
+            voice->expression += voice->expression_delta;
+            voice->feedback_mult += voice->feedback_delta;
 
-                voice->op_states[0].expression += voice->op_states[0].expression_delta;
-                voice->op_states[1].expression += voice->op_states[1].expression_delta;
-                voice->op_states[2].expression += voice->op_states[2].expression_delta;
-                voice->op_states[3].expression += voice->op_states[3].expression_delta;
-                
-                voice->expression += voice->expression_delta;
-                voice->feedback_mult += voice->feedback_delta;
-
-                // assume two channels
-                out_samples[buffer_idx++] += sample;
-                out_samples[buffer_idx++] += sample;
-            }
-
-            voice->remaining_samples -= run_length;
+            // output to left and right channels
+            *out_l += sample;
+            *out_r += sample;
             
             // convert from operable values
             for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -436,8 +498,83 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
                 voice->op_states[op].phase_delta /= SINE_WAVE_LENGTH;
             }
         }
-
     }
+
+    // for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    //     fm_voice_s *voice = inst.voices + i;
+    //     if (!voice->active) continue;
+
+    //     size_t buffer_idx = 0;
+    //     size_t frame = 0;
+
+    //     while (frame < frame_count) {
+    //         if (voice->remaining_samples == 0) {
+    //             voice->remaining_samples += (size_t)ceil(samples_per_tick);
+
+    //             compute_voice(&inst, voice, (tone_compute_s) {
+    //                 .base_inst = src_inst,
+
+    //                 .samples_per_tick = samples_per_tick,
+    //                 .sample_rate = sample_rate,
+    //                 .fade_in = fade_in,
+    //                 .fade_out = fade_out,
+    //                 .envelope_count = src_inst->envelope_count,
+    //                 .envelopes = src_inst->envelopes,
+    //                 .cur_beat = beat,
+
+    //                 .mod_x = mod_x,
+    //                 .mod_y = mod_y,
+    //                 .mod_w = mod_w
+    //             });
+    //         }
+
+    //         // convert to operable values
+    //         for (int op = 0; op < FM_OP_COUNT; op++) {
+    //             voice->op_states[op].phase *= SINE_WAVE_LENGTH;
+    //             voice->op_states[op].phase_delta *= SINE_WAVE_LENGTH;
+    //         }
+            
+    //         size_t end_frame = frame + voice->remaining_samples;
+    //         if (end_frame > frame_count) end_frame = frame_count;
+    //         //assert((int64_t)end_frame - frame >= 0);
+    //         size_t run_length = end_frame - frame;
+
+    //         for (; frame < end_frame; frame++) {      
+    //             float sample = (float) (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
+
+    //             voice->op_states[0].phase += voice->op_states[0].phase_delta;
+    //             voice->op_states[1].phase += voice->op_states[1].phase_delta;
+    //             voice->op_states[2].phase += voice->op_states[2].phase_delta;
+    //             voice->op_states[3].phase += voice->op_states[3].phase_delta;
+
+    //             voice->op_states[0].phase_delta *= voice->op_states[0].phase_delta_scale;
+    //             voice->op_states[1].phase_delta *= voice->op_states[1].phase_delta_scale;
+    //             voice->op_states[2].phase_delta *= voice->op_states[2].phase_delta_scale;
+    //             voice->op_states[3].phase_delta *= voice->op_states[3].phase_delta_scale;
+
+    //             voice->op_states[0].expression += voice->op_states[0].expression_delta;
+    //             voice->op_states[1].expression += voice->op_states[1].expression_delta;
+    //             voice->op_states[2].expression += voice->op_states[2].expression_delta;
+    //             voice->op_states[3].expression += voice->op_states[3].expression_delta;
+                
+    //             voice->expression += voice->expression_delta;
+    //             voice->feedback_mult += voice->feedback_delta;
+
+    //             // assume two channels
+    //             out_samples[buffer_idx++] += sample;
+    //             out_samples[buffer_idx++] += sample;
+    //         }
+
+    //         voice->remaining_samples -= run_length;
+            
+    //         // convert from operable values
+    //         for (int op = 0; op < FM_OP_COUNT; op++) {
+    //             voice->op_states[op].phase /= SINE_WAVE_LENGTH;
+    //             voice->op_states[op].phase_delta /= SINE_WAVE_LENGTH;
+    //         }
+    //     }
+
+    // }
 
     *src_inst->fm = inst;
 }

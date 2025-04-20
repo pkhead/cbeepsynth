@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <stdint.h>
+#include <assert.h>
 #include "instrument.h"
 #include "util.h"
 
@@ -21,7 +22,36 @@ double inst_volume_to_mult(double inst_volume) {
     return pow(2.0, VOLUME_LOG_SCALE * inst_volume);
 }
 
+const double vibrato_normal_periods_secs[1] = {0.14};
+const double vibrato_shaky_periods_secs[3] = {0.11, 1.618 * 0.11, 3 * 0.11};
 
+typedef struct {
+    int size_periods_secs;
+    const double *periods_secs;
+} vibrato_type_def_s;
+
+static vibrato_type_def_s vibrato_types[2] = {
+    {
+        .size_periods_secs = 1,
+        .periods_secs = vibrato_normal_periods_secs
+    },
+    {
+        .size_periods_secs = 3,
+        .periods_secs = vibrato_shaky_periods_secs
+    }
+};
+
+double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
+    assert(0 <= type && type <= 1);
+
+    double effect = 0.0;
+    vibrato_type_def_s type_config = vibrato_types[type];
+    for (int i = 0; i < type_config.size_periods_secs; i++) {
+        const double vibrato_period_secs = type_config.periods_secs[i];
+        effect += sin(PI2 * secs_into_bar / vibrato_period_secs);
+    }
+    return effect;
+}
 
 
 
@@ -223,7 +253,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Vibrato Delay",
         .group = "Effects/Vibrato",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBX_PARAM_INT,
         .min_value = 0,
         .max_value = 50
     },
@@ -925,7 +955,7 @@ size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
 
     // vibrato
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_VIBRATO]),
-    offsetof(bpbx_inst_s, vibrato.preset),
+    offsetof(bpbx_inst_s, vibrato_preset),
     offsetof(bpbx_inst_s, vibrato.depth),
     offsetof(bpbx_inst_s, vibrato.speed),
     offsetof(bpbx_inst_s, vibrato.delay),

@@ -103,6 +103,20 @@ bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst) {
     return inst->type;
 }
 
+void bpbx_transport_begin_playback(bpbx_inst_s *inst, double beat, double bpm) {
+    bpbx_vibrato_params_s vibrato_params = inst->vibrato;
+    bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato_params);
+
+    const double beats_per_sec = bpm / 60.0;
+    const double parts_per_sec = PARTS_PER_BEAT * beats_per_sec;
+    const double ticks_per_sec = TICKS_PER_PART * parts_per_sec;
+    const double sec_per_tick = 1.0 / ticks_per_sec;
+
+    const double time_secs = bpm / 60.0 * beat;
+    inst->vibrato_time_start = time_secs * vibrato_params.speed;
+    inst->vibrato_time_end = inst->vibrato_time_start + sec_per_tick;
+}
+
 static int param_helper(const bpbx_inst_s *inst, int index, void **addr, bpbx_inst_param_info_s *info) {
     if (index < 0) return 1;
 
@@ -373,5 +387,46 @@ const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type
 
         default:
             return NULL;
+    }
+}
+
+void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params) {
+    if (preset == BPBX_VIBRATO_PRESET_CUSTOM) return;
+
+    params->speed = 1.0;
+
+    switch (preset) {
+        case BPBX_VIBRATO_PRESET_NONE:
+            params->depth = 0.0;
+            params->delay = 0;
+            params->type = (uint8_t) BPBX_VIBRATO_TYPE_NORMAL;
+            break;
+        
+        case BPBX_VIBRATO_PRESET_LIGHT:
+            params->depth = 0.15;
+            params->delay = 0;
+            params->type = (uint8_t) BPBX_VIBRATO_TYPE_NORMAL;
+            break;
+
+        case BPBX_VIBRATO_PRESET_DELAYED:
+            params->depth = 0.3;
+            params->delay = 19;
+            params->type = (uint8_t) BPBX_VIBRATO_TYPE_NORMAL;
+            break;
+
+        case BPBX_VIBRATO_PRESET_HEAVY:
+            params->depth = 0.45;
+            params->delay = 0;
+            params->type = (uint8_t) BPBX_VIBRATO_TYPE_NORMAL;
+            break;
+
+        case BPBX_VIBRATO_PRESET_SHAKY:
+            params->depth = 0.1;
+            params->delay = 0;
+            params->type = (uint8_t) BPBX_VIBRATO_TYPE_SHAKY;
+            break;
+
+        default:
+            break;
     }
 }

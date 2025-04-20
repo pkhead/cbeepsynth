@@ -171,6 +171,8 @@ void fm_midi_off(bpbx_inst_s *inst, int key, int velocity) {
 }
 
 typedef struct {
+    const bpbx_inst_s *base_inst;
+
     double fade_in;
     double fade_out;
     double samples_per_tick;
@@ -203,6 +205,9 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
     const double fade_in_secs = secs_fade_in(compute_data.fade_in);
 
+    double interval_start = 0.0;
+    double interval_end = 0.0;
+
     // precalculation/volume balancing/etc
     double sine_expr_boost = 1.0;
     double total_carrier_expr = 0.0;
@@ -226,6 +231,24 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         }
     }
 
+    // pitch shift
+    if (compute_data.base_inst->active_effects[BPBX_INSTFX_PITCH_SHIFT]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_PITCH_SHIFT];
+        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_PITCH_SHIFT];
+
+        interval_start += compute_data.base_inst->pitch_shift * env_start;
+        interval_end += compute_data.base_inst->pitch_shift * env_end;
+    }
+
+    // detune
+    if (compute_data.base_inst->active_effects[BPBX_INSTFX_DETUNE]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_DETUNE];
+        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_DETUNE];
+
+        interval_start += compute_data.base_inst->detune * env_start / 100.0;
+        interval_end += compute_data.base_inst->detune * env_end / 100.0;
+    }
+
     for (int op = 0; op < FM_OP_COUNT; op++) {
         // john nesky: I'm adding 1000 to the phase to ensure that it's never negative even when modulated
         // by other waves because negative numbers don't work with the modulus operator very well.
@@ -235,20 +258,23 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
         int associated_carrier_idx = algo_associated_carriers[inst->algorithm][op] - 1;
         const double freq_mult = freq_data->mult;
-        const double pitch = (double)voice->key + carrier_intervals[associated_carrier_idx];
-        const double base_freq = key_to_hz_d(pitch);
+        const double pitch_start = (double)voice->key + interval_start + carrier_intervals[associated_carrier_idx];
+        const double pitch_end = (double)voice->key + interval_end + carrier_intervals[associated_carrier_idx];
+        const double base_freq_start = key_to_hz_d(pitch_start);
+        const double base_freq_end = key_to_hz_d(pitch_end);
         const double hz_offset = freq_data->hz_offset;
-        const double target_freq = freq_mult * base_freq + hz_offset;
+        const double target_freq_start = freq_mult * base_freq_start + hz_offset;
+        const double target_freq_end = freq_mult * base_freq_end + hz_offset;
 
         const double freq_env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_OPERATOR_FREQ0 + op];
         const double freq_env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_OPERATOR_FREQ0 + op];
         double freq_start, freq_end;
         if (freq_env_start != 1.0 || freq_env_end != 1.0) {
-            freq_start = pow(2.0, log2(target_freq / base_freq) * freq_env_start) * base_freq;
-            freq_end = pow(2.0, log2(target_freq / base_freq) * freq_env_end) * base_freq;
+            freq_start = pow(2.0, log2(target_freq_start / base_freq_start) * freq_env_start) * base_freq_start;
+            freq_end = pow(2.0, log2(target_freq_end / base_freq_end) * freq_env_end) * base_freq_end;
         } else {
-            freq_start = target_freq;
-            freq_end = target_freq;
+            freq_start = target_freq_start;
+            freq_end = target_freq_end;
         }
 
         voice->op_states[op].phase_delta = freq_start * sample_len;
@@ -256,29 +282,36 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
         const double amplitude_curve = operator_amplitude_curve((double) inst->amplitudes[op]);
         const double amplitude_mult = amplitude_curve * freq_data->amplitude_sign;
-        double expression = amplitude_mult;
+        double expression_start = amplitude_mult;
+        double expression_end = amplitude_mult;
 
         if (op < inst->carrier_count) {
             // carrier
-            double pitch_expression;
+            double pitch_expression_start;
             if (voice->op_states[op].has_prev_pitch_expression) {
-                pitch_expression = voice->op_states[op].prev_pitch_expression;
+                pitch_expression_start = voice->op_states[op].prev_pitch_expression;
             } else {
-                pitch_expression = pow(2.0, -(pitch - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
+                pitch_expression_start = pow(2.0, -(pitch_start - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
             }
-            voice->op_states[op].has_prev_pitch_expression = TRUE;
-            voice->op_states[op].prev_pitch_expression = pitch_expression;
+            const double pitch_expression_end = pow(2.0, -(pitch_end - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
 
-            expression *= pitch_expression;
+            voice->op_states[op].has_prev_pitch_expression = TRUE;
+            voice->op_states[op].prev_pitch_expression = pitch_expression_end;
+
+            expression_start *= pitch_expression_start;
+            expression_end *= pitch_expression_end;
+
             total_carrier_expr += amplitude_curve;
         } else {
             // modulator
-            expression *= SINE_WAVE_LENGTH * 1.5;
+            expression_start *= SINE_WAVE_LENGTH * 1.5;
+            expression_end *= SINE_WAVE_LENGTH * 1.5;
+
             sine_expr_boost *= 1.0 - min(1.0, inst->amplitudes[op] / 15.0);
         }
 
-        double expression_start = expression * voice->env_computer.envelope_starts[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
-        double expression_end = expression * voice->env_computer.envelope_ends[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
+        expression_start *= voice->env_computer.envelope_starts[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
+        expression_end *= voice->env_computer.envelope_ends[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
 
         voice->op_states[op].expression = expression_start;
         voice->op_states[op].expression_delta = (expression_end - expression_start) / rounded_samples_per_tick;
@@ -312,6 +345,7 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     const double beat = run_ctx->beat;
 
     // create copy of instrument on stack, for cache optimization purposes
+    // Except this is stupid i don't know if i'll continue following this
     fm_inst_s inst = *src_inst->fm;
     setup_algorithm(&inst);
 
@@ -341,6 +375,8 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
                 voice->remaining_samples += (size_t)ceil(samples_per_tick);
 
                 compute_voice(&inst, voice, (tone_compute_s) {
+                    .base_inst = src_inst,
+
                     .samples_per_tick = samples_per_tick,
                     .sample_rate = sample_rate,
                     .fade_in = fade_in,

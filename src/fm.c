@@ -501,7 +501,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 1 Frequency",
-        .envelope_name = "fm1 freq",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -512,7 +511,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 1 Volume",
-        .envelope_name = "fm1 volume",
 
         .min_value = 0,
         .max_value = 15,
@@ -523,7 +521,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 2 Frequency",
-        .envelope_name = "fm2 freq",
         
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -534,7 +531,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 2 Volume",
-        .envelope_name = "fm2 volume",
 
         .min_value = 0,
         .max_value = 15,
@@ -545,7 +541,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 3 Frequency",
-        .envelope_name = "fm3 freq",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -556,7 +551,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 3 Volume",
-        .envelope_name = "fm3 volume",
 
         .min_value = 0,
         .max_value = 15,
@@ -567,7 +561,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 4 Frequency",
-        .envelope_name = "fm4 freq",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -578,7 +571,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 4 Volume",
-        .envelope_name = "fm4 volume",
 
         .min_value = 0,
         .max_value = 15,
@@ -600,7 +592,6 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Feedback Volume",
-        .envelope_name = "fm feedback",
 
         .min_value = 0,
         .max_value = 15,

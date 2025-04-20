@@ -121,7 +121,6 @@ typedef struct {
     uint32_t flags; // bpbx_inst_param_flags_e
 
     const char *name;
-    const char *envelope_name;
 
     double min_value;
     double max_value;

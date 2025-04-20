@@ -8,6 +8,7 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
 **To be implemented:**
 - Instruments:
     - Chip wave
+    - Custom chip/sampler
     - FM6 (from mods)
     - Noise
     - Pulse width
@@ -18,8 +19,6 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
 - Instrument effects:
     - Transition type
     - Chord type?
-    - Pitch shift, detune
-    - Vibrato
     - Note filter
 - Audio effects:
     - Distortion
@@ -62,4 +61,7 @@ cmake --build .
 ```
 
 ## Credits
-- [BeepBox](https://beepbox.co/), created by John Nesky.
+- [BeepBox](https://beepbox.co/), created by John Nesky, as well as community-created mods:
+    - [JummBox](https://jummb.us/), which includes expanded instrument configuration and a "custom chip" instrument type.
+    - [GoldBox](https://aurysystem.github.io/), which includes a 6-operator FM.
+    - [UltraBox](https://ultraabox.github.io/) and [Slarmoo's Box](https://slarmoo.github.io/slarmoosbox), which includes more FM frequency ratios.

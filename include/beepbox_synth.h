@@ -182,6 +182,10 @@ typedef struct {
     // if you don't have that information or the song isn't playing,
     // simply constantly increase this by the bpm.
     double beat;
+
+    // Current value of the mod wheel, from 0 to 1.
+    // Resting value is 0.
+    double mod_wheel;
 } bpbx_run_ctx_s;
 
 typedef struct bpbx_inst_s bpbx_inst_s;

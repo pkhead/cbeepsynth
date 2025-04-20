@@ -24,7 +24,7 @@ double ticks_fade_out(double setting) {
     return (fade_out_ticks[index+1] - result) * (setting - index) + result;
 }
 
-static double compute_envelope(const envelope_curve_preset_s *curve, double time, double beats, double note_size, double mod_x, double mod_y) {
+static double compute_envelope(const envelope_curve_preset_s *curve, double time, double beats, double note_size, double mod_x, double mod_y, double mod_w) {
     switch (curve->curve_type) {
         case ENV_CURVE_NOTE_SIZE:       return note_size_to_volume_mult(note_size);
         case ENV_CURVE_NONE:            return 1.0;
@@ -41,17 +41,39 @@ static double compute_envelope(const envelope_curve_preset_s *curve, double time
             return time < attack ? time / attack : 1.0 / (1.0 + (time - attack) * curve->speed);
         }
 
+        case ENV_CURVE_MOD_X:     return clampd(mod_x, 0.0, 1.0);
+        case ENV_CURVE_MOD_Y:     return clampd(mod_y, 0.0, 1.0);
+        case ENV_CURVE_MOD_WHEEL: return clampd(mod_w, 0.0, 1.0);
+
         default:
             assert(0 && "unrecognized operator envelope type");
             return 0.0;
     }
 }
 
-void envelope_computer_init(envelope_computer_s *env_computer) {
+void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w) {
     for (int i = 0; i < BPBX_ENV_INDEX_COUNT; i++) {
         env_computer->envelope_starts[i] = 1.0;
         env_computer->envelope_ends[i] = 1.0;
     }
+
+    env_computer->mod_x[0] = mod_x;
+    env_computer->mod_y[0] = mod_y;
+    env_computer->mod_wheel[0] = mod_w;
+
+    env_computer->mod_x[1] = mod_x;
+    env_computer->mod_y[1] = mod_y;
+    env_computer->mod_wheel[1] = mod_w;
+}
+
+void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w) {
+    env_computer->mod_x[0] = env_computer->mod_x[1];
+    env_computer->mod_y[0] = env_computer->mod_y[1];
+    env_computer->mod_wheel[0] = env_computer->mod_wheel[1];
+
+    env_computer->mod_x[1] = mod_x;
+    env_computer->mod_y[1] = mod_y;
+    env_computer->mod_wheel[1] = mod_w;
 }
 
 void compute_envelopes(
@@ -77,8 +99,14 @@ void compute_envelopes(
         const bpbx_envelope_s *env = &envelopes[i];
         const envelope_curve_preset_s curve = envelope_curve_presets[env->curve_preset];
 
-        env_computer->envelope_starts[env->index] *= compute_envelope(&curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX, 0.0, 0.0);
-        env_computer->envelope_ends[env->index] *= compute_envelope(&curve, env_computer->note_secs_end, beats_time_end, NOTE_SIZE_MAX, 0.0, 0.0);
+        env_computer->envelope_starts[env->index] *= compute_envelope(
+            &curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX,
+            env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
+        );
+        env_computer->envelope_ends[env->index] *= compute_envelope(
+            &curve, env_computer->note_secs_end, beats_time_end, NOTE_SIZE_MAX,
+            env_computer->mod_x[1], env_computer->mod_y[1], env_computer->mod_wheel[1]
+        );
     }
     //env_computer->tick += 1.0;
 }

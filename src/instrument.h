@@ -47,6 +47,10 @@ typedef struct bpbx_inst_s {
     // envelopes
     uint8_t envelope_count;
     bpbx_envelope_s envelopes[BPBX_MAX_ENVELOPE_COUNT];
+
+    double mod_x;
+    double mod_y;
+    double mod_wheel; // last stored state of modulation wheel
 } bpbx_inst_s;
 
 double calc_samples_per_tick(double bpm, double sample_rate);

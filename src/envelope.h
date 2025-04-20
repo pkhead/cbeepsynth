@@ -14,6 +14,11 @@ typedef struct {
     double tick;
     double note_secs_start;
     double note_secs_end;
+
+    double mod_x[2];
+    double mod_y[2];
+    double mod_wheel[2];
+    double pitch_wheel[2];
 } envelope_computer_s;
 
 typedef enum {
@@ -28,8 +33,9 @@ typedef enum {
     ENV_CURVE_DECAY,
     ENV_CURVE_BLIP, // from jummbox
 
-    ENV_CURVE_MOD_X, // probably MIDI CC 1 (Modulation wheel)
+    ENV_CURVE_MOD_X,
     ENV_CURVE_MOD_Y,
+    ENV_CURVE_MOD_WHEEL // MIDI CC 1 (Modulation wheel)
 } envelope_curve_type_e;
 
 double secs_fade_in(double setting);
@@ -41,7 +47,9 @@ typedef struct {
     double speed;
 } envelope_curve_preset_s;
 
-void envelope_computer_init(envelope_computer_s *env_computer);
+void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w);
+
+void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w);
 
 void compute_envelopes(
     envelope_computer_s *env_computer,

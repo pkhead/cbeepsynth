@@ -153,6 +153,8 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
         };
     }
 
+    envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
+
     return voice_index;
 }
 
@@ -174,6 +176,7 @@ typedef struct {
     double samples_per_tick;
     double sample_rate;
     double cur_beat;
+    double mod_x, mod_y, mod_w;
 
     uint8_t envelope_count;
     bpbx_envelope_s *envelopes;
@@ -188,6 +191,9 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     voice->time2_ticks = voice->time_ticks + 1.0;
     voice->time_secs = voice->time2_secs;
     voice->time2_secs = voice->time_secs + samples_per_tick / compute_data.sample_rate;
+
+    // update envelope computer modulation
+    update_envelope_modulation(&voice->env_computer, compute_data.mod_x, compute_data.mod_y, compute_data.mod_w);
 
     compute_envelopes(
         &voice->env_computer,
@@ -314,6 +320,10 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     const double fade_in = src_inst->fade_in;
     const double fade_out = src_inst->fade_out;
 
+    const double mod_x = src_inst->mod_x;
+    const double mod_y = src_inst->mod_y;
+    const double mod_w = run_ctx->mod_wheel;
+
     // zero-initialize sample data
     memset(out_samples, 0, frame_count * 2 * sizeof(float));
     
@@ -337,7 +347,11 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
                     .fade_out = fade_out,
                     .envelope_count = src_inst->envelope_count,
                     .envelopes = src_inst->envelopes,
-                    .cur_beat = beat
+                    .cur_beat = beat,
+
+                    .mod_x = mod_x,
+                    .mod_y = mod_y,
+                    .mod_w = mod_w
                 });
             }
 

@@ -76,6 +76,26 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 0.0
     },
 
+    // modulation params
+    {
+        .name = "Modulation X",
+        .group = "Modulation",
+
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0.0,
+        .max_value = 1.0,
+        .default_value = 0.0
+    },
+    {
+        .name = "Modulation Y",
+        .group = "Modulation",
+
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0.0,
+        .max_value = 1.0,
+        .default_value = 0.0
+    },
+
     // transition type
     {
         .name = "Transition Type Toggle",
@@ -878,9 +898,14 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 };
 
 size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
+    // general
     offsetof(bpbx_inst_s, volume),
     offsetof(bpbx_inst_s, fade_in),
     offsetof(bpbx_inst_s, fade_out),
+
+    // modulation
+    offsetof(bpbx_inst_s, mod_x),
+    offsetof(bpbx_inst_s, mod_y),
 
     // transition type
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_TRANSITION_TYPE]),

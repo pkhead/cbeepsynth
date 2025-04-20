@@ -18,13 +18,17 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _beepbox_instrument_data_h_
 
 #define BPBX_INST_MAX_VOICES 16
-#define BPBX_BASE_PARAM_COUNT 82
+#define BPBX_BASE_PARAM_COUNT 84
 
 typedef enum {
     // basic params
     BPBX_PARAM_VOLUME,
     BPBX_PARAM_FADE_IN,
     BPBX_PARAM_FADE_OUT,
+
+    // modulation params
+    BPBX_PARAM_MOD_X,
+    BPBX_PARAM_MOD_Y,
 
     // transition type params
     BPBX_PARAM_ENABLE_TRANSITION_TYPE,

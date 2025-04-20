@@ -167,6 +167,9 @@ BEEPBOX_API int bpbx_inst_get_param_int(const bpbx_inst_s* inst, int index, int 
 BEEPBOX_API int bpbx_inst_get_param_double(const bpbx_inst_s* inst, int index, double *value);
 
 BEEPBOX_API const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index);
+
+// returns the array of curve preset names.
+// the array is terminated by a null pointer.
 BEEPBOX_API const char** bpbx_envelope_curve_preset_names();
 
 BEEPBOX_API const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type, int *size);

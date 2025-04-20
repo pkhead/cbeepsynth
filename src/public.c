@@ -257,6 +257,7 @@ bpbx_envelope_s* bpbx_inst_add_envelope(bpbx_inst_s *inst) {
 
 void bpbx_inst_remove_envelope(bpbx_inst_s *inst, uint8_t index) {
     if (index >= BPBX_MAX_ENVELOPE_COUNT) return;
+    if (inst->envelope_count == 0) return;
 
     for (uint8_t i = index; i < BPBX_MAX_ENVELOPE_COUNT - 1; i++) {
         inst->envelopes[i] = inst->envelopes[i+1];
@@ -355,13 +356,15 @@ const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index) {
 
 const char** bpbx_envelope_curve_preset_names() {
     static int need_init = 1;
-    static const char* env_curve_names[BPBX_ENVELOPE_CURVE_PRESET_COUNT];
+    static const char* env_curve_names[BPBX_ENVELOPE_CURVE_PRESET_COUNT + 1];
 
     if (need_init) {
         need_init = 0;
         for (int i = 0; i < BPBX_ENVELOPE_CURVE_PRESET_COUNT; i++) {
             env_curve_names[i] = envelope_curve_presets[i].name;
         }
+
+        env_curve_names[BPBX_ENVELOPE_CURVE_PRESET_COUNT] = NULL;
     }
 
     return env_curve_names;

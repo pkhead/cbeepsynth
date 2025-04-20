@@ -34,7 +34,8 @@ if (BEEPBOX_SYNTH_BUILD_SHARED)
     add_library(beepbox_synth_shared SHARED ${SOURCES})
     set_target_properties(beepbox_synth_shared PROPERTIES
         ${TARGET_PROPERTIES}
-        C_VISIBILITY_PRESET hidden    
+        C_VISIBILITY_PRESET hidden
+        OUTPUT_NAME "beepboxsynth"
     )
     target_include_directories(beepbox_synth_shared ${TARGET_INCLUDES})
     target_compile_definitions(beepbox_synth_shared PRIVATE BPBX_SHARED)

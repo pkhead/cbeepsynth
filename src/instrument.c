@@ -135,6 +135,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -145,6 +146,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
+        .default_value = 0,
         .enum_values = transition_type_values
     },
 
@@ -157,6 +159,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -167,6 +170,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
+        .default_value = 0,
         .enum_values = chord_type_values
     },
 
@@ -179,6 +183,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -188,6 +193,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_DOUBLE,
         .min_value = -12,
         .max_value = 12,
+        .default_value = 0,
     },
 
     // detune
@@ -199,6 +205,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -208,6 +215,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_DOUBLE,
         .min_value = -200,
         .max_value = 200,
+        .default_value = 0,
     },
 
     // vibrato
@@ -219,6 +227,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -229,6 +238,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 5,
+        .default_value = 0,
         .enum_values = vibrato_preset_values
     },
     {
@@ -239,6 +249,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = 2,
+        .default_value = 0,
         .enum_values = bool_enum_values
     },
     {
@@ -248,6 +259,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = 3.0,
+        .default_value = 1.0,
     },
     {
         .name = "Vibrato Delay",
@@ -255,7 +267,8 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
         .type = BPBX_PARAM_INT,
         .min_value = 0,
-        .max_value = 50
+        .max_value = 50,
+        .default_value = 0,
     },
     {
         .name = "Vibrato Type",
@@ -265,6 +278,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
+        .default_value = 0,
         .enum_values = vibrato_values
     },
 

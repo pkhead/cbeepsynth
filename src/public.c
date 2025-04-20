@@ -14,36 +14,6 @@ void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *revision = BPBX_VERSION_REVISION;
 }
 
-static bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
-    {
-        .name = "Volume",
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = -25.0,
-        .max_value = 25.0,
-        .default_value = 0.0
-    },
-    {
-        .name = "Fade In",
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0.0,
-        .max_value = 9.0,
-        .default_value = 0.0
-    },
-    {
-        .name = "Fade Out",
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = FADE_OUT_MIN,
-        .max_value = FADE_OUT_MAX,
-        .default_value = 0.0
-    }
-};
-
-size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
-    offsetof(bpbx_inst_s, volume),
-    offsetof(bpbx_inst_s, fade_in),
-    offsetof(bpbx_inst_s, fade_out)
-};
-
 const unsigned int bpbx_param_count(bpbx_inst_type_e type) {
     switch (type) {
         case BPBX_INSTRUMENT_FM:

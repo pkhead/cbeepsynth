@@ -61,6 +61,35 @@ typedef enum {
 } bpbx_inst_type_e;
 
 typedef enum {
+    BPBX_INSTFX_TRANSITION_TYPE,
+    BPBX_INSTFX_CHORD_TYPE,
+    BPBX_INSTFX_PITCH_SHIFT,
+    BPBX_INSTFX_DETUNE,
+    BPBX_INSTFX_VIBRATO,
+    BPBX_INSTFX_NOTE_FILTER
+} bpbx_instfx_type_e;
+
+typedef enum {
+    BPBX_TRANSITION_TYPE_NORMAL,
+    BPBX_TRANSITION_TYPE_INTERRUPT,
+    BPBX_TRANSITION_TYPE_CONTINUE,
+    BPBX_TRANSITION_TYPE_SLIDE
+} bpbx_transition_type_e;
+
+typedef enum {
+    BPBX_CHORD_TYPE_SIMULTANEOUS,
+    BPBX_CHORD_TYPE_STRUM,
+    BPBX_CHORD_TYPE_ARPEGGIO,
+    BPBX_CHORD_TYPE_CUSTOM_INTERVAL
+} bpbx_chord_type_e;
+
+typedef enum {
+    BPBX_FILTER_TYPE_LP,
+    BPBX_FILTER_TYPE_HP,
+    BPBX_FILTER_TYPE_NOTCH
+} bpbx_filter_type_e;
+
+typedef enum {
     BPBX_PARAM_UINT8,
     BPBX_PARAM_INT,
     BPBX_PARAM_DOUBLE
@@ -121,6 +150,7 @@ typedef struct {
     uint32_t flags; // bpbx_inst_param_flags_e
 
     const char *name;
+    const char *group;
 
     double min_value;
     double max_value;

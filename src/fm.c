@@ -490,6 +490,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
         .name = "Algorithm",
+        .group = "FM",
         .min_value = 0,
         .max_value = 12,
         .default_value = 0,
@@ -501,6 +502,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 1 Frequency",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -511,6 +513,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 1 Volume",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
@@ -521,6 +524,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 2 Frequency",
+        .group = "FM",
         
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -531,6 +535,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 2 Volume",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
@@ -541,6 +546,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 3 Frequency",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -551,6 +557,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 3 Volume",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
@@ -561,6 +568,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         .name = "Operator 4 Frequency",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = BPBX_FM_FREQ_COUNT-1,
@@ -571,6 +579,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Operator 4 Volume",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
@@ -582,6 +591,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
         .name = "Feedback Type",
+        .group = "FM",
         .min_value = 0,
         .max_value = BPBX_FM_FEEDBACK_TYPE_COUNT-1,
         .default_value = 0,
@@ -592,6 +602,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_DOUBLE,
         .name = "Feedback Volume",
+        .group = "FM",
 
         .min_value = 0,
         .max_value = 15,

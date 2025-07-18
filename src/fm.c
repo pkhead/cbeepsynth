@@ -156,6 +156,10 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
         };
     }
 
+    for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
+        dyn_biquad_reset_output(voice->note_filters + i);
+    }
+
     envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
 
     return voice_index;
@@ -303,7 +307,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
     // note filter
     double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
-    if (compute_data.base_inst->active_effects[BPBX_INSTFX_NOTE_FILTER]) {
+    voice->filters_enabled = compute_data.base_inst->active_effects[BPBX_INSTFX_NOTE_FILTER];
+    if (voice->filters_enabled) {
         // get modulation for all freqs
         const double note_all_freqs_envelope_start =
             voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
@@ -311,18 +316,6 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
             voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
         
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-            // get freq modulation
-            const double note_freq_envelope_start =
-                voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
-            const double note_freq_envelope_end =
-                voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
-
-            // get gain modulation
-            const double note_peak_envelope_start =
-                voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
-            const double note_peak_envelope_end =
-                voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
-            
             const filter_group_s *filter_group_start = &compute_data.base_inst->last_note_filter;
             const filter_group_s *filter_group_end = &compute_data.base_inst->note_filter;
 
@@ -334,6 +327,18 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
             if (filter_group_start->type[i] == BPBX_FILTER_TYPE_OFF) {
                 voice->note_filters[i].enabled = FALSE;
             } else {
+                // get freq modulation
+                const double note_freq_envelope_start =
+                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+                const double note_freq_envelope_end =
+                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+
+                // get gain modulation
+                const double note_peak_envelope_start =
+                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                const double note_peak_envelope_end =
+                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                
                 voice->note_filters[i].enabled = TRUE;
 
                 filter_coefs_s start_coefs = filter_to_coefficients(
@@ -345,8 +350,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
                 filter_coefs_s end_coefs = filter_to_coefficients(
                     filter_group_end, i,
                     compute_data.sample_rate,
-                    note_all_freqs_envelope_start * note_freq_envelope_start,
-                    note_peak_envelope_start);
+                    note_all_freqs_envelope_end * note_freq_envelope_end,
+                    note_peak_envelope_end);
                 
                 dyn_biquad_load(&voice->note_filters[i],
                     start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
@@ -532,7 +537,19 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             }
             
             // process this frame
-            float sample = (float) (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
+            double x0 = (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
+            double x1 = voice->note_filter_input[0];
+            double x2 = voice->note_filter_input[1];
+            
+            float sample;
+            if (voice->filters_enabled) {
+                sample = (float) apply_filters(x0, x1, x2, voice->note_filters);
+            } else {
+                sample = (float) x0;
+            }
+
+            x2 = x1;
+            x1 = x0;
 
             voice->op_states[0].phase += voice->op_states[0].phase_delta;
             voice->op_states[1].phase += voice->op_states[1].phase_delta;
@@ -555,6 +572,9 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             // output to left and right channels
             *out_l += sample;
             *out_r += sample;
+
+            voice->note_filter_input[0] = x1;
+            voice->note_filter_input[1] = x2;
             
             // convert from operable values
             for (int op = 0; op < FM_OP_COUNT; op++) {

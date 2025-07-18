@@ -5,6 +5,10 @@
 #include <stdint.h>
 
 #define FILTER_GROUP_COUNT 8
+#define FILTER_FREQ_MIN_HZ 8.0
+#define FILTER_FREQ_REFERENCE_HZ 8000.0
+#define FILTER_FREQ_STEP ((1.0 / 4.0))
+#define FILTER_GAIN_STEP ((1.0 / 2.0))
 
 typedef struct {
     uint8_t type[FILTER_GROUP_COUNT];
@@ -29,9 +33,9 @@ double filter_get_volume_compensation_mult(const filter_group_s *group, int inde
 // low-pass 2nd-order butterworth
 void filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain);
 // high-pass 2nd-order butterworth
-void filter_hp2bw(filter_coefs_s *coefs, double sample_rate, double frequency, double linear_gain);
+void filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double linear_gain);
 // peak 2nd-order
-void filter_peak2nd(filter_coefs_s *coefs, double sample_rate, double frequency, double linear_gain, double bw_scale);
+void filter_peak2nd(filter_coefs_s *coefs, double corner_radians_per_sample, double linear_gain, double bw_scale);
 
 typedef struct {
     double a1;
@@ -53,13 +57,16 @@ typedef struct {
     uint8_t enabled;
 } dyn_biquad_s;
 
-// loadCoefficientsWithGradient
 void dyn_biquad_reset_output(dyn_biquad_s *self);
+// loadCoefficientsWithGradient
 void dyn_biquad_load(
     dyn_biquad_s *self, filter_coefs_s start, filter_coefs_s end,
     double delta_rate, uint8_t use_multiplicative_input_coefficients);
 
 // compute group of 2nd-order filters
+// input0: current sample (x[0])
+// input1: last sample (x[-1])
+// input2: sample before input1 (x[-2])
 double apply_filters(double input0, double input1, double input2, dyn_biquad_s filters[FILTER_GROUP_COUNT]);
 
 #endif

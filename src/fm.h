@@ -54,6 +54,8 @@ typedef struct {
     double secs_since_release;
     double ticks_since_release;
 
+    uint8_t filters_enabled;
+    double note_filter_input[2]; // x[-1] and x[-2]
     dyn_biquad_s note_filters[FILTER_GROUP_COUNT];
 
     fm_voice_opstate_s op_states[FM_OP_COUNT];

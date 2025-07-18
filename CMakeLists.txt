@@ -7,6 +7,7 @@ set(SOURCES
     src/instrument.c
     src/wavetables.c
     src/envelope.c
+    src/filtering.c
     src/public.c
 )
 

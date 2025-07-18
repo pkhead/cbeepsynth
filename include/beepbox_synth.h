@@ -30,14 +30,20 @@ namespace beepbox {
 extern "C" {
 #endif
 
-#ifndef BPBX_SHARED
-#define BEEPBOX_API
-#else
 #ifdef _WIN32
-#define BEEPBOX_API __declspec(dllexport)
+#   if defined(BPBX_SHARED) && defined(BPBX_SHARED_IMPORT)
+#       define BEEPBOX_API __declspec(dllimport)
+#   elif defined(BPBX_SHARED)
+#       define BEEPBOX_API __declspec(dllexport)
+#   else
+#       define BEEPBOX_API
+#   endif
 #else
-#define BEEPBOX_API __attribute__((visibility("default")))
-#endif
+#   ifdef BPBX_SHARED
+#       define BEEPBOX_API __attribute__((visibility("default")))
+#   else
+#       define BEEPBOX_API
+#   endif
 #endif
 
 #include "beepbox_instrument_data.h"
@@ -207,6 +213,15 @@ typedef struct {
     double mod_wheel;
 } bpbx_run_ctx_s;
 
+// frequency response analysis return data
+// this is a complex number with an extra property "denom"
+// the magnitude of this number is sqrt(real*real + imag*imag) / denom
+typedef struct {
+    double real;
+    double imag;
+    double denom;
+} bpbx_freq_response_s;
+
 typedef struct bpbx_inst_s bpbx_inst_s;
 
 BEEPBOX_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
@@ -255,6 +270,16 @@ BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_v
 
 BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx);
 
+BEEPBOX_API double bpbx_freq_setting_to_hz(double freq_setting);
+
+// analyze the frequency response of a specific control point of a given instrument's note filter
+// at a given frequency
+BEEPBOX_API void bpbx_inst_analyze_freq_response(
+    const bpbx_inst_s *inst, int control_index,
+    double hz, double sample_rate, bpbx_freq_response_s *out);
+
+BEEPBOX_API double bpbx_freq_response_magnitude(const bpbx_freq_response_s *self);
+BEEPBOX_API double bpbx_freq_response_angle(const bpbx_freq_response_s *self);
 
 #ifdef __cplusplus
 }

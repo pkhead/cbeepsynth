@@ -2,11 +2,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "../include/beepbox_synth.h"
+#include "util.h"
 #include "instrument.h"
 #include "fm.h"
-#include "util.h"
 #include "envelope.h"
+#include "filtering.h"
 
 void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *major = BPBX_VERSION_MAJOR;
@@ -429,4 +431,27 @@ void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_param
         default:
             break;
     }
+}
+
+double bpbx_freq_setting_to_hz(double freq_setting) {
+    return get_hz_from_setting_value(freq_setting);
+}
+
+void bpbx_inst_analyze_freq_response(
+    const bpbx_inst_s *inst, int control_index,
+    double hz, double sample_rate, bpbx_freq_response_s *out)
+{
+    filter_coefs_s coefs = filter_to_coefficients(&inst->note_filter, control_index, sample_rate, 1.0, 1.0);
+    double corner_rads_per_sample = PI2 * hz / sample_rate;
+    bpbx_freq_response_s resp = filter_analyze(coefs, corner_rads_per_sample);
+
+    *out = resp;
+}
+
+double bpbx_freq_response_magnitude(const bpbx_freq_response_s *self) {
+    return sqrt(self->real * self->real + self->imag * self->imag) / self->denom;
+}
+
+double bpbx_freq_response_angle(const bpbx_freq_response_s *self) {
+    return atan2(self->imag, self->real);
 }

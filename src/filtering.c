@@ -19,11 +19,11 @@ static double get_filter_freq_max(void) {
 
 #define FILTER_FREQ_MAX_HZ (get_filter_freq_max())
 
-static double get_hz_from_setting_value(double value) {
+double get_hz_from_setting_value(double value) {
     return FILTER_FREQ_REFERENCE_HZ * pow(2.0, (value - BPBX_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP);
 }
 
-static double get_linear_gain(const filter_group_s *group, int index, double peak_mult) {
+static double filter_get_linear_gain(const filter_group_s *group, int index, double peak_mult) {
     const double power = (group->gain_idx[index] - BPBX_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
     const double neutral = (group->type[index] == BPBX_FILTER_TYPE_NOTCH) ? 0.0 : -0.5;
     const double interpolated_power = neutral + (power - neutral) * peak_mult;
@@ -36,7 +36,7 @@ filter_coefs_s filter_to_coefficients(
 {
     const double hz = get_hz_from_setting_value(group->freq_idx[index]);
     const double corner_radians_per_sample = PI2 * clampd(freq_mult * hz, FILTER_FREQ_MIN_HZ, FILTER_FREQ_MAX_HZ) / sample_rate;
-    const double linear_gain = get_linear_gain(group, index, peak_mult);
+    const double linear_gain = filter_get_linear_gain(group, index, peak_mult);
     filter_coefs_s filter = {};
 
     switch (group->type[index]) {
@@ -49,7 +49,7 @@ filter_coefs_s filter_to_coefficients(
             break;
 
         case BPBX_FILTER_TYPE_NOTCH:
-            filter_peak2nd(&filter, corner_radians_per_sample, linear_gain, 1.0);
+            filter_peak2(&filter, corner_radians_per_sample, linear_gain, 1.0);
             break;
 
         default:
@@ -133,7 +133,7 @@ void filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
 }
 
 // peak 2nd-order
-void filter_peak2nd(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain, double bw_scale) {
+void filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain, double bw_scale) {
     const double sqrt_gain = sqrt(peak_linear_gain);
     const double bandwidth = bw_scale * corner_radians_per_sample / (sqrt_gain >= 1.0 ? sqrt_gain : 1.0 / sqrt_gain);
     const double alpha = tan(bandwidth * 0.5);
@@ -213,4 +213,37 @@ double apply_filters(double sample, double input1, double input2, dyn_biquad_s f
     }
 
     return sample;
+}
+
+bpbx_freq_response_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
+    const double *a = coefs.a;
+    const double *b = coefs.b;
+    const double real_z1 = real;
+    const double imag_z1 = -imag;
+    double real_num = b[0] + b[1] * real_z1;
+    double imag_num = b[1] * imag_z1;
+    double real_denom = 1.0 + a[1] * real_z1;
+    double imag_denom = a[1] * imag_z1;
+    double real_z = real_z1;
+    double imag_z = imag_z1;
+    for (int i = 2; i <= 2; i++) {
+        const double real_temp = real_z * real_z1 - imag_z * imag_z1;
+        const double imag_temp = real_z * imag_z1 + imag_z * real_z1;
+        real_z = real_temp;
+        imag_z = imag_temp;
+        real_num += b[i] * real_z;
+        imag_num += b[i] * imag_z;
+        real_denom += a[i] * real_z;
+        imag_denom += a[i] * imag_z;
+    }
+
+    return (bpbx_freq_response_s) {
+        .denom = real_denom * real_denom + imag_denom * imag_denom,
+        .real = real_num * real_denom + imag_num * imag_denom,
+        .imag = imag_num * real_denom - real_num * imag_denom
+    };
+}
+
+bpbx_freq_response_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
+    return filter_analyze_complex(coefs, cos(radians_per_sample), sin(radians_per_sample));
 }

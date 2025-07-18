@@ -50,11 +50,11 @@ static inline double max(double a, double b) {
     return a > b ? a : b;
 }
 
-inline float key_to_hz_f(int key) {
+static inline float key_to_hz_f(int key) {
     return powf(2.f, (key - 69) / 12.f) * 440.f;
 }
 
-inline double key_to_hz_d(double key) {
+static inline double key_to_hz_d(double key) {
     return pow(2.0, (key - 69) / 12.0) * 440.0;
 }
 

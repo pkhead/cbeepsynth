@@ -57,7 +57,7 @@ double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);
 double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar);
 
-bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT];
-size_t base_param_offsets[BPBX_BASE_PARAM_COUNT];
+extern bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT];
+extern size_t base_param_offsets[BPBX_BASE_PARAM_COUNT];
 
 #endif

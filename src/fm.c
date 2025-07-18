@@ -10,6 +10,7 @@
 #include "wavetables.h"
 #include "instrument.h"
 #include "envelope.h"
+#include "filtering.h"
 
 /*
 algorithms:
@@ -300,6 +301,62 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         interval_end += vibrato_end;
     }
 
+    // note filter
+    double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
+    if (compute_data.base_inst->active_effects[BPBX_INSTFX_NOTE_FILTER]) {
+        // get modulation for all freqs
+        const double note_all_freqs_envelope_start =
+            voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+        const double note_all_freqs_envelope_end=
+            voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+        
+        for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
+            // get freq modulation
+            const double note_freq_envelope_start =
+                voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+            const double note_freq_envelope_end =
+                voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+
+            // get gain modulation
+            const double note_peak_envelope_start =
+                voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+            const double note_peak_envelope_end =
+                voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+            
+            const filter_group_s *filter_group_start = &compute_data.base_inst->last_note_filter;
+            const filter_group_s *filter_group_end = &compute_data.base_inst->note_filter;
+
+            // If switching dot type, do it all at once and do not try to interpolate since no valid interpolation exists.
+            if (filter_group_start->type[i] != filter_group_end->type[i]) {
+                filter_group_start = filter_group_end;
+            }
+
+            if (filter_group_start->type[i] == BPBX_FILTER_TYPE_OFF) {
+                voice->note_filters[i].enabled = FALSE;
+            } else {
+                voice->note_filters[i].enabled = TRUE;
+
+                filter_coefs_s start_coefs = filter_to_coefficients(
+                    filter_group_start, i,
+                    compute_data.sample_rate,
+                    note_all_freqs_envelope_start * note_freq_envelope_start,
+                    note_peak_envelope_start);
+
+                filter_coefs_s end_coefs = filter_to_coefficients(
+                    filter_group_end, i,
+                    compute_data.sample_rate,
+                    note_all_freqs_envelope_start * note_freq_envelope_start,
+                    note_peak_envelope_start);
+                
+                dyn_biquad_load(&voice->note_filters[i],
+                    start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
+                    filter_group_start->type[i] == BPBX_FILTER_TYPE_LP);
+
+                note_filter_expression *= filter_get_volume_compensation_mult(filter_group_start, i);
+            }
+        }
+    }
+
     for (int op = 0; op < FM_OP_COUNT; op++) {
         // john nesky: I'm adding 1000 to the phase to ensure that it's never negative even when modulated
         // by other waves because negative numbers don't work with the modulus operator very well.
@@ -372,8 +429,11 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     sine_expr_boost *= 1.0 - min(1.0, max(0.0, total_carrier_expr - 1) / 2.0);
     sine_expr_boost = 1.0 + sine_expr_boost * 3.0;
 
-    const double expr_start = VOICE_BASE_EXPRESSION * sine_expr_boost * fade_expr_start * voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_VOLUME];
-    const double expr_end = VOICE_BASE_EXPRESSION * sine_expr_boost * fade_expr_end * voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_VOLUME];
+    const double expr_start = VOICE_BASE_EXPRESSION * sine_expr_boost * note_filter_expression * fade_expr_start *
+        voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_VOLUME];
+    const double expr_end = VOICE_BASE_EXPRESSION * sine_expr_boost * note_filter_expression * fade_expr_end *
+        voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_VOLUME];
+    
     voice->expression = expr_start;
     voice->expression_delta = (expr_end - expr_start) / rounded_samples_per_tick;
 
@@ -420,6 +480,7 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
         float *out_l = &out_samples[frame * 2];
         float *out_r = &out_samples[frame * 2 + 1];
 
+        // compute a tick
         if (++src_inst->frame_counter >= (size_t)samples_per_tick) {
             src_inst->frame_counter = 0;
 
@@ -452,6 +513,9 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
                     .mod_w = mod_w
                 });
             }
+
+            src_inst->last_eq = src_inst->eq;
+            src_inst->last_note_filter = src_inst->note_filter;
         }
 
         *out_l = 0.0f;

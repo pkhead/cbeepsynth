@@ -68,7 +68,7 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
 
 static const char *bool_enum_values[] = {"Off", "On"};
 static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};
-static const char *filt_type_enum[] = {"Low pass", "High pass", "Notch"};
+static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
 static const char *chord_type_values[] = {"Simultaneous", "Strum", "Arpeggio", "Custom Interval"};
 static const char *vibrato_preset_values[] = {"None", "Light", "Delayed", "Heavy", "Shaky", "Custom"};
 static const char *vibrato_values[] = {"Normal", "Shaky"};
@@ -285,16 +285,6 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // note filter
     /*
     local template = [[{
-        .name = "Note Filter # Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter # Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -345,23 +335,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values,
     },
     {
-        .name = "Note Filter 1 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 1 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -381,23 +361,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 2 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 2 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -417,23 +387,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 3 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 3 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -453,23 +413,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 4 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 4 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -489,23 +439,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 5 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 5 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -525,23 +465,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 6 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 6 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -561,23 +491,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 7 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 7 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -597,23 +517,13 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
-        .name = "Note Filter 8 Toggle",
-        .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
-    },
-    {
         .name = "Note Filter 8 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
@@ -632,19 +542,51 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
+
     
     
     // eq filter
-    {
-        .name = "EQ 1 Toggle",
+    /*
+    local template = [[{
+        .name = "EQ # Type",
         .group = "EQ",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
+        .max_value = 3,
+        .enum_values = filt_type_enum,
     },
+    {
+        .name = "EQ # Freq.",
+        .group = "EQ",
+        
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0,
+        .max_value = FILTER_MAX_FREQ,
+    },
+    {
+        .name = "EQ # Gain",
+        .group = "EQ",
+        
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0,
+        .max_value = FILTER_MAX_GAIN,
+    },
+    ]]
+
+    local build = {}
+    for i=1, 8 do
+        local repl = template:gsub("#", tostring(i))
+        table.insert(build, repl)
+    end
+
+    local str = table.concat(build)
+
+    local p = assert(io.popen("clip.exe", "w"))
+    p:write(str)
+    p:close()
+    */
     {
         .name = "EQ 1 Type",
         .group = "EQ",
@@ -652,13 +594,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 1 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -667,21 +608,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 1 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 2 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 2 Type",
@@ -690,13 +620,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 2 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -705,21 +634,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 2 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 3 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 3 Type",
@@ -728,13 +646,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 3 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -743,21 +660,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 3 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 4 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 4 Type",
@@ -766,13 +672,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 4 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -781,21 +686,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 4 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 5 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 5 Type",
@@ -804,13 +698,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 5 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -819,21 +712,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 5 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 6 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 6 Type",
@@ -842,13 +724,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 6 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -857,21 +738,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 6 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 7 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 7 Type",
@@ -880,13 +750,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 7 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -895,21 +764,10 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 7 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 8 Toggle",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 1,
-        .enum_values = bool_enum_values,
     },
     {
         .name = "EQ 8 Type",
@@ -918,13 +776,12 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         
         .type = BPBX_PARAM_UINT8,
         .min_value = 0,
-        .max_value = 2,
+        .max_value = 3,
         .enum_values = filt_type_enum,
     },
     {
         .name = "EQ 8 Freq.",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
@@ -933,12 +790,11 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     {
         .name = "EQ 8 Gain",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
         .type = BPBX_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
-    },    
+    },
 };
 
 size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
@@ -977,69 +833,53 @@ size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
 
     // note filter params
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_NOTE_FILTER]),
-    offsetof(bpbx_inst_s, note_filter.enabled [0]),
     offsetof(bpbx_inst_s, note_filter.type    [0]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[0]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[0]),
-    offsetof(bpbx_inst_s, note_filter.enabled [1]),
     offsetof(bpbx_inst_s, note_filter.type    [1]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[1]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[1]),
-    offsetof(bpbx_inst_s, note_filter.enabled [2]),
     offsetof(bpbx_inst_s, note_filter.type    [2]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[2]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[2]),
-    offsetof(bpbx_inst_s, note_filter.enabled [3]),
     offsetof(bpbx_inst_s, note_filter.type    [3]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[3]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[3]),
-    offsetof(bpbx_inst_s, note_filter.enabled [4]),
     offsetof(bpbx_inst_s, note_filter.type    [4]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[4]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[4]),
-    offsetof(bpbx_inst_s, note_filter.enabled [5]),
     offsetof(bpbx_inst_s, note_filter.type    [5]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[5]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[5]),
-    offsetof(bpbx_inst_s, note_filter.enabled [6]),
     offsetof(bpbx_inst_s, note_filter.type    [6]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[6]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[6]),
-    offsetof(bpbx_inst_s, note_filter.enabled [7]),
     offsetof(bpbx_inst_s, note_filter.type    [7]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[7]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[7]),
 
     // eq filter params
-    offsetof(bpbx_inst_s, eq.enabled [0]),
     offsetof(bpbx_inst_s, eq.type    [0]),
     offsetof(bpbx_inst_s, eq.freq_idx[0]),
     offsetof(bpbx_inst_s, eq.gain_idx[0]),
-    offsetof(bpbx_inst_s, eq.enabled [1]),
     offsetof(bpbx_inst_s, eq.type    [1]),
     offsetof(bpbx_inst_s, eq.freq_idx[1]),
     offsetof(bpbx_inst_s, eq.gain_idx[1]),
-    offsetof(bpbx_inst_s, eq.enabled [2]),
     offsetof(bpbx_inst_s, eq.type    [2]),
     offsetof(bpbx_inst_s, eq.freq_idx[2]),
     offsetof(bpbx_inst_s, eq.gain_idx[2]),
-    offsetof(bpbx_inst_s, eq.enabled [3]),
     offsetof(bpbx_inst_s, eq.type    [3]),
     offsetof(bpbx_inst_s, eq.freq_idx[3]),
     offsetof(bpbx_inst_s, eq.gain_idx[3]),
-    offsetof(bpbx_inst_s, eq.enabled [4]),
     offsetof(bpbx_inst_s, eq.type    [4]),
     offsetof(bpbx_inst_s, eq.freq_idx[4]),
     offsetof(bpbx_inst_s, eq.gain_idx[4]),
-    offsetof(bpbx_inst_s, eq.enabled [5]),
     offsetof(bpbx_inst_s, eq.type    [5]),
     offsetof(bpbx_inst_s, eq.freq_idx[5]),
     offsetof(bpbx_inst_s, eq.gain_idx[5]),
-    offsetof(bpbx_inst_s, eq.enabled [6]),
     offsetof(bpbx_inst_s, eq.type    [6]),
     offsetof(bpbx_inst_s, eq.freq_idx[6]),
     offsetof(bpbx_inst_s, eq.gain_idx[6]),
-    offsetof(bpbx_inst_s, eq.enabled [7]),
     offsetof(bpbx_inst_s, eq.type    [7]),
     offsetof(bpbx_inst_s, eq.freq_idx[7]),
     offsetof(bpbx_inst_s, eq.gain_idx[7]),

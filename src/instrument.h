@@ -30,8 +30,14 @@ typedef struct bpbx_inst_s {
     uint8_t vibrato_preset;
     bpbx_vibrato_params_s vibrato;
 
+    // current state of note filter 
     filter_group_s note_filter;
     filter_group_s eq;
+
+    // previous state of note filter
+    // interpolated per-tick as usual
+    filter_group_s last_note_filter;
+    filter_group_s last_eq;
 
     union {
         fm_inst_s *fm;

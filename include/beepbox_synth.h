@@ -98,6 +98,7 @@ typedef enum {
 } bpbx_vibrato_type_e;
 
 typedef enum {
+    BPBX_FILTER_TYPE_OFF,
     BPBX_FILTER_TYPE_LP,
     BPBX_FILTER_TYPE_HP,
     BPBX_FILTER_TYPE_NOTCH

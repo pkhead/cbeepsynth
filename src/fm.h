@@ -7,6 +7,7 @@
 #include "../include/beepbox_instrument_data.h"
 #include "wavetables.h"
 #include "envelope.h"
+#include "filtering.h"
 
 #define FM_OP_COUNT 4
 #define FM_MOD_COUNT 9
@@ -52,6 +53,8 @@ typedef struct {
 
     double secs_since_release;
     double ticks_since_release;
+
+    dyn_biquad_s note_filters[FILTER_GROUP_COUNT];
 
     fm_voice_opstate_s op_states[FM_OP_COUNT];
     envelope_computer_s env_computer;

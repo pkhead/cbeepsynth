@@ -18,7 +18,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _beepbox_instrument_data_h_
 
 #define BPBX_INST_MAX_VOICES 16
-#define BPBX_BASE_PARAM_COUNT 84
+#define BPBX_BASE_PARAM_COUNT 68
 
 typedef enum {
     // basic params

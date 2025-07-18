@@ -15,6 +15,9 @@ typedef struct {
     double note_secs_start;
     double note_secs_end;
 
+    // lowpassCutoffDecayVolumeCompensation
+    double lp_cutoff_decay_volume_compensation;
+
     double mod_x[2];
     double mod_y[2];
     double mod_wheel[2];

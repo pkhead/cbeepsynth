@@ -57,6 +57,8 @@ void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, dou
         env_computer->envelope_ends[i] = 1.0;
     }
 
+    env_computer->lp_cutoff_decay_volume_compensation = 1.0;
+
     env_computer->mod_x[0] = mod_x;
     env_computer->mod_y[0] = mod_y;
     env_computer->mod_wheel[0] = mod_w;

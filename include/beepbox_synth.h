@@ -272,11 +272,12 @@ BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_v
 BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx);
 
 BEEPBOX_API double bpbx_freq_setting_to_hz(double freq_setting);
+BEEPBOX_API double bpbx_linear_gain_to_setting(double gain);
 
 // analyze the frequency response of a specific control point of a given instrument's note filter
 // at a given frequency
-BEEPBOX_API void bpbx_inst_analyze_freq_response(
-    const bpbx_inst_s *inst, int control_index,
+BEEPBOX_API void bpbx_analyze_freq_response(
+    bpbx_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbx_freq_response_s *out);
 
 BEEPBOX_API double bpbx_freq_response_magnitude(const bpbx_freq_response_s *self);

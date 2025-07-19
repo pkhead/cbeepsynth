@@ -51,6 +51,16 @@ filter_coefs_s filter_to_coefficients(
         case BPBX_FILTER_TYPE_NOTCH:
             filter_peak2(&filter, corner_radians_per_sample, linear_gain, 1.0);
             break;
+        
+        case BPBX_FILTER_TYPE_OFF:
+            filter.a[0] = 1.0;
+            filter.a[1] = 0.0;
+            filter.a[2] = 0.0;
+
+            filter.b[0] = 1.0;
+            filter.b[1] = 0.0;
+            filter.b[2] = 0.0;
+            break;
 
         default:
             assert(FALSE && "filter_to_coefficients: invalid filter type");

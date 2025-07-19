@@ -16,7 +16,7 @@ void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *revision = BPBX_VERSION_REVISION;
 }
 
-const unsigned int bpbx_param_count(bpbx_inst_type_e type) {
+unsigned int bpbx_param_count(bpbx_inst_type_e type) {
     switch (type) {
         case BPBX_INSTRUMENT_FM:
             return BPBX_BASE_PARAM_COUNT + BPBX_FM_PARAM_COUNT;
@@ -442,11 +442,20 @@ double bpbx_freq_setting_to_hz(double freq_setting) {
     return get_hz_from_setting_value(freq_setting);
 }
 
-void bpbx_inst_analyze_freq_response(
-    const bpbx_inst_s *inst, int control_index,
+double bpbx_linear_gain_to_setting(double gain) {
+    return log2(gain) / FILTER_GAIN_STEP + BPBX_FILTER_GAIN_CENTER;
+}
+
+void bpbx_analyze_freq_response(
+    bpbx_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbx_freq_response_s *out)
 {
-    filter_coefs_s coefs = filter_to_coefficients(&inst->note_filter, control_index, sample_rate, 1.0, 1.0);
+    filter_group_s temp_group;
+    temp_group.type[0] = filter_type;
+    temp_group.freq_idx[0] = freq_setting;
+    temp_group.gain_idx[0] = gain_setting;
+
+    filter_coefs_s coefs = filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
     double corner_rads_per_sample = PI2 * hz / sample_rate;
     bpbx_freq_response_s resp = filter_analyze(coefs, corner_rads_per_sample);
 

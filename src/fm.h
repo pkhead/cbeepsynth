@@ -8,6 +8,7 @@
 #include "wavetables.h"
 #include "envelope.h"
 #include "filtering.h"
+#include "instrument.h"
 
 #define FM_OP_COUNT 4
 #define FM_MOD_COUNT 9
@@ -25,45 +26,17 @@ typedef struct {
 } fm_voice_opstate_s;
 
 typedef struct {
-    uint8_t triggered; // triggered, but not active until the next tick
-    uint8_t active;
-    uint8_t released;
-    uint8_t is_on_last_tick;
-    uint16_t key;
-    
-    float volume;
-
-    uint8_t has_prev_vibrato;
-    double prev_vibrato;
-    
-    double expression;
-    double expression_delta;
+    inst_base_voice_s base;
 
     double feedback_mult;
     double feedback_delta;
 
-    // how long the voice has been active in ticks
-    // time2_secs is seconds to end of current run.
-    double time_secs;
-    double time2_secs;
-
-    // how long the voice has been active in ticks
-    // time2_secs is ticks to the end of the current run.
-    double time_ticks;
-    double time2_ticks;
-
-    double secs_since_release;
-    double ticks_since_release;
-
-    uint8_t filters_enabled;
-    double note_filter_input[2]; // x[-1] and x[-2]
-    dyn_biquad_s note_filters[FILTER_GROUP_COUNT];
-
     fm_voice_opstate_s op_states[FM_OP_COUNT];
-    envelope_computer_s env_computer;
 } fm_voice_s;
 
 typedef struct {
+    bpbx_inst_s base;
+
     uint8_t algorithm;
     uint8_t freq_ratios[FM_OP_COUNT];
     double amplitudes[FM_OP_COUNT];

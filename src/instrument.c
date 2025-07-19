@@ -6,6 +6,23 @@
 
 #define VOLUME_LOG_SCALE 0.1428
 
+void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
+    *inst = (bpbx_inst_s) {
+        .type = type,
+        .sample_rate = 0.0,
+
+        .volume = 0.0,
+        .panning = 50.0,
+        .fade_in = 0.0,
+        .fade_out = 0.0
+    };
+
+    for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
+        inst->note_filter.gain_idx[i] = BPBX_FILTER_GAIN_CENTER;
+        inst->note_filter.freq_idx[i] = 20;
+    }
+}
+
 double calc_samples_per_tick(double bpm, double sample_rate) {
     const double beats_per_sec = bpm / 60.0;
     const double parts_per_sec = PARTS_PER_BEAT * beats_per_sec;

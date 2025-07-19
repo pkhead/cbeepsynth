@@ -67,38 +67,19 @@ unsigned int bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
 bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     init_wavetables();
 
-    bpbx_inst_s *inst = malloc(sizeof(bpbx_inst_s));
-    *inst = (bpbx_inst_s) {
-        .type = type,
-        .sample_rate = 0.0,
-
-        .volume = 0.0,
-        .panning = 50.0,
-        .fade_in = 0.0,
-        .fade_out = 0.0
-    };
-
-    for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
-        inst->note_filter.gain_idx[i] = BPBX_FILTER_GAIN_CENTER;
-        inst->note_filter.freq_idx[i] = 20;
-    }
-
     switch (type) {
-        case BPBX_INSTRUMENT_FM:
-            inst->fm = malloc(sizeof(fm_inst_s));
-            fm_init(inst->fm);
-            break;
+        case BPBX_INSTRUMENT_FM: {
+            fm_inst_s *inst = malloc(sizeof(fm_inst_s));;
+            fm_init(inst);
+            return &inst->base;
+        }
 
         default:
-            free(inst);
             return NULL;
     }
-
-    return inst;
 }
 
-void bpbx_inst_destroy(bpbx_inst_s* inst) {
-    free(inst->fm);
+void bpbx_inst_destroy(bpbx_inst_s *inst) {
     free(inst);
 }
 
@@ -139,7 +120,7 @@ static int param_helper(const bpbx_inst_s *inst, int index, void **addr, bpbx_in
         case BPBX_INSTRUMENT_FM:
             if (index >= BPBX_FM_PARAM_COUNT) return 1;
             *info = fm_param_info[index];
-            *addr = (void*)(((uint8_t*)inst->fm) + fm_param_addresses[index]);
+            *addr = (void*)(((uint8_t*)(fm_inst_s*)inst) + fm_param_addresses[index]);
             break;
 
         default:

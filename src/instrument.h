@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include "../include/beepbox_synth.h"
 #include "envelope.h"
-#include "fm.h"
 #include "filtering.h"
 
 #define NOTE_SIZE_MAX 3
@@ -39,10 +38,6 @@ typedef struct bpbx_inst_s {
     filter_group_s last_note_filter;
     filter_group_s last_eq;
 
-    union {
-        fm_inst_s *fm;
-    };
-
     int frame_counter;
 
     // envelopes
@@ -58,6 +53,42 @@ typedef struct bpbx_inst_s {
     double mod_wheel; // last stored state of modulation wheel
 } bpbx_inst_s;
 
+typedef struct {
+    uint8_t triggered; // triggered, but not active until the next tick
+    uint8_t active;
+    uint8_t released;
+    uint8_t is_on_last_tick;
+    uint16_t key;
+    
+    float volume;
+
+    uint8_t has_prev_vibrato;
+    double prev_vibrato;
+    
+    double expression;
+    double expression_delta;
+
+    // how long the voice has been active in ticks
+    // time2_secs is seconds to end of current run.
+    double time_secs;
+    double time2_secs;
+
+    // how long the voice has been active in ticks
+    // time2_secs is ticks to the end of the current run.
+    double time_ticks;
+    double time2_ticks;
+
+    double secs_since_release;
+    double ticks_since_release;
+
+    uint8_t filters_enabled;
+    double note_filter_input[2]; // x[-1] and x[-2]
+    dyn_biquad_s note_filters[FILTER_GROUP_COUNT];
+
+    envelope_computer_s env_computer;
+} inst_base_voice_s;
+
+void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);

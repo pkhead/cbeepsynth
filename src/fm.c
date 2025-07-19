@@ -100,12 +100,12 @@ static void setup_algorithm(fm_inst_s *inst) {
     }
 }
 
-void fm_init(fm_inst_s *inst) {    
-    memset(inst, 0, sizeof(*inst));
+void fm_init(fm_inst_s *inst) {
+    inst_init(&inst->base, BPBX_INSTRUMENT_FM);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        inst->voices[i].active = FALSE;
-        inst->voices[i].triggered = FALSE;
+        inst->voices[i].base.active = FALSE;
+        inst->voices[i].base.triggered = FALSE;
     }
 
     inst->algorithm = 0;
@@ -124,25 +124,29 @@ void fm_init(fm_inst_s *inst) {
 }
 
 int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
-    fm_inst_s *const fm = inst->fm;
+    assert(inst);
+    assert(inst.type == BPBX_INSTRUMENT_FM);
+    fm_inst_s *const fm = (fm_inst_s*)inst;
 
     float velocity_f = velocity / 127.f;
 
     int voice_index = 0;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        if (fm->voices[i].triggered) continue;
+        if (fm->voices[i].base.triggered) continue;
         voice_index = i;
         break;
     }
 
     fm_voice_s *voice = fm->voices + voice_index;
     *voice = (fm_voice_s) {
-        .triggered = TRUE,
-        .released = FALSE,
-        .key = key < 0 ? 0 : (uint16_t)key,
-        .volume = velocity_f,
-        .has_prev_vibrato = FALSE
+        .base = {
+            .triggered = TRUE,
+            .released = FALSE,
+            .key = key < 0 ? 0 : (uint16_t)key,
+            .volume = velocity_f,
+            .has_prev_vibrato = FALSE
+        }
     };
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -157,10 +161,10 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
     }
 
     for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-        dyn_biquad_reset_output(voice->note_filters + i);
+        dyn_biquad_reset_output(voice->base.note_filters + i);
     }
 
-    envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
+    envelope_computer_init(&voice->base.env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
 
     return voice_index;
 }
@@ -168,19 +172,21 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
 void fm_midi_off(bpbx_inst_s *inst, int key, int velocity) {
     (void)velocity;
 
-    fm_inst_s *const fm = inst->fm;
+    assert(inst);
+    assert(inst.type == BPBX_INSTRUMENT_FM);
+    fm_inst_s *const fm = (fm_inst_s*)inst;
     
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         fm_voice_s *voice = &fm->voices[i];
-        if (voice->triggered && !voice->released && voice->key == key) {
-            voice->released = 1;
+        if (voice->base.triggered && !voice->base.released && voice->base.key == key) {
+            voice->base.released = 1;
             break;
         }
     }
 }
 
 typedef struct {
-    const bpbx_inst_s *base_inst;
+    const fm_inst_s *inst;
 
     double fade_in;
     double fade_out;
@@ -189,12 +195,12 @@ typedef struct {
     double cur_beat;
     double mod_x, mod_y, mod_w;
     bpbx_vibrato_params_s *vibrato_params;
-
-    uint8_t envelope_count;
-    bpbx_envelope_s *envelopes;
 } tone_compute_s;
 
-static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, tone_compute_s compute_data) {
+static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const fm_voice, tone_compute_s compute_data) {
+    const bpbx_inst_s *const base_inst = &inst->base;
+    inst_base_voice_s *const voice = &fm_voice->base;
+
     const double sample_len = 1.f / compute_data.sample_rate;
     const double samples_per_tick = compute_data.samples_per_tick;
     const double rounded_samples_per_tick = ceil(samples_per_tick);
@@ -213,7 +219,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
     compute_envelopes(
         &voice->env_computer,
-        compute_data.envelopes, compute_data.envelope_count,
+        base_inst->envelopes, base_inst->envelope_count,
         compute_data.cur_beat, voice->time_secs, samples_per_tick * sample_len
     );
 
@@ -246,25 +252,25 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     }
 
     // pitch shift
-    if (compute_data.base_inst->active_effects[BPBX_INSTFX_PITCH_SHIFT]) {
+    if (base_inst->active_effects[BPBX_INSTFX_PITCH_SHIFT]) {
         const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_PITCH_SHIFT];
         const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_PITCH_SHIFT];
 
-        interval_start += compute_data.base_inst->pitch_shift * env_start;
-        interval_end += compute_data.base_inst->pitch_shift * env_end;
+        interval_start += base_inst->pitch_shift * env_start;
+        interval_end += base_inst->pitch_shift * env_end;
     }
 
     // detune
-    if (compute_data.base_inst->active_effects[BPBX_INSTFX_DETUNE]) {
+    if (base_inst->active_effects[BPBX_INSTFX_DETUNE]) {
         const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_DETUNE];
         const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_DETUNE];
 
-        interval_start += compute_data.base_inst->detune * env_start / 100.0;
-        interval_end += compute_data.base_inst->detune * env_end / 100.0;
+        interval_start += base_inst->detune * env_start / 100.0;
+        interval_end += base_inst->detune * env_end / 100.0;
     }
 
     // vibrato
-    if (compute_data.base_inst->active_effects[BPBX_INSTFX_VIBRATO]) {
+    if (base_inst->active_effects[BPBX_INSTFX_VIBRATO]) {
         const bpbx_vibrato_params_s vibrato_params = *compute_data.vibrato_params;
 
         int delay_ticks = vibrato_params.delay * 2;
@@ -274,8 +280,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         double vibrato_phase_tick = compute_data.cur_beat * PARTS_PER_BEAT * TICKS_PER_PART;
         vibrato_phase_tick *= vibrato_params.speed;
 
-        const double vibrato_time_start = compute_data.base_inst->vibrato_time_start;
-        const double vibrato_time_end = compute_data.base_inst->vibrato_time_end;
+        const double vibrato_time_start = base_inst->vibrato_time_start;
+        const double vibrato_time_end = base_inst->vibrato_time_end;
 
         double vibrato_start;
         if (voice->has_prev_vibrato) {
@@ -308,7 +314,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 
     // note filter
     double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
-    voice->filters_enabled = compute_data.base_inst->active_effects[BPBX_INSTFX_NOTE_FILTER];
+    voice->filters_enabled = base_inst->active_effects[BPBX_INSTFX_NOTE_FILTER];
     if (voice->filters_enabled) {
         // get modulation for all freqs
         const double note_all_freqs_envelope_start =
@@ -317,8 +323,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
             voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
         
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-            const filter_group_s *filter_group_start = &compute_data.base_inst->last_note_filter;
-            const filter_group_s *filter_group_end = &compute_data.base_inst->note_filter;
+            const filter_group_s *filter_group_start = &base_inst->last_note_filter;
+            const filter_group_s *filter_group_end = &base_inst->note_filter;
 
             // If switching dot type, do it all at once and do not try to interpolate since no valid interpolation exists.
             if (filter_group_start->type[i] != filter_group_end->type[i]) {
@@ -369,7 +375,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     for (int op = 0; op < FM_OP_COUNT; op++) {
         // john nesky: I'm adding 1000 to the phase to ensure that it's never negative even when modulated
         // by other waves because negative numbers don't work with the modulus operator very well.
-        voice->op_states[op].phase = (fmod(voice->op_states[op].phase, 1.0) + 1000);
+        fm_voice->op_states[op].phase = (fmod(fm_voice->op_states[op].phase, 1.0) + 1000);
 
         fm_freq_data_s *freq_data = &frequency_data[inst->freq_ratios[op]];
 
@@ -394,8 +400,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
             freq_end = target_freq_end;
         }
 
-        voice->op_states[op].phase_delta = freq_start * sample_len;
-        voice->op_states[op].phase_delta_scale = pow(freq_end / freq_start, 1.0 / rounded_samples_per_tick);
+        fm_voice->op_states[op].phase_delta = freq_start * sample_len;
+        fm_voice->op_states[op].phase_delta_scale = pow(freq_end / freq_start, 1.0 / rounded_samples_per_tick);
 
         const double amplitude_curve = operator_amplitude_curve((double) inst->amplitudes[op]);
         const double amplitude_mult = amplitude_curve * freq_data->amplitude_sign;
@@ -405,15 +411,15 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         if (op < inst->carrier_count) {
             // carrier
             double pitch_expression_start;
-            if (voice->op_states[op].has_prev_pitch_expression) {
-                pitch_expression_start = voice->op_states[op].prev_pitch_expression;
+            if (fm_voice->op_states[op].has_prev_pitch_expression) {
+                pitch_expression_start = fm_voice->op_states[op].prev_pitch_expression;
             } else {
                 pitch_expression_start = pow(2.0, -(pitch_start - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
             }
             const double pitch_expression_end = pow(2.0, -(pitch_end - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
 
-            voice->op_states[op].has_prev_pitch_expression = TRUE;
-            voice->op_states[op].prev_pitch_expression = pitch_expression_end;
+            fm_voice->op_states[op].has_prev_pitch_expression = TRUE;
+            fm_voice->op_states[op].prev_pitch_expression = pitch_expression_end;
 
             expression_start *= pitch_expression_start;
             expression_end *= pitch_expression_end;
@@ -430,8 +436,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         expression_start *= voice->env_computer.envelope_starts[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
         expression_end *= voice->env_computer.envelope_ends[BPBX_ENV_INDEX_OPERATOR_AMP0 + op];
 
-        voice->op_states[op].expression = expression_start;
-        voice->op_states[op].expression_delta = (expression_end - expression_start) / rounded_samples_per_tick;
+        fm_voice->op_states[op].expression = expression_start;
+        fm_voice->op_states[op].expression_delta = (expression_end - expression_start) / rounded_samples_per_tick;
     }
 
     sine_expr_boost *= (pow(2.0, (2.0 - 1.4 * inst->feedback / 15.0)) - 1.0) / 3.0;
@@ -449,8 +455,8 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
     const double feedback_amplitude = SINE_WAVE_LENGTH * 0.3 * inst->feedback / 15.0;
     const double feedback_start = feedback_amplitude * voice->env_computer.envelope_starts[BPBX_ENV_INDEX_FEEDBACK_AMP];
     const double feedback_end = feedback_amplitude * voice->env_computer.envelope_ends[BPBX_ENV_INDEX_FEEDBACK_AMP];
-    voice->feedback_mult = feedback_start;
-    voice->feedback_delta = (feedback_end - feedback_start) / rounded_samples_per_tick;
+    fm_voice->feedback_mult = feedback_start;
+    fm_voice->feedback_delta = (feedback_end - feedback_start) / rounded_samples_per_tick;
 
     if (released) {
         voice->ticks_since_release += 1.0;
@@ -459,17 +465,18 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 }
 
 void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_FM);
+
     const double sample_rate = src_inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
     float *const out_samples = run_ctx->out_samples;
     const double beat = run_ctx->beat;
+    
+    fm_inst_s *const fm = (fm_inst_s*)src_inst;
+    setup_algorithm(fm);
 
-    // create copy of instrument on stack, for cache optimization purposes
-    // Except this is stupid i don't know if i'll continue following this
-    fm_inst_s inst = *src_inst->fm;
-    setup_algorithm(&inst);
-
-    fm_algo_f algo_func = fm_algorithm_table[inst.algorithm * BPBX_FM_FEEDBACK_TYPE_COUNT + inst.feedback_type];
+    fm_algo_f algo_func = fm_algorithm_table[fm->algorithm * BPBX_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
     const double samples_per_tick = calc_samples_per_tick(run_ctx->bpm, sample_rate);
     const double fade_in = src_inst->fade_in;
     const double fade_out = src_inst->fade_out;
@@ -500,25 +507,23 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             src_inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
 
             for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-                fm_voice_s *voice = inst.voices + i;
-                if (!voice->triggered) continue;
-                if (voice->is_on_last_tick) {
-                    voice->triggered = FALSE;
-                    voice->active = FALSE;
+                fm_voice_s *voice = fm->voices + i;
+                if (!voice->base.triggered) continue;
+                if (voice->base.is_on_last_tick) {
+                    voice->base.triggered = FALSE;
+                    voice->base.active = FALSE;
                     continue;
                 }
                 
-                voice->active = TRUE;
+                voice->base.active = TRUE;
 
-                compute_voice(&inst, voice, (tone_compute_s) {
-                    .base_inst = src_inst,
+                compute_voice(fm, voice, (tone_compute_s) {
+                    .inst = fm,
 
                     .samples_per_tick = samples_per_tick,
                     .sample_rate = sample_rate,
                     .fade_in = fade_in,
                     .fade_out = fade_out,
-                    .envelope_count = src_inst->envelope_count,
-                    .envelopes = src_inst->envelopes,
                     .cur_beat = beat,
                     .vibrato_params = &vibrato,
 
@@ -536,8 +541,8 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
         *out_r = 0.0f;
 
         for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-            fm_voice_s *voice = inst.voices + i;
-            if (!voice->active) continue;
+            fm_voice_s *voice = fm->voices + i;
+            if (!voice->base.active) continue;
             
             // convert to operable values
             for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -546,13 +551,13 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             }
             
             // process this frame
-            double x0 = (algo_func(voice, voice->feedback_mult) * voice->expression * inst_volume) * voice->volume;
-            double x1 = voice->note_filter_input[0];
-            double x2 = voice->note_filter_input[1];
+            double x0 = (algo_func(voice, voice->feedback_mult) * voice->base.expression * inst_volume) * voice->base.volume;
+            double x1 = voice->base.note_filter_input[0];
+            double x2 = voice->base.note_filter_input[1];
             
             float sample;
-            if (voice->filters_enabled) {
-                sample = (float) apply_filters(x0, x1, x2, voice->note_filters);
+            if (voice->base.filters_enabled) {
+                sample = (float) apply_filters(x0, x1, x2, voice->base.note_filters);
             } else {
                 sample = (float) x0;
             }
@@ -575,15 +580,15 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             voice->op_states[2].expression += voice->op_states[2].expression_delta;
             voice->op_states[3].expression += voice->op_states[3].expression_delta;
             
-            voice->expression += voice->expression_delta;
+            voice->base.expression += voice->base.expression_delta;
             voice->feedback_mult += voice->feedback_delta;
 
             // output to left and right channels
             *out_l += sample;
             *out_r += sample;
 
-            voice->note_filter_input[0] = x1;
-            voice->note_filter_input[1] = x2;
+            voice->base.note_filter_input[0] = x1;
+            voice->base.note_filter_input[1] = x2;
             
             // convert from operable values
             for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -668,8 +673,6 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     //     }
 
     // }
-
-    *src_inst->fm = inst;
 }
 
 

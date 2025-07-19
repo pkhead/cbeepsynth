@@ -88,7 +88,44 @@ typedef struct {
     envelope_computer_s env_computer;
 } inst_base_voice_s;
 
+typedef struct {
+    const bpbx_inst_s *inst;
+
+    double fade_in;
+    double fade_out;
+    double samples_per_tick;
+    double sample_rate;
+    double cur_beat;
+    double mod_x, mod_y, mod_w;
+    bpbx_vibrato_params_s *vibrato_params;
+} voice_compute_constants_s;
+
+typedef struct {
+    double interval_start;
+    double interval_end;
+    double expr_start;
+    double expr_end;
+
+    double sample_len;
+    double samples_per_tick;
+    double rounded_samples_per_tick;
+} voice_compute_varying_s;
+
+typedef struct {
+    voice_compute_constants_s constants;
+    voice_compute_varying_s varying;
+
+    // internal variables
+    uint8_t _released;
+} voice_compute_s;
+
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
+
+void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_data);
+void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *compute_data);
+int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
+void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
+
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);

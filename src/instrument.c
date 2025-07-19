@@ -1,6 +1,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <assert.h>
+#include <string.h>
 #include "instrument.h"
 #include "util.h"
 
@@ -68,6 +69,244 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
         effect += sin(PI2 * secs_into_bar / vibrato_period_secs);
     }
     return effect;
+}
+
+#define GET_VOICE(idx) ((inst_base_voice_s*)((uint8_t*)voices + (idx) * sizeof_voice))
+
+int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
+    int voice_index = 0;
+
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        if (GET_VOICE(i)->triggered) continue;
+        voice_index = i;
+        break;
+    }
+
+    inst_base_voice_s *voice = GET_VOICE(voice_index);
+    memset(voice, 0, sizeof_voice);
+    *voice = (inst_base_voice_s) {
+        .triggered = TRUE,
+        .released = FALSE,
+        .key = key < 0 ? 0 : (uint16_t)key,
+        .volume = velocity / 127.f,
+        .has_prev_vibrato = FALSE
+    };
+
+    for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
+        dyn_biquad_reset_output(voice->note_filters + i);
+    }
+
+    envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
+
+    return voice_index;
+}
+
+void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
+    (void)velocity;
+
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        inst_base_voice_s *voice = GET_VOICE(i);
+        if (voice->triggered && !voice->released && voice->key == key) {
+            voice->released = 1;
+            break;
+        }
+    }
+}
+
+#undef GET_VOICE
+
+void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_struct) {
+    const voice_compute_constants_s *const compute_data = &compute_struct->constants;
+    const bpbx_inst_s *const inst = compute_data->inst;
+
+    const double sample_len = compute_struct->varying.sample_len
+        = 1.f / compute_data->sample_rate;
+    const double samples_per_tick = compute_struct->varying.samples_per_tick
+        = compute_data->samples_per_tick;
+    const double rounded_samples_per_tick = compute_struct->varying.rounded_samples_per_tick
+        = ceil(samples_per_tick);
+
+    voice->time_ticks = voice->time2_ticks;
+    voice->time2_ticks = voice->time_ticks + 1.0;
+    voice->time_secs = voice->time2_secs;
+    voice->time2_secs = voice->time_secs + samples_per_tick / compute_data->sample_rate;
+
+    // const double ticks_into_bar = compute_data.cur_beat * PARTS_PER_BEAT / TICKS_PER_PART;
+    // const double part_time_start = (double)ticks_into_bar / TICKS_PER_PART;
+    // const double part_time_end = (double)(ticks_into_bar + 1) / TICKS_PER_PART;
+
+    // update envelope computer modulation
+    update_envelope_modulation(&voice->env_computer, compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
+
+    compute_envelopes(
+        &voice->env_computer,
+        inst->envelopes, inst->envelope_count,
+        compute_data->cur_beat, voice->time_secs, samples_per_tick * sample_len
+    );
+
+    const double fade_in_secs = secs_fade_in(compute_data->fade_in);
+
+    double interval_start = 0.0;
+    double interval_end = 0.0;
+
+    // precalculation/volume balancing/etc
+    double fade_expr_start = 1.0;
+    double fade_expr_end = 1.0;
+
+    const uint8_t released = compute_struct->_released = voice->time_secs >= fade_in_secs && voice->released;
+    if (released) {
+        const double ticks = fabs(ticks_fade_out(compute_data->fade_out));
+        fade_expr_start = note_size_to_volume_mult((1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
+        fade_expr_end = note_size_to_volume_mult((1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
+
+        if (voice->ticks_since_release >= ticks) {
+            voice->is_on_last_tick = TRUE;
+        }
+    } else {
+        // fade in beginning of note
+        if (fade_in_secs > 0) {
+            fade_expr_start *= min(1.0, voice->time_secs / fade_in_secs);
+            fade_expr_end *= min(1.0, voice->time2_secs / fade_in_secs);
+        }
+    }
+
+    // pitch shift
+    if (inst->active_effects[BPBX_INSTFX_PITCH_SHIFT]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_PITCH_SHIFT];
+        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_PITCH_SHIFT];
+
+        interval_start += inst->pitch_shift * env_start;
+        interval_end += inst->pitch_shift * env_end;
+    }
+
+    // detune
+    if (inst->active_effects[BPBX_INSTFX_DETUNE]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_DETUNE];
+        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_DETUNE];
+
+        interval_start += inst->detune * env_start / 100.0;
+        interval_end += inst->detune * env_end / 100.0;
+    }
+
+    // vibrato
+    if (inst->active_effects[BPBX_INSTFX_VIBRATO]) {
+        const bpbx_vibrato_params_s vibrato_params = *compute_data->vibrato_params;
+
+        int delay_ticks = vibrato_params.delay * 2;
+
+        // i don't get the calculations beepbox/jummbox does.
+        // i just did my own thing. It sounds the same i think.
+        double vibrato_phase_tick = compute_data->cur_beat * PARTS_PER_BEAT * TICKS_PER_PART;
+        vibrato_phase_tick *= vibrato_params.speed;
+
+        const double vibrato_time_start = inst->vibrato_time_start;
+        const double vibrato_time_end = inst->vibrato_time_end;
+
+        double vibrato_start;
+        if (voice->has_prev_vibrato) {
+            vibrato_start = voice->prev_vibrato;
+        } else {
+            double lfo_start = get_lfo_amplitude(vibrato_params.type, vibrato_time_start);
+            const double vibrato_depth_envelope_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+            vibrato_start = vibrato_params.depth * lfo_start * vibrato_depth_envelope_start;
+
+            if (delay_ticks > 0.0) {
+                const int ticks_until_vibrato_start = delay_ticks - voice->time_ticks;
+                vibrato_start *= max(0.0, min(1.0, 1.0 - ticks_until_vibrato_start / 2.0));
+            }
+        }
+
+        double lfo_end = get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
+        const double vibrato_depth_envelope_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+        double vibrato_end = vibrato_params.depth * lfo_end * vibrato_depth_envelope_end;
+        if (delay_ticks > 0.0) {
+            const int ticks_until_vibrato_end = delay_ticks - voice->time2_ticks;
+            vibrato_end *= max(0.0, min(1.0, 1.0 - ticks_until_vibrato_end / 2.0));
+        }
+
+        voice->has_prev_vibrato = TRUE;
+        voice->prev_vibrato = vibrato_end;
+
+        interval_start += vibrato_start;
+        interval_end += vibrato_end;
+    }
+
+    // note filter
+    double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
+    voice->filters_enabled = inst->active_effects[BPBX_INSTFX_NOTE_FILTER];
+    if (voice->filters_enabled) {
+        // get modulation for all freqs
+        const double note_all_freqs_envelope_start =
+            voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+        const double note_all_freqs_envelope_end=
+            voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+        
+        for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
+            const filter_group_s *filter_group_start = &inst->last_note_filter;
+            const filter_group_s *filter_group_end = &inst->note_filter;
+
+            // If switching dot type, do it all at once and do not try to interpolate since no valid interpolation exists.
+            if (filter_group_start->type[i] != filter_group_end->type[i]) {
+                filter_group_start = filter_group_end;
+            }
+
+            if (filter_group_start->type[i] == BPBX_FILTER_TYPE_OFF) {
+                voice->note_filters[i].enabled = FALSE;
+            } else {
+                // get freq modulation
+                const double note_freq_envelope_start =
+                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+                const double note_freq_envelope_end =
+                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+
+                // get gain modulation
+                const double note_peak_envelope_start =
+                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                const double note_peak_envelope_end =
+                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                
+                voice->note_filters[i].enabled = TRUE;
+
+                filter_coefs_s start_coefs = filter_to_coefficients(
+                    filter_group_start, i,
+                    compute_data->sample_rate,
+                    note_all_freqs_envelope_start * note_freq_envelope_start,
+                    note_peak_envelope_start);
+
+                filter_coefs_s end_coefs = filter_to_coefficients(
+                    filter_group_end, i,
+                    compute_data->sample_rate,
+                    note_all_freqs_envelope_end * note_freq_envelope_end,
+                    note_peak_envelope_end);
+                
+                dyn_biquad_load(&voice->note_filters[i],
+                    start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
+                    filter_group_start->type[i] == BPBX_FILTER_TYPE_LP);
+
+                note_filter_expression *= filter_get_volume_compensation_mult(filter_group_start, i);
+            }
+        }
+    }
+
+    if (note_filter_expression > 3.0)
+        note_filter_expression = 3.0;
+
+    const double expr_start = note_filter_expression * fade_expr_start *
+        voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_VOLUME];
+    const double expr_end = note_filter_expression * fade_expr_end *
+        voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_VOLUME];
+
+    compute_struct->varying.expr_start = expr_start;
+    compute_struct->varying.expr_end = expr_end;
+    compute_struct->varying.interval_start = interval_start;
+    compute_struct->varying.interval_end = interval_end;
+}
+
+void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *compute_data) {
+    if (compute_data->_released) {
+        voice->ticks_since_release += 1.0;
+        voice->secs_since_release += compute_data->constants.samples_per_tick;
+    }
 }
 
 

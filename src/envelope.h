@@ -16,6 +16,7 @@ typedef struct {
     double note_secs_end;
 
     // lowpassCutoffDecayVolumeCompensation
+    // TODO: implement this. Currently it's always 1.0
     double lp_cutoff_decay_volume_compensation;
 
     double mod_x[2];

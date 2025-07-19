@@ -28,6 +28,7 @@ typedef struct {
     uint8_t triggered; // triggered, but not active until the next tick
     uint8_t active;
     uint8_t released;
+    uint8_t is_on_last_tick;
     uint16_t key;
     
     float volume;

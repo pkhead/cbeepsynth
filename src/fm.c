@@ -233,8 +233,7 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
         fade_expr_end = note_size_to_volume_mult((1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
 
         if (voice->ticks_since_release >= ticks) {
-            voice->active = FALSE;
-            voice->triggered = FALSE;
+            voice->is_on_last_tick = TRUE;
         }
     } else {
         // fade in beginning of note
@@ -361,6 +360,9 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
             }
         }
     }
+
+    if (note_filter_expression > 3.0)
+        note_filter_expression = 3.0;
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
         // john nesky: I'm adding 1000 to the phase to ensure that it's never negative even when modulated
@@ -499,6 +501,12 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
             for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
                 fm_voice_s *voice = inst.voices + i;
                 if (!voice->triggered) continue;
+                if (voice->is_on_last_tick) {
+                    voice->triggered = FALSE;
+                    voice->active = FALSE;
+                    continue;
+                }
+                
                 voice->active = TRUE;
 
                 compute_voice(&inst, voice, (tone_compute_s) {

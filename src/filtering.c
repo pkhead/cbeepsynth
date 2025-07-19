@@ -37,7 +37,7 @@ filter_coefs_s filter_to_coefficients(
     const double hz = get_hz_from_setting_value(group->freq_idx[index]);
     const double corner_radians_per_sample = PI2 * clampd(freq_mult * hz, FILTER_FREQ_MIN_HZ, FILTER_FREQ_MAX_HZ) / sample_rate;
     const double linear_gain = filter_get_linear_gain(group, index, peak_mult);
-    filter_coefs_s filter = {};
+    filter_coefs_s filter = {0};
 
     switch (group->type[index]) {
         case BPBX_FILTER_TYPE_LP:
@@ -69,28 +69,31 @@ double filter_get_volume_compensation_mult(const filter_group_s *group, int inde
     const double gain_pow = (gain - BPBX_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
 
     switch (type) {
-        case BPBX_FILTER_TYPE_LP:
+        case BPBX_FILTER_TYPE_LP: {
             const double freq_relative_to_8khz = pow(2.0, octave) * FILTER_FREQ_REFERENCE_HZ / 8000.0;
 
             // Reverse the frequency warping from importing legacy simplified filters to imitate how the legacy filter cutoff setting affected volume.
             const double warped_freq = (sqrt(1.0 + 4.0 * freq_relative_to_8khz) - 1.0) / 2.0;
-            const double warped_octave = log2(warped_freq);
+            // const double warped_octave = log2(warped_freq);
             return pow(
                 0.5,
                 0.2 * max(0.0, gain_pow + 1.0) + min(0.0, max(-3.0, 0.595 * warped_freq + 0.35 * min(0.0, gain_pow + 1.0))));
+        }
             
-        case BPBX_FILTER_TYPE_HP:
+        case BPBX_FILTER_TYPE_HP: {
             return pow(
                 0.5,
                 0.125 * max(0.0, gain_pow + 1.0) +
                     min(0.0, 0.3 * (-octave - log2(FILTER_FREQ_REFERENCE_HZ / 125.0)) + 0.2 * min(0.0, gain_pow + 1.0)));
+        }
             
-        case BPBX_FILTER_TYPE_NOTCH:
+        case BPBX_FILTER_TYPE_NOTCH: {
             const double distance_from_center = octave + log2(FILTER_FREQ_REFERENCE_HZ / 2000.0);
             const double freq_loudness = pow(1.0 / (1.0 + pow(distance_from_center / 3.0, 2.0)), 2.0);
             return pow(
                 0.5,
                 0.125 * max(0.0, gain_pow) + 0.1 * freq_loudness * min(0.0, gain_pow));
+        }
             
         // error case
         default:

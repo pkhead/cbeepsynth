@@ -28,6 +28,10 @@ if (BEEPBOX_SYNTH_BUILD_STATIC)
     add_library(beepbox_synth_static STATIC ${SOURCES})
     set_target_properties(beepbox_synth_static PROPERTIES ${TARGET_PROPERTIES})
     target_include_directories(beepbox_synth_static ${TARGET_INCLUDES})
+
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        target_compile_options(beepbox_synth_static PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 # dynamic target
@@ -40,4 +44,8 @@ if (BEEPBOX_SYNTH_BUILD_SHARED)
     )
     target_include_directories(beepbox_synth_shared ${TARGET_INCLUDES})
     target_compile_definitions(beepbox_synth_shared PRIVATE BPBX_SHARED)
+    
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+        target_compile_options(beepbox_synth_shared PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()

@@ -83,10 +83,12 @@ void compute_envelopes(
     const bpbx_envelope_s *envelopes, unsigned int envelope_count,
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
+    (void)tick_time_start;
+    
     env_computer->note_secs_start = env_computer->note_secs_end;
     env_computer->note_secs_end = env_computer->note_secs_start + secs_per_tick;
 
-    const double tick_time_end = tick_time_start + 1.0;
+    // const double tick_time_end = tick_time_start + 1.0;
 
     const double beats_per_tick = 1.0 / (TICKS_PER_PART * PARTS_PER_BEAT);
     const double beats_time_start = beat_start;

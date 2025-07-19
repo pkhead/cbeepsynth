@@ -54,6 +54,7 @@ extern "C" {
 
 #define BPBX_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box
 #define BPBX_ENVELOPE_CURVE_PRESET_COUNT 26
+#define BPBX_FILTER_GROUP_COUNT 8
 #define BPBX_FILTER_GAIN_CENTER 7
 #define BPBX_FILTER_FREQ_REFERENCE_SETTING 28
 #define BPBX_FILTER_FREQ_RANGE 34
@@ -226,7 +227,7 @@ typedef struct bpbx_inst_s bpbx_inst_s;
 
 BEEPBOX_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
 
-BEEPBOX_API const unsigned int bpbx_param_count(bpbx_inst_type_e type);
+BEEPBOX_API unsigned int bpbx_param_count(bpbx_inst_type_e type);
 BEEPBOX_API const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned int index);
 
 BEEPBOX_API bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e inst_type);

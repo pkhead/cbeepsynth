@@ -78,6 +78,11 @@ bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
         .fade_out = 0.0
     };
 
+    for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
+        inst->note_filter.gain_idx[i] = BPBX_FILTER_GAIN_CENTER;
+        inst->note_filter.freq_idx[i] = 20;
+    }
+
     switch (type) {
         case BPBX_INSTRUMENT_FM:
             inst->fm = malloc(sizeof(fm_inst_s));

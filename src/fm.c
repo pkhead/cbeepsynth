@@ -166,6 +166,8 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
 }
 
 void fm_midi_off(bpbx_inst_s *inst, int key, int velocity) {
+    (void)velocity;
+
     fm_inst_s *const fm = inst->fm;
     
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
@@ -459,7 +461,6 @@ static void compute_voice(const fm_inst_s *const inst, fm_voice_s *const voice, 
 void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
     const double sample_rate = src_inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
-    const size_t frame_count = run_ctx->frame_count;
     float *const out_samples = run_ctx->out_samples;
     const double beat = run_ctx->beat;
 
@@ -488,7 +489,7 @@ void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
         float *out_r = &out_samples[frame * 2 + 1];
 
         // compute a tick
-        if (++src_inst->frame_counter >= (size_t)samples_per_tick) {
+        if (++src_inst->frame_counter >= samples_per_tick) {
             src_inst->frame_counter = 0;
 
             // update vibrato lfo

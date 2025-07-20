@@ -9,6 +9,9 @@
 #define NOTE_SIZE_MAX 3
 #define PARTS_PER_BEAT 24
 #define TICKS_PER_PART 2
+#define UNISON_MAX_VOICES 2
+#define EXPRESSION_REFERENCE_PITCH 16 // A low "E" as a MIDI pitch.
+#define PITCH_DAMPING 48
 
 typedef struct bpbx_inst_s {
     bpbx_inst_type_e type;
@@ -129,6 +132,14 @@ typedef struct {
     void *userdata;
 } audio_compute_s;
 
+typedef struct {
+    int voices; // maximum of two
+    double spread;
+    double offset;
+    double expression;
+    double sign;
+} unison_desc_s;
+
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
@@ -139,8 +150,11 @@ double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);
 double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar);
+// double calc_pitch_expression(double pitch);
+#define calc_pitch_expression(pitch) (pow(2.0, -((pitch) - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING))
 
 extern bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT];
 extern size_t base_param_offsets[BPBX_BASE_PARAM_COUNT];
+extern const unison_desc_s unison_info[BPBX_UNISON_COUNT];
 
 #endif

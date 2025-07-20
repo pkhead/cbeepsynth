@@ -32,6 +32,10 @@ double calc_samples_per_tick(double bpm, double sample_rate) {
     return sample_rate / ticks_per_sec;
 }
 
+// double calc_pitch_expression(double pitch) {
+//     return pow(2.0, -(pitch - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
+// }
+
 double note_size_to_volume_mult(double size) {
     return pow(max(0.0, size) / NOTE_SIZE_MAX, 1.5);
 }
@@ -411,6 +415,29 @@ static const char *vibrato_values[] = {"Normal", "Shaky"};
 
 #define FILTER_MAX_FREQ 33
 #define FILTER_MAX_GAIN 14
+
+const unison_desc_s unison_info[BPBX_UNISON_COUNT] = {
+    // none
+    { .voices = 1, .spread = 0.0, .offset = 0.0, .expression = 1.4, .sign = 1.0 },
+    // shimmer
+    { .voices = 2, .spread = 0.018, .offset = 0.0, .expression = 0.8, .sign = 1.0 },
+    // hum
+    { .voices = 2, .spread = 0.045, .offset = 0.0, .expression = 1.0, .sign = 1.0 },
+    // honky tonk
+    { .voices = 2, .spread = 0.09, .offset = 0.0, .expression = 1.0, .sign = 1.0 },
+    // dissonant
+    { .voices = 2, .spread = 0.25, .offset = 0.0, .expression = 0.9, .sign = 1.0 },
+    // fifth
+    { .voices = 2, .spread = 3.5, .offset = 3.5, .expression = 0.9, .sign = 1.0 },
+    // octave
+    { .voices = 2, .spread = 6.0, .offset = 6.0, .expression = 0.8, .sign = 1.0 },
+    // bowed
+    { .voices = 2, .spread = 0.02, .offset = 0.0, .expression = 1.0, .sign = -1.0 },
+    // piano
+    { .voices = 2, .spread = 0.01, .offset = 0.0, .expression = 1.0, .sign = 0.7 },
+    // warbled
+    { .voices = 2, .spread = 0.25, .offset = 0.05, .expression = 0.9, .sign = -0.8 },
+};
 
 bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // general

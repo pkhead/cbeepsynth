@@ -60,9 +60,7 @@ static fm_freq_data_s frequency_data[BPBX_FM_FREQ_COUNT];
 static int algo_associated_carriers[BPBX_FM_ALGORITHM_COUNT][4];
 static double carrier_intervals[FM_OP_COUNT];
 
-#define EXPRESSION_REFERENCE_PITCH 16 // A low "E" as a MIDI pitch.
-#define PITCH_DAMPING 48
-#define VOICE_BASE_EXPRESSION 0.1 // 0.03 (original value, but i felt like it was too quiet)
+#define VOICE_BASE_EXPRESSION 0.03
 
 static double operator_amplitude_curve(double amplitude) {
     return (pow(16.0, amplitude / 15.0) - 1.0) / 15.0;
@@ -209,9 +207,9 @@ static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice
             if (fm_voice->op_states[op].has_prev_pitch_expression) {
                 pitch_expression_start = fm_voice->op_states[op].prev_pitch_expression;
             } else {
-                pitch_expression_start = pow(2.0, -(pitch_start - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
+                pitch_expression_start = calc_pitch_expression(pitch_start);
             }
-            const double pitch_expression_end = pow(2.0, -(pitch_end - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
+            const double pitch_expression_end = calc_pitch_expression(pitch_end);
 
             fm_voice->op_states[op].has_prev_pitch_expression = TRUE;
             fm_voice->op_states[op].prev_pitch_expression = pitch_expression_end;

@@ -12,13 +12,11 @@
 typedef struct {
     inst_base_voice_s base;
 
-    double phase;
-    
-    double phase_delta;
-    double phase_delta_scale;
-    double prev_pitch_expression;
-    double output;
+    double phase[UNISON_MAX_VOICES];
+    double phase_delta[UNISON_MAX_VOICES];
+    double phase_delta_scale[UNISON_MAX_VOICES];
 
+    double prev_pitch_expression;
     uint8_t has_prev_pitch_expression;
 } chip_voice_s;
 

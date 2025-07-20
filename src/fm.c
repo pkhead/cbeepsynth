@@ -162,14 +162,10 @@ static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    double total_carrier_expr = 0.0;
     double sine_expr_boost = 1.0;
+    double total_carrier_expr = 0.0;
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
-        // john nesky: I'm adding 1000 to the phase to ensure that it's never negative even when modulated
-        // by other waves because negative numbers don't work with the modulus operator very well.
-        fm_voice->op_states[op].phase = (fmod(fm_voice->op_states[op].phase, 1.0) + 1000);
-
         fm_freq_data_s *freq_data = &frequency_data[inst->freq_ratios[op]];
 
         int associated_carrier_idx = algo_associated_carriers[inst->algorithm][op] - 1;
@@ -269,6 +265,10 @@ static void audio_render_callback(
         
         // convert to operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
+            // I'm adding 1000 to the phase to ensure that it's never negative even when modulated
+            // by other waves because negative numbers don't work with the modulus operator very well.
+            voice->op_states[op].phase = (fmod(voice->op_states[op].phase, 1.0) + 1000);
+
             voice->op_states[op].phase *= SINE_WAVE_LENGTH;
             voice->op_states[op].phase_delta *= SINE_WAVE_LENGTH;
         }
@@ -278,7 +278,8 @@ static void audio_render_callback(
         
         for (size_t sf = 0; sf < frames_to_compute; sf++) {
             // process the frames
-            double x0 = (ud->algo_func(voice, voice->feedback_mult) * voice->base.expression * inst_volume) * voice->base.volume;
+            double x0 = ud->algo_func(voice, voice->feedback_mult) *
+                voice->base.expression * voice->base.volume * inst_volume;
             
             float sample;
             if (voice->base.filters_enabled) {

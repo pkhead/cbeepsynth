@@ -47,8 +47,10 @@ static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voi
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    const double expr_start = VOICE_BASE_EXPRESSION * varying->expr_start;
-    const double expr_end = VOICE_BASE_EXPRESSION * varying->expr_end;
+    wavetable_desc_s wavetable = chip_wavetables[inst->waveform];
+
+    const double expr_start = VOICE_BASE_EXPRESSION * varying->expr_start * wavetable.expression;
+    const double expr_end = VOICE_BASE_EXPRESSION * varying->expr_end * wavetable.expression;
 
     const double start_pitch = (double)voice->key + compute_data->varying.interval_start;
     const double end_pitch = (double)voice->key + compute_data->varying.interval_end;
@@ -69,22 +71,24 @@ static void audio_render_callback(
 ) {
     chip_inst_s *const chip = userdata_ptr;
 
+    wavetable_desc_s wavetable = chip_wavetables[chip->waveform];
+    const size_t wave_length = wavetable.length - 1;
+
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         chip_voice_s *voice = chip->voices + i;
         if (!voice->base.active) continue;
         
         // convert to operable values
-        double phase_mix = voice->phase * SINE_WAVE_LENGTH;
-        double phase_delta = voice->phase_delta * SINE_WAVE_LENGTH;
+        double phase_mix = voice->phase * wave_length;
+        double phase_delta = voice->phase_delta * wave_length;
 
         float *out = output_buffer;
 
         for (size_t frame = 0; frame < frames_to_compute; frame++) {
             const int phase_int = (int)phase_mix;
-            const int index = phase_int & (SINE_WAVE_LENGTH - 1);
-            double sample = sine_wave_d[index];
-            sample = sample + (sine_wave_d[index+1] - sample) * (phase_mix - phase_int);
-            sample *= inst_volume * voice->base.expression * voice->base.volume;
+            const int index = phase_int % wave_length;
+            double sample = wavetable.values[index];
+            sample *= wavetable.expression * inst_volume * voice->base.expression * voice->base.volume;
 
             const float final_sample = (float)sample;
 
@@ -98,8 +102,8 @@ static void audio_render_callback(
             *out++ += final_sample;
         }
 
-        voice->phase = phase_mix / SINE_WAVE_LENGTH;
-        voice->phase_delta = phase_delta / SINE_WAVE_LENGTH;
+        voice->phase = phase_mix / wave_length;
+        voice->phase_delta = phase_delta / wave_length;
         
         // process this frame
         // double x0 = (algo_func(voice, voice->feedback_mult) * voice->base.expression * inst_volume) * voice->base.volume;
@@ -180,12 +184,14 @@ void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
 //  DATA  //
 ////////////
 
-static const char *waveform_enum_values[] = {
+static const char *waveform_enum_values[BPBX_CHIP_WAVE_COUNT] = {
     "rounded", "triangle", "square", "1/4 pulse", "1/8 pulse", "sawtooth",
-    "double saw", "double pulse", "spiky", "sine"
+    "double saw", "double pulse", "spiky", "sine", "flute", "harp",
+    "sharp clarinet", "soft clarinet", "alto sax", "bassoon",
+    "trumpet", "electric guitar", "organ", "pan flute", "glitch"
 };
 
-static const char *unison_enum_values[] = {
+static const char *unison_enum_values[BPBX_UNISON_COUNT] = {
     "none", "shimmer", "hum", "honky tonk", "dissonant",
     "fifth", "octave", "bowed", "piano", "warbled"
 };
@@ -198,8 +204,8 @@ const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
         .name = "Wave",
         .group = "Chip",
         .min_value = 0,
-        .max_value = 9,
-        .default_value = 2,
+        .max_value = BPBX_CHIP_WAVE_COUNT - 1,
+        .default_value = BPBX_CHIP_WAVE_SQUARE,
 
         .enum_values = waveform_enum_values
     },
@@ -211,8 +217,8 @@ const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
         .name = "Unison",
         .group = "Chip",
         .min_value = 0,
-        .max_value = 9,
-        .default_value = 0,
+        .max_value = BPBX_UNISON_COUNT - 1,
+        .default_value = BPBX_UNISON_NONE,
 
         .enum_values = unison_enum_values
     },

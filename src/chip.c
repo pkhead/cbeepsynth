@@ -7,6 +7,7 @@
 #define VOICE_BASE_EXPRESSION 0.1 // i don't really care about the original value
 
 void chip_init(chip_inst_s *inst) {
+    *inst = (chip_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {

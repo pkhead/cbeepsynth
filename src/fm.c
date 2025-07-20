@@ -101,6 +101,7 @@ static void setup_algorithm(fm_inst_s *inst) {
 }
 
 void fm_init(fm_inst_s *inst) {
+    *inst = (fm_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_FM);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {

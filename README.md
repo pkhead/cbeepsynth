@@ -2,12 +2,12 @@
 This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C library. It also implements some modded additions.
 
 **Implemented:**
-- FM synthesizer
+- FM and chip synthesizers
+- Chip wave
 - Envelopes
 
 **To be implemented:**
 - Instruments:
-    - Chip wave
     - Custom chip/sampler
     - FM6 (from mods)
     - Noise

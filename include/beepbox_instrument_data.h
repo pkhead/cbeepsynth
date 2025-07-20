@@ -127,4 +127,11 @@ typedef enum {
     BPBX_FM_PARAM_FEEDBACK_VOLUME,
 } bpbx_fm_param_e;
 
+#define BPBX_CHIP_PARAM_COUNT 2
+
+typedef enum {
+    BPBX_CHIP_PARAM_WAVEFORM = BPBX_BASE_PARAM_COUNT,
+    BPBX_CHIP_PARAM_UNISON,
+} bpbx_chip_param_e;
+
 #endif

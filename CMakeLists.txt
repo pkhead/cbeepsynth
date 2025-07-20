@@ -4,6 +4,7 @@ project(beepbox_synth VERSION 0.1.0)
 set(SOURCES
 	src/fm_algo.c
     src/fm.c
+    src/chip.c
     src/instrument.c
     src/wavetables.c
     src/envelope.c

@@ -6,6 +6,7 @@
 #include "util.h"
 
 #define VOLUME_LOG_SCALE 0.1428
+#define GET_VOICE(voice_list, size, idx) ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
 
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
     *inst = (bpbx_inst_s) {
@@ -71,18 +72,16 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
     return effect;
 }
 
-#define GET_VOICE(idx) ((inst_base_voice_s*)((uint8_t*)voices + (idx) * sizeof_voice))
-
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
     int voice_index = 0;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        if (GET_VOICE(i)->triggered) continue;
+        if (GET_VOICE(voices, sizeof_voice, i)->triggered) continue;
         voice_index = i;
         break;
     }
 
-    inst_base_voice_s *voice = GET_VOICE(voice_index);
+    inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, voice_index);
     memset(voice, 0, sizeof_voice);
     *voice = (inst_base_voice_s) {
         .triggered = TRUE,
@@ -105,7 +104,7 @@ void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key
     (void)velocity;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        inst_base_voice_s *voice = GET_VOICE(i);
+        inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if (voice->triggered && !voice->released && voice->key == key) {
             voice->released = 1;
             break;
@@ -113,9 +112,7 @@ void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key
     }
 }
 
-#undef GET_VOICE
-
-void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_struct) {
+static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_struct) {
     const voice_compute_constants_s *const compute_data = &compute_struct->constants;
     const bpbx_inst_s *const inst = compute_data->inst;
 
@@ -159,6 +156,9 @@ void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_
         fade_expr_start = note_size_to_volume_mult((1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
         fade_expr_end = note_size_to_volume_mult((1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
 
+        // code should be voice->ticks_since_release + 1 >= ticks
+        // but i decide to end it one tick earlier to mitigate release click.
+        // How tf does beepbox not have that.
         if (voice->ticks_since_release >= ticks) {
             voice->is_on_last_tick = TRUE;
         }
@@ -302,10 +302,90 @@ void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_
     compute_struct->varying.interval_end = interval_end;
 }
 
-void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *compute_data) {
+static void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *compute_data) {
     if (compute_data->_released) {
         voice->ticks_since_release += 1.0;
         voice->secs_since_release += compute_data->constants.samples_per_tick;
+    }
+}
+
+void inst_audio_process(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx, const audio_compute_s *params)
+{
+    const double sample_rate = inst->sample_rate;
+    const double sample_len = 1.0 / sample_rate;
+    float *const out_samples = run_ctx->out_samples;
+    const double beat = run_ctx->beat;
+
+    const double samples_per_tick = calc_samples_per_tick(run_ctx->bpm, sample_rate);
+    const double fade_in = inst->fade_in;
+    const double fade_out = inst->fade_out;
+
+    const double mod_x = inst->mod_x;
+    const double mod_y = inst->mod_y;
+    const double mod_w = run_ctx->mod_wheel;
+
+    // zero-initialize sample data
+    memset(out_samples, 0, run_ctx->frame_count * 2 * sizeof(float));
+    
+    double inst_volume = inst_volume_to_mult(inst->volume);
+
+    //const double secs_per_tick = samples_per_tick * sample_len;
+    for (size_t frame = 0; frame < run_ctx->frame_count;) {
+        // need to compute a new tick
+        if (inst->frames_remaining == 0) {
+            inst->frames_remaining = samples_per_tick;
+
+            // update vibrato lfo
+            bpbx_vibrato_params_s vibrato = inst->vibrato;
+            bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato);
+
+            inst->vibrato_time_start = inst->vibrato_time_end;
+            inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
+
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+                
+                if (!voice->triggered) continue;
+                if (voice->is_on_last_tick) {
+                    voice->triggered = FALSE;
+                    voice->active = FALSE;
+                    continue;
+                }
+                
+                voice->active = TRUE;
+
+                voice_compute_s compute_data = {
+                    .constants = {
+                        .inst = inst,
+        
+                        .samples_per_tick = samples_per_tick,
+                        .sample_rate = sample_rate,
+                        .fade_in = fade_in,
+                        .fade_out = fade_out,
+                        .cur_beat = beat,
+                        .vibrato_params = &vibrato,
+        
+                        .mod_x = mod_x,
+                        .mod_y = mod_y,
+                        .mod_w = mod_w
+                    }
+                };
+
+                compute_voice_pre(voice, &compute_data);
+                params->compute_voice(inst, voice, &compute_data);
+                compute_voice_post(voice, &compute_data);
+            }
+
+            inst->last_eq = inst->eq;
+            inst->last_note_filter = inst->note_filter;
+        }        
+
+        // compute audio block
+        const size_t frames_to_compute = min(inst->frames_remaining, run_ctx->frame_count - frame);
+        params->render_block(&out_samples[frame * 2], frames_to_compute, inst_volume, params->userdata);
+
+        inst->frames_remaining -= frames_to_compute;
+        frame += frames_to_compute;
     }
 }
 

@@ -38,7 +38,7 @@ typedef struct bpbx_inst_s {
     filter_group_s last_note_filter;
     filter_group_s last_eq;
 
-    int frame_counter;
+    size_t frames_remaining;
 
     // envelopes
     uint8_t envelope_count;
@@ -119,12 +119,21 @@ typedef struct {
     uint8_t _released;
 } voice_compute_s;
 
+typedef struct {
+    void *voice_list;
+    size_t sizeof_voice;
+
+    void (*compute_voice)(const bpbx_inst_s *const inst, inst_base_voice_s *const voice, voice_compute_s *compute_data);
+    void (*render_block)(float *output, size_t samples_to_process, double inst_volume, void *userdata);
+
+    void *userdata;
+} audio_compute_s;
+
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 
-void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_data);
-void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *compute_data);
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
 void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
+void inst_audio_process(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx, const audio_compute_s *params);
 
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);

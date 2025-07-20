@@ -18,8 +18,7 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
     - Supersaw
 - Instrument effects:
     - Transition type
-    - Chord type?
-    - Note filter
+    - Chord type
 - Audio effects:
     - Distortion
     - Bitcrusher

@@ -70,31 +70,72 @@ static void audio_render_callback(
     double inst_volume, void *userdata_ptr
 ) {
     chip_inst_s *const chip = userdata_ptr;
+    const uint8_t aliases = FALSE;
 
-    wavetable_desc_s wavetable = chip_wavetables[chip->waveform];
-    const size_t wave_length = wavetable.length - 1;
+    wavetable_desc_s wavetable;
+    size_t wave_length;
+
+    if (aliases) {
+        wavetable = raw_chip_wavetables[chip->waveform];
+        wave_length = wavetable.length - 1;
+    } else {
+        wavetable = chip_wavetables[chip->waveform];
+        wave_length = wavetable.length - 1;
+    }
+
+    const double *const wave = wavetable.values;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         chip_voice_s *voice = chip->voices + i;
         if (!voice->base.active) continue;
+        float *out = output_buffer;
         
         // convert to operable values
-        double phase_mix = voice->phase * wave_length;
+        double phase = fmod(voice->phase, 1.0) * wave_length;
         double phase_delta = voice->phase_delta * wave_length;
 
-        float *out = output_buffer;
+        double prev_wave_integral = 0.0;
+
+        if (!aliases) {
+            const int phase_int = (int)phase;
+            const int index = phase_int % wave_length;
+            const double phase_ratio = phase - phase_int;
+            prev_wave_integral = wave[index];
+            prev_wave_integral += (wave[index + 1] - prev_wave_integral) * phase_ratio;
+        }
+
+        double x1 = voice->base.note_filter_input[0];
+        double x2 = voice->base.note_filter_input[1];
 
         for (size_t frame = 0; frame < frames_to_compute; frame++) {
-            const int phase_int = (int)phase_mix;
-            const int index = phase_int % wave_length;
-            double sample = wavetable.values[index];
-            sample *= wavetable.expression * inst_volume * voice->base.expression * voice->base.volume;
+            phase += phase_delta;
 
-            const float final_sample = (float)sample;
+            double x0;
+            
+            if (aliases) {
+                x0 = wave[(int)phase % wave_length];
+            } else {
+                const int phase_int = (int)phase;
+                const int index = phase_int % wave_length;
+                double next_wave_integral = wave[index];
+                const double phase_ratio = phase - phase_int;
+                next_wave_integral += (wave[index + 1] - next_wave_integral) * phase_ratio;
+                x0 = (next_wave_integral - prev_wave_integral) / phase_delta;
+                prev_wave_integral = next_wave_integral;
+            }
 
-            phase_mix += phase_delta;
+            x0 *= wavetable.expression * inst_volume * voice->base.expression * voice->base.volume;
+            float final_sample;
+            if (voice->base.filters_enabled) {
+                final_sample = (float) apply_filters(x0, x1, x2, voice->base.note_filters);
+            } else {
+                final_sample = (float) x0;
+            }
+
+            x2 = x1;
+            x1 = x0;
+
             phase_delta *= voice->phase_delta_scale;
-
             voice->base.expression += voice->base.expression_delta;
 
             // output frame
@@ -102,7 +143,10 @@ static void audio_render_callback(
             *out++ += final_sample;
         }
 
-        voice->phase = phase_mix / wave_length;
+        voice->base.note_filter_input[0] = x1;
+        voice->base.note_filter_input[1] = x2;
+
+        voice->phase = phase / wave_length;
         voice->phase_delta = phase_delta / wave_length;
         
         // process this frame

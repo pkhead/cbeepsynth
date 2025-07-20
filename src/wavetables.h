@@ -18,6 +18,10 @@ typedef struct {
     size_t length;
 } wavetable_desc_s;
 
+// raw chip wavetables
+extern wavetable_desc_s raw_chip_wavetables[BPBX_CHIP_WAVE_COUNT];
+
+// chip wavetables integrated for the purposes of anti-aliasing
 extern wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
 
 extern void init_wavetables(void);

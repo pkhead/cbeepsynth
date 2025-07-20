@@ -6,29 +6,34 @@ float sine_wave_f[SINE_WAVE_LENGTH + 1];
 double sine_wave_d[SINE_WAVE_LENGTH + 1];
 static int need_init_wavetables = 1;
 
+wavetable_desc_s raw_chip_wavetables[BPBX_CHIP_WAVE_COUNT];
 wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
 
-#define INIT_WAVETABLE(INDEX, EXPR, ...)                \
-    {                                                   \
-        static double arr[] = {__VA_ARGS__, 0};         \
-        center_wave(arr, sizeof(arr)/sizeof(*arr));     \
-        chip_wavetables[INDEX] = (wavetable_desc_s) {   \
-            .expression = EXPR,                         \
-            .values = arr,                              \
-            .length = sizeof(arr)/sizeof(*arr)          \
-        };                                              \
+#define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
+
+#define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...) \
+    {                                                       \
+        static double arr[] = {__VA_ARGS__, 0};             \
+        static double arr2[ARRLEN(arr)];                    \
+        TRANSFORM(arr, ARRLEN(arr));                        \
+        perform_integral(arr, arr2, ARRLEN(arr));           \
+        raw_chip_wavetables[INDEX] = (wavetable_desc_s) {   \
+            .expression = EXPR,                             \
+            .values = arr,                                  \
+            .length = ARRLEN(arr)                           \
+        };                                                  \
+        chip_wavetables[INDEX] = (wavetable_desc_s) {       \
+            .expression = EXPR,                             \
+            .values = arr2,                                 \
+            .length = ARRLEN(arr2)                          \
+        };                                                  \
     }
 
-#define INIT_WAVETABLE_N(INDEX, EXPR, ...)                          \
-    {                                                               \
-        static double arr[] = {__VA_ARGS__};                        \
-        center_and_normalize_wave(arr, sizeof(arr)/sizeof(*arr));   \
-        chip_wavetables[INDEX] = (wavetable_desc_s) {               \
-            .expression = EXPR,                                     \
-            .values = arr,                                          \
-            .length = sizeof(arr)/sizeof(*arr)                      \
-        };                                                          \
-    }
+#define INIT_WAVETABLE(INDEX, EXPR, ...) \
+    INIT_WAVETABLE_GENERIC(INDEX, EXPR, center_wave, __VA_ARGS__)
+
+#define INIT_WAVETABLE_N(INDEX, EXPR, ...) \
+    INIT_WAVETABLE_GENERIC(INDEX, EXPR, center_and_normalize_wave, __VA_ARGS__)
 
 static void center_wave(double *wave, size_t length) {
     length--;
@@ -59,6 +64,15 @@ static void center_and_normalize_wave(double *wave, size_t length) {
 
     for (size_t i = 0; i < length - 1; i++) {
         wave[i] = wave[i] / magn_avg;
+    }
+}
+
+static void perform_integral(double *wave, double *new_wave, size_t length) {
+    // Perform the integral on the wave. The synth function will perform the derivative to get the original wave back but with antialiasing.
+    double cumulative = 0.0;
+    for (size_t i = 0; i < length; i++) {
+        new_wave[i] = cumulative;
+        cumulative += wave[i];
     }
 }
 

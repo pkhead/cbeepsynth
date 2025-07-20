@@ -273,12 +273,13 @@ static void audio_render_callback(
             voice->op_states[op].phase *= SINE_WAVE_LENGTH;
             voice->op_states[op].phase_delta *= SINE_WAVE_LENGTH;
         }
+
+        double x1 = voice->base.note_filter_input[0];
+        double x2 = voice->base.note_filter_input[1];
         
         for (size_t sf = 0; sf < frames_to_compute; sf++) {
             // process the frames
             double x0 = (ud->algo_func(voice, voice->feedback_mult) * voice->base.expression * inst_volume) * voice->base.volume;
-            double x1 = voice->base.note_filter_input[0];
-            double x2 = voice->base.note_filter_input[1];
             
             float sample;
             if (voice->base.filters_enabled) {
@@ -308,13 +309,13 @@ static void audio_render_callback(
             voice->base.expression += voice->base.expression_delta;
             voice->feedback_mult += voice->feedback_delta;
 
-            voice->base.note_filter_input[0] = x1;
-            voice->base.note_filter_input[1] = x2;
-
             // output to left and right channels
             *output_sample++ += sample;
             *output_sample++ += sample;
         }
+
+        voice->base.note_filter_input[0] = x1;
+        voice->base.note_filter_input[1] = x2;
         
         // convert from operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {

@@ -71,8 +71,8 @@ static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voi
     chip_voice->prev_pitch_expression = pitch_expression_end;
 
     // calculate final expression
-    const double expr_start = VOICE_BASE_EXPRESSION * varying->expr_start * settings_expression_mult * pitch_expression_start;
-    const double expr_end = VOICE_BASE_EXPRESSION * varying->expr_end * settings_expression_mult * pitch_expression_end;
+    const double expr_start = varying->expr_start * settings_expression_mult * pitch_expression_start;
+    const double expr_end = varying->expr_end * settings_expression_mult * pitch_expression_end;
     
     const double unison_env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_UNISON];
     const double unison_env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_UNISON];
@@ -171,14 +171,14 @@ static void audio_render_callback(
                     prev_wave_integral[i] = next_wave_integral;
                 }
 
-                x0[i] *= wavetable.expression * inst_volume * voice->base.expression * voice->base.volume;
-
                 phase_delta[i] *= voice->phase_delta_scale[i];
             }
 
             double x0_sum;
             if (!aliases)
                 x0_sum = x0[0] + x0[1] * unison.sign;
+
+            x0_sum *= inst_volume * voice->base.expression * voice->base.volume;
 
             float final_sample;
             if (voice->base.filters_enabled) {

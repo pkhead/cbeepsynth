@@ -139,9 +139,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     // update envelope computer modulation
     update_envelope_modulation(&voice->env_computer, compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
 
-    compute_envelopes(
-        &voice->env_computer,
-        inst->envelopes, inst->envelope_count,
+    compute_envelopes(inst, &voice->env_computer,
         compute_data->cur_beat, voice->time_secs, samples_per_tick * sample_len
     );
 

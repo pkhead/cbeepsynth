@@ -1,7 +1,8 @@
-#include <assert.h>
 #include "envelope.h"
-#include "instrument.h"
+
+#include <assert.h>
 #include "util.h"
+#include "instrument.h"
 
 double secs_fade_in(double setting) {
     return 0.0125 * (0.95 * setting + 0.05 * setting * setting);
@@ -22,6 +23,16 @@ double ticks_fade_out(double setting) {
     int index = (int) setting;
     double result = fade_out_ticks[index];
     return (fade_out_ticks[index+1] - result) * (setting - index) + result;
+}
+
+static double get_lp_cutoff_decay_volume_compensation(const envelope_curve_preset_s *curve) {
+    // This is a little hokey in the details, but I designed it a while ago and keep it 
+    // around for compatibility. This decides how much to increase the volume (or
+    // expression) to compensate for a decaying lowpass cutoff to maintain perceived
+    // volume overall.
+    if (curve->curve_type == ENV_CURVE_DECAY) return 1.25 + 0.025 * curve->speed;
+    if (curve->curve_type == ENV_CURVE_TWANG) return 1.0 + 0.02 * curve->speed;
+    return 1.0;
 }
 
 static double compute_envelope(const envelope_curve_preset_s *curve, double time, double beats, double note_size, double mod_x, double mod_y, double mod_w) {
@@ -78,15 +89,50 @@ void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x,
     env_computer->mod_wheel[1] = mod_w;
 }
 
+static int is_filter_target(bpbx_envelope_compute_index_e index) {
+    return
+        (index >= BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 &&
+        index <= BPBX_ENV_INDEX_NOTE_FILTER_FREQ7) ||
+        (index >= BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 &&
+        index <= BPBX_ENV_INDEX_NOTE_FILTER_GAIN7) ||
+        index == BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS;
+}
+
+static int get_filter_target(bpbx_envelope_compute_index_e index) {
+    // i'd rather make a huge switch statement than write the bounds checking
+    // because i can multicursor
+    switch (index) {
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ0: return 0;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ1: return 1;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ2: return 2;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ3: return 3;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ4: return 4;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ5: return 5;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ6: return 6;
+        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ7: return 7;
+
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN0: return 0;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN1: return 1;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN2: return 2;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN3: return 3;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN4: return 4;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN5: return 5;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN6: return 6;
+        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN7: return 7;
+
+        default: return -1;
+    }
+}
+
 void compute_envelopes(
-    envelope_computer_s *env_computer,
-    const bpbx_envelope_s *envelopes, unsigned int envelope_count,
+    const bpbx_inst_s *inst, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
     (void)tick_time_start;
     
     env_computer->note_secs_start = env_computer->note_secs_end;
     env_computer->note_secs_end = env_computer->note_secs_start + secs_per_tick;
+    env_computer->lp_cutoff_decay_volume_compensation = 1.0;
 
     // const double tick_time_end = tick_time_start + 1.0;
 
@@ -99,18 +145,29 @@ void compute_envelopes(
         env_computer->envelope_ends[i] = 1.0;
     }
 
-    for (unsigned int i = 0; i < envelope_count; i++) {
-        const bpbx_envelope_s *env = &envelopes[i];
+    for (unsigned int i = 0; i < inst->envelope_count; i++) {
+        const bpbx_envelope_s *env = &inst->envelopes[i];
         const envelope_curve_preset_s curve = envelope_curve_presets[env->curve_preset];
 
-        env_computer->envelope_starts[env->index] *= compute_envelope(
+        const double envelope_start = compute_envelope(
             &curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX,
             env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
         );
-        env_computer->envelope_ends[env->index] *= compute_envelope(
+
+        const double envelope_end = compute_envelope(
             &curve, env_computer->note_secs_end, beats_time_end, NOTE_SIZE_MAX,
             env_computer->mod_x[1], env_computer->mod_y[1], env_computer->mod_wheel[1]
         );
+
+        env_computer->envelope_starts[env->index] *= envelope_start;
+        env_computer->envelope_ends[env->index] *= envelope_end;
+
+        int filter_target = get_filter_target(env->index);
+        if (filter_target != -1 && inst->note_filter.type[filter_target] == BPBX_FILTER_TYPE_LP) {
+            double v = get_lp_cutoff_decay_volume_compensation(&curve);
+            if (v > env_computer->lp_cutoff_decay_volume_compensation)
+                env_computer->lp_cutoff_decay_volume_compensation = v;
+        }
     }
     //env_computer->tick += 1.0;
 }

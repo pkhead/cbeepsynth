@@ -1,6 +1,64 @@
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include "util.h"
 #include "wavetables.h"
+#include "fft.h"
+
+// performIntegralOld
+static void harmonics_perform_integral(float *wave, size_t length) {
+    // Old ver used in harmonics/picked string instruments, manipulates wave in place.
+    double cumulative = 0.0;
+    for (int i = 0; i < length; i++) {
+        const double temp = (double)wave[i];
+        wave[i] += cumulative;
+        cumulative += temp;
+    }
+}
+
+void generate_harmonics(uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *wave) {
+    memset(wave, 0, HARMONICS_WAVE_LENGTH * sizeof(float));
+
+    const float *retro_wave = noise_wavetables[BPBX_NOISE_RETRO].samples;
+
+    const double overall_slope = -0.25;
+    double combined_control_point_amp = 1;
+
+    for (int harmonic_index = 0; harmonic_index < harmonics_rendered; harmonic_index++) {
+        const int harmonic_freq = harmonic_index + 1;
+        double control_value = harmonic_index < BPBX_HARMONICS_CONTROL_COUNT ?
+            (double)controls[harmonic_index] : 
+            (double)controls[BPBX_HARMONICS_CONTROL_COUNT - 1];
+
+        if (harmonic_index >= BPBX_HARMONICS_CONTROL_COUNT) {
+            control_value *= 1.0 - (double)(harmonic_index - BPBX_HARMONICS_CONTROL_COUNT) / (harmonics_rendered - BPBX_HARMONICS_CONTROL_COUNT);
+        }
+
+        const double normalized_value = control_value / BPBX_HARMONICS_CONTROL_MAX;
+        double amplitude = pow(2.0, control_value - BPBX_HARMONICS_CONTROL_MAX + 1) * sqrt(normalized_value);
+        if (harmonic_index < BPBX_HARMONICS_CONTROL_COUNT) {
+            combined_control_point_amp += amplitude;
+        }
+        amplitude *= pow((double)harmonic_freq, overall_slope);
+        
+        // Multiply all the sine wave amplitudes by 1 or -1 based on the LFSR
+        // retro wave (effectively random) to avoid egregiously tall spikes.
+        amplitude *= retro_wave[harmonic_index + 589];
+
+        wave[HARMONICS_WAVE_LENGTH - harmonic_freq] = amplitude;
+    }
+
+    fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
+
+    // Limit the maximum wave amplitude
+    const double mult = 1.0 / pow(combined_control_point_amp, 0.7);
+    for (int i = 0; i < HARMONICS_WAVE_LENGTH; i++) wave[i] *= mult;
+
+    harmonics_perform_integral(wave, HARMONICS_WAVE_LENGTH);
+
+    // The first sample should be zero, and we'll duplicate it at the end for easier interpolation.
+    wave[HARMONICS_WAVE_LENGTH] = wave[0];
+}
 
 float sine_wave_f[SINE_WAVE_LENGTH + 1];
 double sine_wave_d[SINE_WAVE_LENGTH + 1];
@@ -8,6 +66,7 @@ static int need_init_wavetables = 1;
 
 wavetable_desc_s raw_chip_wavetables[BPBX_CHIP_WAVE_COUNT];
 wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
+noise_wavetable_s noise_wavetables[BPBX_NOISE_COUNT];
 
 #define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
 
@@ -34,6 +93,8 @@ wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
 
 #define INIT_WAVETABLE_N(INDEX, EXPR, ...) \
     INIT_WAVETABLE_GENERIC(INDEX, EXPR, center_and_normalize_wave, __VA_ARGS__)
+
+#define RANDOM() ((float)rand() / RAND_MAX)
 
 static void center_wave(double *wave, size_t length) {
     length--;
@@ -86,6 +147,7 @@ void init_wavetables() {
         sine_wave_f[i] = sinf((float)i / SINE_WAVE_LENGTH * PI2f);
     }
 
+    // set up chip wavetables
     INIT_WAVETABLE(
         BPBX_CHIP_WAVE_ROUNDED,
         0.94,
@@ -191,4 +253,172 @@ void init_wavetables() {
         0.5,
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0
     );
+
+    // generate noise wavetables
+
+    // there is an extra 0 at the end of each wavetable.
+    // This is just for interpolation purposes.
+    for (int i = 0; i < BPBX_NOISE_COUNT; i++) {
+        noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
+    }
+
+    // The "retro" drum uses a "Linear Feedback Shift Register" similar to the NES noise channel.
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_RETRO];
+        wavetable->expression = 0.25;
+        wavetable->base_pitch = 69;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (float)(drum_buffer & 1) * 2.0 - 1.0;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer += 1 << 14;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
+
+    // White noise is just random values for each sample.
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_WHITE];
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 69;
+        wavetable->pitch_filter_mult = 8.0;
+        wavetable->is_soft = true;
+        
+        float *wave = wavetable->samples;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = RANDOM() * 2.f - 1.f;
+        }
+    }
+
+    // The "clang" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_CLANG];
+        wavetable->expression = 0.4;
+        wavetable->base_pitch = 69;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+        
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer += 2 << 14;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
+
+    // The "buzz" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_BUZZ];
+        wavetable->expression = 0.3;
+        wavetable->base_pitch = 69;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+        
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer += 10 << 2;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
+
+    // TODO: hollow drums
+    // "hollow" drums, designed in frequency space and then converted via FFT:
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_HOLLOW];
+        wavetable->expression = 1.5;
+        wavetable->base_pitch = 96;
+        wavetable->pitch_filter_mult = 1.0;
+        wavetable->is_soft = true;
+        
+        // TODO: generation
+    }
+
+    // "Shine" drums from modbox!
+    // (it's the same as buzz but louder)
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_SHINE];
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 69;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+        
+        // TODO: generation
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer += 10 << 2;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
+
+    // TODO: deep drums
+    // "Deep" drums from modbox!
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_DEEP];
+        wavetable->expression = 1.5;
+        wavetable->base_pitch = 120;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = true;
+        
+        // TODO: generation
+    }
+
+    // "Cutter" drums from modbox!
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_CUTTER];
+        wavetable->expression = 0.005;
+        wavetable->base_pitch = 96;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+        
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (drum_buffer & 1) * 4.f * (RANDOM() * 14.f + 1) - 8.f;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer += 15 << 2;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
+
+    // "Metallic" drums from modbox!
+    {
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_METALLIC];
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 96;
+        wavetable->pitch_filter_mult = 1024.0;
+        wavetable->is_soft = false;
+        
+        float *wave = wavetable->samples;
+        int drum_buffer = 1;
+        for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
+            wave[i] = (drum_buffer & 1) / 2.f - 0.5f;
+            int new_buffer = drum_buffer >> 1;
+            if (((drum_buffer + new_buffer) & 1) == 1) {
+                new_buffer -= 10 << 2;
+            }
+            drum_buffer = new_buffer;
+        }
+    }
 }

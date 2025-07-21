@@ -108,6 +108,9 @@ typedef enum {
     BPBX_PARAM_EQ_GAIN7,
 } bpbx_inst_param_e;
 
+/////////////
+// FM data //
+/////////////
 #define BPBX_FM_PARAM_COUNT 11
 #define BPBX_FM_FREQ_COUNT 35
 #define BPBX_FM_ALGORITHM_COUNT 13
@@ -127,11 +130,28 @@ typedef enum {
     BPBX_FM_PARAM_FEEDBACK_VOLUME,
 } bpbx_fm_param_e;
 
+///////////////
+// Chip data //
+///////////////
 #define BPBX_CHIP_PARAM_COUNT 2
 
 typedef enum {
     BPBX_CHIP_PARAM_WAVEFORM = BPBX_BASE_PARAM_COUNT,
     BPBX_CHIP_PARAM_UNISON,
 } bpbx_chip_param_e;
+
+////////////////////
+// Harmonics data //
+////////////////////
+#define BPBX_HARMONICS_CONTROL_COUNT 28
+#define BPBX_HARMONICS_CONTROL_RANGE 8
+#define BPBX_HARMONICS_CONTROL_MAX ((BPBX_HARMONICS_CONTROL_RANGE - 1))
+#define BPBX_HARMONICS_PARAM_COUNT ((1 + BPBX_HARMONICS_CONTROL_COUNT))
+
+typedef enum {
+    BPBX_HARMONICS_PARAM_UNISON = BPBX_BASE_PARAM_COUNT,
+    BPBX_HARMONICS_CONTROL_FIRST,
+    BPBX_HARMONICS_CONTROL_LAST = BPBX_HARMONICS_CONTROL_FIRST + (BPBX_HARMONICS_CONTROL_COUNT - 1)
+} bpbx_harmonics_param_e;
 
 #endif

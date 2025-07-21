@@ -2,14 +2,18 @@ cmake_minimum_required(VERSION 3.22)
 project(beepbox_synth VERSION 0.1.0)
 
 set(SOURCES
-	src/fm_algo.c
+    src/public.c
+
+    src/instrument.c
+    src/fm_algo.c
     src/fm.c
     src/chip.c
-    src/instrument.c
+    src/harmonics.c
+    
     src/wavetables.c
     src/envelope.c
     src/filtering.c
-    src/public.c
+    src/fft.c
 )
 
 set(TARGET_PROPERTIES

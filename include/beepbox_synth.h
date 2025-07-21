@@ -157,6 +157,19 @@ typedef enum {
 } bpbx_unsion_type_e;
 
 typedef enum {
+    BPBX_NOISE_RETRO,
+    BPBX_NOISE_WHITE,
+    BPBX_NOISE_CLANG,
+    BPBX_NOISE_BUZZ,
+    BPBX_NOISE_HOLLOW,
+    BPBX_NOISE_SHINE,
+    BPBX_NOISE_DEEP,
+    BPBX_NOISE_CUTTER,
+    BPBX_NOISE_METALLIC,
+    BPBX_NOISE_COUNT
+} bpbx_noise_type_e;
+
+typedef enum {
     BPBX_PARAM_UINT8,
     BPBX_PARAM_INT,
     BPBX_PARAM_DOUBLE

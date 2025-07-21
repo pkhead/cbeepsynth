@@ -228,7 +228,7 @@ double apply_filters(double sample, double input1, double input2, dyn_biquad_s f
     return sample;
 }
 
-bpbx_freq_response_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
+bpbx_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
     const double *a = coefs.a;
     const double *b = coefs.b;
     const double real_z1 = real;
@@ -250,13 +250,23 @@ bpbx_freq_response_s filter_analyze_complex(filter_coefs_s coefs, double real, d
         imag_denom += a[i] * imag_z;
     }
 
-    return (bpbx_freq_response_s) {
-        .denom = real_denom * real_denom + imag_denom * imag_denom,
-        .real = real_num * real_denom + imag_num * imag_denom,
-        .imag = imag_num * real_denom - real_num * imag_denom
+    // sqrt(r*r + i*i) / d
+    // (r*r + i*i)^(0.5) * (1/d)
+    // (r*r + i*i)^(0.5) * ((1/d)^2)^(0.5)
+    // ( (r^2 + i^2) * ((1/d)^2) )^(0.5)
+    // 
+    // r^2 * (1/d)^2
+    // (r * (1/d))^2
+    // (r / d)^2
+    // ...then how come in the original code the denominator was stored separately?
+
+    double final_denom = real_denom * real_denom + imag_denom * imag_denom;
+    return (bpbx_complex_s) {
+        .real = (real_num * real_denom + imag_num * imag_denom) / final_denom,
+        .imag = (imag_num * real_denom - real_num * imag_denom) / final_denom
     };
 }
 
-bpbx_freq_response_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
+bpbx_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
     return filter_analyze_complex(coefs, cos(radians_per_sample), sin(radians_per_sample));
 }

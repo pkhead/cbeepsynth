@@ -42,8 +42,6 @@ typedef struct bpbx_inst_s {
     filter_group_s last_note_filter;
     filter_group_s last_eq;
 
-    size_t frames_remaining;
-
     // envelopes
     uint8_t envelope_count;
     bpbx_envelope_s envelopes[BPBX_MAX_ENVELOPE_COUNT];
@@ -73,7 +71,8 @@ typedef struct {
     
     int         (*inst_midi_on)(bpbx_inst_s *inst, int key, int velocity);
     void        (*inst_midi_off)(bpbx_inst_s *inst, int key, int velocity);
-    void        (*inst_run)(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx);
+    void        (*inst_tick)(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
+    void        (*inst_run)(bpbx_inst_s *inst, float *samples, size_t frame_count);
 } inst_vtable_s;
 
 typedef struct {
@@ -147,7 +146,6 @@ typedef struct {
     size_t sizeof_voice;
 
     void (*compute_voice)(const bpbx_inst_s *const inst, inst_base_voice_s *const voice, voice_compute_s *compute_data);
-    void (*render_block)(float *output, size_t samples_to_process, double inst_volume, void *userdata);
 
     void *userdata;
 } audio_compute_s;
@@ -164,7 +162,7 @@ void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
 void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
-void inst_audio_process(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx, const audio_compute_s *params);
+void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params);
 
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);

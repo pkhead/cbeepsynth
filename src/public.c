@@ -124,6 +124,7 @@ bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     assert(vtable->inst_init);
     assert(vtable->inst_midi_on);
     assert(vtable->inst_midi_off);
+    assert(vtable->inst_tick);
     assert(vtable->inst_run);
     assert(vtable->param_count > 0 && vtable->param_info);
     assert(vtable->param_count > 0 && vtable->param_addresses);
@@ -338,16 +339,24 @@ void bpbx_inst_midi_off(bpbx_inst_s *inst, int key, int velocity) {
     vtable->inst_midi_off(inst, key, velocity);
 }
 
-void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx) {
+void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
-
-    vtable->inst_run(inst, run_ctx);
+    vtable->inst_tick(inst, tick_ctx);
 }
 
-double bpbx_samples_fade_out(double setting, double bpm, double sample_rate) {
-    const double samples_per_tick = calc_samples_per_tick(bpm, sample_rate);
-    return ticks_fade_out(setting) * samples_per_tick;
+void bpbx_inst_run(bpbx_inst_s* inst, float *out_samples, size_t frame_count) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+    vtable->inst_run(inst, out_samples, frame_count);
+}
+
+double bpbx_calc_samples_per_tick(double bpm, double sample_rate) {
+    return calc_samples_per_tick(bpm, sample_rate);
+}
+
+double bpbx_ticks_fade_out(double setting) {
+    return ticks_fade_out(setting);
 }
 
 const char *env_index_names[] = {

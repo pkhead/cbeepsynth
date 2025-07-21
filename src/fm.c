@@ -248,20 +248,44 @@ static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice
 
 typedef struct {
     fm_inst_s *fm;
-    fm_algo_f algo_func;
 } audio_process_fm_userdata_s;
 
-static void audio_render_callback(
-    float *output_buffer, size_t frames_to_compute,
-    double inst_volume, void *userdata_ptr
-) {
-    audio_process_fm_userdata_s *const ud = userdata_ptr;
+void fm_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_FM);
+    fm_inst_s *const fm = (fm_inst_s*)src_inst;
 
+    audio_process_fm_userdata_s userdata = (audio_process_fm_userdata_s) {
+        .fm = fm,
+    };
+
+    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+        .voice_list = fm->voices,
+        .sizeof_voice = sizeof(*fm->voices),
+
+        .compute_voice = compute_fm_voice,
+
+        .userdata = &userdata
+    });
+}
+
+void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_FM);
+    
+    fm_inst_s *const fm = (fm_inst_s*)src_inst;
+    setup_algorithm(fm);
+
+    fm_algo_f algo_func = fm_algorithm_table[fm->algorithm * BPBX_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    double inst_volume = inst_volume_to_mult(src_inst->volume);
+
+    memset(samples, 0, frame_count * sizeof(float));
+    
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        fm_voice_s *voice = ud->fm->voices + i;
+        fm_voice_s *voice = fm->voices + i;
         if (!voice->base.active) continue;
 
-        float *output_sample = output_buffer;
+        float *output_sample = samples;
         
         // convert to operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -276,9 +300,9 @@ static void audio_render_callback(
         double x1 = voice->base.note_filter_input[0];
         double x2 = voice->base.note_filter_input[1];
         
-        for (size_t sf = 0; sf < frames_to_compute; sf++) {
+        for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            double x0 = ud->algo_func(voice, voice->feedback_mult) *
+            double x0 = algo_func(voice, voice->feedback_mult) *
                 voice->base.expression * voice->base.volume * inst_volume;
             
             float sample;
@@ -309,8 +333,6 @@ static void audio_render_callback(
             voice->base.expression += voice->base.expression_delta;
             voice->feedback_mult += voice->feedback_delta;
 
-            // output to left and right channels
-            *output_sample++ += sample;
             *output_sample++ += sample;
         }
 
@@ -323,29 +345,6 @@ static void audio_render_callback(
             voice->op_states[op].phase_delta /= SINE_WAVE_LENGTH;
         }
     }
-}
-
-void fm_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
-    assert(src_inst);
-    assert(src_inst->type == BPBX_INSTRUMENT_FM);
-    
-    fm_inst_s *const fm = (fm_inst_s*)src_inst;
-    setup_algorithm(fm);
-
-    audio_process_fm_userdata_s userdata = (audio_process_fm_userdata_s) {
-        .fm = fm,
-        .algo_func = fm_algorithm_table[fm->algorithm * BPBX_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type]
-    };
-    
-    inst_audio_process(src_inst, run_ctx, &(audio_compute_s) {
-        .voice_list = fm->voices,
-        .sizeof_voice = sizeof(*fm->voices),
-
-        .compute_voice = compute_fm_voice,
-        .render_block = audio_render_callback,
-
-        .userdata = &userdata
-    });
 }
 
 
@@ -674,5 +673,6 @@ const inst_vtable_s inst_fm_vtable = {
     .inst_init = (inst_init_f)bpbx_inst_init_fm,
     .inst_midi_on = fm_midi_on,
     .inst_midi_off = fm_midi_off,
+    .inst_tick = fm_tick,
     .inst_run = fm_run
 };

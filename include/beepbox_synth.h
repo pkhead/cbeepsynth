@@ -247,9 +247,6 @@ typedef struct {
 } bpbx_vibrato_params_s;
 
 typedef struct {
-    float *out_samples;
-    size_t frame_count;
-    
     // do NOT set this to zero or a very low value!
     // beepbox runs voice computations at a tick rate derived from the tempo.
     // if you don't have bpm information, set it to a dummy value like 60 or 150.
@@ -264,7 +261,7 @@ typedef struct {
     // Current value of the mod wheel, from 0 to 1.
     // Resting value is 0.
     double mod_wheel;
-} bpbx_run_ctx_s;
+} bpbx_tick_ctx_s;
 
 // frequency response analysis return data
 // this is a complex number with an extra property "denom"
@@ -323,11 +320,14 @@ BEEPBOX_API void bpbx_inst_midi_on(bpbx_inst_s *inst, int key, int velocity);
 BEEPBOX_API void bpbx_inst_midi_off(bpbx_inst_s *inst, int key, int velocity);
 
 // if you know the length of each note, and the result of this is negative,
-// call midi_off that positive number of samples before the note actually ends.
-BEEPBOX_API double bpbx_samples_fade_out(double setting, double bpm, double sample_rate);
+// call midi_off that positive number of ticks before the note actually ends.
+BEEPBOX_API double bpbx_ticks_fade_out(double setting);
 BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params);
 
-BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx);
+BEEPBOX_API double bpbx_calc_samples_per_tick(double bpm, double sample_rate);
+BEEPBOX_API void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
+// mono output
+BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, float *out_samples, size_t frame_count);
 
 BEEPBOX_API double bpbx_freq_setting_to_hz(double freq_setting);
 BEEPBOX_API double bpbx_linear_gain_to_setting(double gain);

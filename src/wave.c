@@ -96,6 +96,8 @@ static void wave_audio_render_callback(
     assert(UNISON_MAX_VOICES == 2);
     assert(unison.voices <= UNISON_MAX_VOICES);
 
+    memset(output_buffer, 0, frames_to_compute * sizeof(float));
+
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         wave_voice_s *voice = voice_list + i;
         if (!voice->base.active) continue;
@@ -165,7 +167,6 @@ static void wave_audio_render_callback(
 
             // output frame
             *out++ += final_sample;
-            *out++ += final_sample;
         }
 
         voice->base.note_filter_input[0] = x1;
@@ -232,11 +233,22 @@ static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voi
     compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
 }
 
-static void chip_audio_render_callback(
-    float *output_buffer, size_t frames_to_compute,
-    double inst_volume, void *userdata_ptr
-) {
-    chip_inst_s *const chip = userdata_ptr;
+void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_CHIP);
+
+    chip_inst_s *const chip = (chip_inst_s*)src_inst;
+
+    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+        .voice_list = chip->voices,
+        .sizeof_voice = sizeof(*chip->voices),
+        .compute_voice = compute_chip_voice,
+        .userdata = chip
+    });
+}
+
+void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+    chip_inst_s *const chip = (chip_inst_s*) src_inst;
     const bool aliases = FALSE;
 
     wavetable_desc_s wavetable;
@@ -249,25 +261,8 @@ static void chip_audio_render_callback(
     unison_desc_s unison = unison_info[chip->unison_type];
 
     wave_audio_render_callback(
-        output_buffer, frames_to_compute, inst_volume,
+        samples, frame_count, inst_volume_to_mult(src_inst->volume),
         aliases, unison, wavetable.samples, wavetable.length - 1, chip->voices);
-}
-
-void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
-    assert(src_inst);
-    assert(src_inst->type == BPBX_INSTRUMENT_CHIP);
-
-    chip_inst_s *const chip = (chip_inst_s*)src_inst;
-
-    inst_audio_process(src_inst, run_ctx, &(audio_compute_s) {
-        .voice_list = chip->voices,
-        .sizeof_voice = sizeof(*chip->voices),
-
-        .compute_voice = compute_chip_voice,
-        .render_block = chip_audio_render_callback,
-
-        .userdata = chip
-    });
 }
 
 
@@ -343,11 +338,22 @@ static void compute_harmonics_voice(const bpbx_inst_s *const base_inst, inst_bas
     compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
 }
 
-static void harmonics_audio_render_callback(
-    float *output_buffer, size_t frames_to_compute,
-    double inst_volume, void *userdata_ptr
-) {
-    harmonics_inst_s *const harmonics = userdata_ptr;
+void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_HARMONICS);
+
+    harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
+
+    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+        .voice_list = harmonics->voices,
+        .sizeof_voice = sizeof(*harmonics->voices),
+        .compute_voice = compute_harmonics_voice,
+        .userdata = harmonics
+    });
+}
+
+void harmonics_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+    harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
     const bool aliases = FALSE;
 
     unison_desc_s unison = unison_info[harmonics->unison_type];
@@ -359,25 +365,8 @@ static void harmonics_audio_render_callback(
     }
 
     wave_audio_render_callback(
-        output_buffer, frames_to_compute, inst_volume,
+        samples, frame_count, inst_volume_to_mult(src_inst->volume),
         aliases, unison, harmonics->wave, HARMONICS_WAVE_LENGTH, harmonics->voices);
-}
-
-void harmonics_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
-    assert(src_inst);
-    assert(src_inst->type == BPBX_INSTRUMENT_HARMONICS);
-
-    harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
-
-    inst_audio_process(src_inst, run_ctx, &(audio_compute_s) {
-        .voice_list = harmonics->voices,
-        .sizeof_voice = sizeof(*harmonics->voices),
-
-        .compute_voice = compute_harmonics_voice,
-        .render_block = harmonics_audio_render_callback,
-
-        .userdata = harmonics
-    });
 }
 
 
@@ -835,6 +824,7 @@ const inst_vtable_s inst_chip_vtable = {
     .inst_init = (inst_init_f)bpbx_inst_init_chip,
     .inst_midi_on = chip_midi_on,
     .inst_midi_off = chip_midi_off,
+    .inst_tick = chip_tick,
     .inst_run = chip_run
 };
 
@@ -851,5 +841,6 @@ const inst_vtable_s inst_harmonics_vtable = {
     .inst_init = (inst_init_f)bpbx_inst_init_harmonics,
     .inst_midi_on = harmonics_midi_on,
     .inst_midi_off = harmonics_midi_off,
+    .inst_tick = harmonics_tick,
     .inst_run = harmonics_run
 };

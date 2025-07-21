@@ -47,19 +47,20 @@ typedef struct {
 
     wave_voice_s voices[BPBX_INST_MAX_VOICES];
 
-    // float instead of double to take up less space
     float wave[HARMONICS_WAVE_LENGTH + 1];
 } harmonics_inst_s;
 
 void bpbx_inst_init_chip(chip_inst_s *inst);
 int chip_midi_on(bpbx_inst_s *inst, int key, int velocity);
 void chip_midi_off(bpbx_inst_s *inst, int key, int velocity);
-void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
+void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
+void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
 
 void bpbx_inst_init_harmonics(harmonics_inst_s *inst);
 int harmonics_midi_on(bpbx_inst_s *inst, int key, int velocity);
 void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity);
-void harmonics_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
+void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
+void harmonics_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
 
 extern const inst_vtable_s inst_chip_vtable;
 extern const inst_vtable_s inst_harmonics_vtable;

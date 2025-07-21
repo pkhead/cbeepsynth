@@ -311,11 +311,10 @@ static void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *
     }
 }
 
-void inst_audio_process(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx, const audio_compute_s *params)
+void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params)
 {
     const double sample_rate = inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
-    float *const out_samples = run_ctx->out_samples;
     const double beat = run_ctx->beat;
 
     const double samples_per_tick = calc_samples_per_tick(run_ctx->bpm, sample_rate);
@@ -324,71 +323,51 @@ void inst_audio_process(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx, const 
 
     const double mod_x = inst->mod_x;
     const double mod_y = inst->mod_y;
-    const double mod_w = run_ctx->mod_wheel;
+    const double mod_w = run_ctx->mod_wheel;    
 
-    // zero-initialize sample data
-    memset(out_samples, 0, run_ctx->frame_count * 2 * sizeof(float));
-    
-    double inst_volume = inst_volume_to_mult(inst->volume);
+    // update vibrato lfo
+    bpbx_vibrato_params_s vibrato = inst->vibrato;
+    bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato);
 
-    //const double secs_per_tick = samples_per_tick * sample_len;
-    for (size_t frame = 0; frame < run_ctx->frame_count;) {
-        // need to compute a new tick
-        if (inst->frames_remaining == 0) {
-            inst->frames_remaining = samples_per_tick;
+    inst->vibrato_time_start = inst->vibrato_time_end;
+    inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
 
-            // update vibrato lfo
-            bpbx_vibrato_params_s vibrato = inst->vibrato;
-            bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato);
-
-            inst->vibrato_time_start = inst->vibrato_time_end;
-            inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
-
-            for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
-                
-                if (!voice->triggered) continue;
-                if (voice->is_on_last_tick) {
-                    voice->triggered = FALSE;
-                    voice->active = FALSE;
-                    continue;
-                }
-                
-                voice->active = TRUE;
-
-                voice_compute_s compute_data = {
-                    .constants = {
-                        .inst = inst,
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
-                        .samples_per_tick = samples_per_tick,
-                        .sample_rate = sample_rate,
-                        .fade_in = fade_in,
-                        .fade_out = fade_out,
-                        .cur_beat = beat,
-                        .vibrato_params = &vibrato,
+        if (!voice->triggered) continue;
+        if (voice->is_on_last_tick) {
+            voice->triggered = FALSE;
+            voice->active = FALSE;
+            continue;
+        }
         
-                        .mod_x = mod_x,
-                        .mod_y = mod_y,
-                        .mod_w = mod_w
-                    }
-                };
+        voice->active = TRUE;
 
-                compute_voice_pre(voice, &compute_data);
-                params->compute_voice(inst, voice, &compute_data);
-                compute_voice_post(voice, &compute_data);
+        voice_compute_s compute_data = {
+            .constants = {
+                .inst = inst,
+
+                .samples_per_tick = samples_per_tick,
+                .sample_rate = sample_rate,
+                .fade_in = fade_in,
+                .fade_out = fade_out,
+                .cur_beat = beat,
+                .vibrato_params = &vibrato,
+
+                .mod_x = mod_x,
+                .mod_y = mod_y,
+                .mod_w = mod_w
             }
+        };
 
-            inst->last_eq = inst->eq;
-            inst->last_note_filter = inst->note_filter;
-        }        
-
-        // compute audio block
-        const size_t frames_to_compute = min(inst->frames_remaining, run_ctx->frame_count - frame);
-        params->render_block(&out_samples[frame * 2], frames_to_compute, inst_volume, params->userdata);
-
-        inst->frames_remaining -= frames_to_compute;
-        frame += frames_to_compute;
+        compute_voice_pre(voice, &compute_data);
+        params->compute_voice(inst, voice, &compute_data);
+        compute_voice_post(voice, &compute_data);
     }
+
+    inst->last_eq = inst->eq;
+    inst->last_note_filter = inst->note_filter;
 }
 
 

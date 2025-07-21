@@ -23,9 +23,10 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
     - Distortion
     - Bitcrusher
     - Panning
-    - Chorus (or is this an inst effect?)
+    - Chorus
     - Echo
     - Reverb
+    - Compressor/Limiter (in one)
 
 ## Building/Usage
 Clone or get this repository as a Git submodule

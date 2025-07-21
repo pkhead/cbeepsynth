@@ -64,19 +64,11 @@ BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void
 }
 
 unsigned int bpbx_param_count(bpbx_inst_type_e type) {
-    switch (type) {
-        case BPBX_INSTRUMENT_FM:
-            return BPBX_BASE_PARAM_COUNT + BPBX_FM_PARAM_COUNT;
-        
-        case BPBX_INSTRUMENT_CHIP:
-            return BPBX_BASE_PARAM_COUNT + BPBX_CHIP_PARAM_COUNT;
-        
-        case BPBX_INSTRUMENT_HARMONICS:
-            return BPBX_BASE_PARAM_COUNT + BPBX_HARMONICS_PARAM_COUNT;
+    const inst_vtable_s *vtable = inst_vtables[type];
+    assert(vtable);
 
-        default:
-            return 0;
-    }
+    if (!vtable) return 0;
+    return BPBX_BASE_PARAM_COUNT + vtable->param_count;
 }
 
 const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned int index) {

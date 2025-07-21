@@ -15,7 +15,7 @@ extern double sine_wave_d[SINE_WAVE_LENGTH + 1];
 // chip wave tables
 typedef struct {
     double expression;
-    const double *values;
+    const float *samples;
     size_t length;
 } wavetable_desc_s;
 

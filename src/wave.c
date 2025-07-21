@@ -1,0 +1,807 @@
+#include "wave.h"
+
+#include <assert.h>
+#include "util.h"
+#include "wavetables.h"
+
+///////////////
+//  GENERIC  //
+///////////////
+
+static inline int wave_midi_on(bpbx_inst_s *inst, wave_voice_s *voice_list, int key, int velocity) {
+    int voice_index = trigger_voice(inst, voice_list, sizeof(*voice_list), key, velocity);
+    wave_voice_s *voice = &voice_list[voice_index];
+    *voice = (wave_voice_s) {
+        .base = voice->base
+    };
+
+    return voice_index;
+}
+
+static inline void wave_midi_off(bpbx_inst_s *inst, wave_voice_s *voice_list, int key, int velocity) {
+    release_voice(inst, voice_list, sizeof(*voice_list), key, velocity);
+}
+
+static void compute_wave_voice(
+    const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data,
+    const double base_expression
+) {
+    const chip_inst_s *const inst = (chip_inst_s*) base_inst;
+    wave_voice_s *const wave_voice = (wave_voice_s*) voice;
+
+    const double sample_len = compute_data->varying.sample_len;
+    const double samples_per_tick = compute_data->varying.samples_per_tick;
+    const double rounded_samples_per_tick = compute_data->varying.rounded_samples_per_tick;
+
+    voice_compute_varying_s *const varying = &compute_data->varying;
+
+    const unison_desc_s unison = unison_info[inst->unison_type];
+
+    double settings_expression_mult = base_expression;
+    settings_expression_mult *= unison.expression * unison.voices / 2.0;
+
+    const double interval_start = compute_data->varying.interval_start;
+    const double interval_end = compute_data->varying.interval_end;
+    const double start_pitch = (double)voice->key + interval_start;
+    const double end_pitch = (double)voice->key + interval_end;
+
+    // pitch expression
+    double pitch_expression_start;
+    if (wave_voice->has_prev_pitch_expression) {
+        pitch_expression_start = wave_voice->prev_pitch_expression;
+    } else {
+        pitch_expression_start = calc_pitch_expression(start_pitch);
+    }
+    const double pitch_expression_end = calc_pitch_expression(end_pitch);
+    wave_voice->has_prev_pitch_expression = TRUE;
+    wave_voice->prev_pitch_expression = pitch_expression_end;
+
+    // calculate final expression
+    const double expr_start = varying->expr_start * settings_expression_mult * pitch_expression_start;
+    const double expr_end = varying->expr_end * settings_expression_mult * pitch_expression_end;
+    
+    const double unison_env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_UNISON];
+    const double unison_env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_UNISON];
+
+    const double freq_end_ratio = pow(2.0, (interval_end - interval_start) * 1.0 / 12.0);
+    const double base_phase_delta_scale = pow(freq_end_ratio, 1.0 / rounded_samples_per_tick);
+
+    const double start_freq = key_to_hz_d(start_pitch);
+
+    // TODO: specialIntervalMult has to do with arpeggios/custom interval
+    // But if there is none it will always be 1.0
+    assert(UNISON_MAX_VOICES == 2);
+    double unison_starts[UNISON_MAX_VOICES];
+    double unison_ends[UNISON_MAX_VOICES];
+
+    unison_starts[0] = pow(2.0, (unison.offset + unison.spread) * unison_env_start / 12.0);
+    unison_ends[0] = pow(2.0, (unison.offset + unison.spread) * unison_env_end / 12.0);
+    unison_starts[1] = pow(2.0, (unison.offset - unison.spread) * unison_env_start / 12.0)/* * specialIntervalMult*/;
+    unison_ends[1] = pow(2.0, (unison.offset - unison.spread) * unison_env_end / 12.0)/* * specialIntervalMult*/;
+
+    for (int i = 0; i < UNISON_MAX_VOICES; i++) {
+        wave_voice->phase_delta[i] = start_freq * sample_len * unison_starts[i];
+        wave_voice->phase_delta_scale[i] = base_phase_delta_scale * pow(unison_ends[i] / unison_starts[i], 1.0 / rounded_samples_per_tick);
+    }
+    
+    voice->expression = expr_start;
+    voice->expression_delta = (expr_end - expr_start) / rounded_samples_per_tick;
+}
+
+static void wave_audio_render_callback(
+    float *output_buffer, size_t frames_to_compute, double inst_volume,
+    bool aliases, unison_desc_s unison, const float *wave, size_t wave_length, wave_voice_s *voice_list
+) {
+    assert(UNISON_MAX_VOICES == 2);
+    assert(unison.voices <= UNISON_MAX_VOICES);
+
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        wave_voice_s *voice = voice_list + i;
+        if (!voice->base.active) continue;
+        float *out = output_buffer;
+
+        if (unison.voices == 1) voice->phase[1] = voice->phase[0];
+        
+        // convert to operable values
+        double phase[UNISON_MAX_VOICES];
+        double phase_delta[UNISON_MAX_VOICES];
+        double prev_wave_integral[UNISON_MAX_VOICES];
+
+        for (int i = 0; i < UNISON_MAX_VOICES; i++) {
+            phase[i] = fmod(voice->phase[i], 1.0) * wave_length;
+            phase_delta[i] = voice->phase_delta[i] * wave_length;
+            prev_wave_integral[i] = 0.0;
+
+            if (!aliases) {
+                const int phase_int = (int)phase[i];
+                const int index = phase_int % wave_length;
+                const double phase_ratio = phase[i] - phase_int;
+                prev_wave_integral[i] = (double)wave[index];
+                prev_wave_integral[i] += ((double)wave[index + 1] - prev_wave_integral[i]) * phase_ratio;
+            }
+        }
+        
+        double x1 = voice->base.note_filter_input[0];
+        double x2 = voice->base.note_filter_input[1];
+
+        for (size_t frame = 0; frame < frames_to_compute; frame++) {
+            double x0[UNISON_MAX_VOICES];
+
+            for (int i = 0; i < UNISON_MAX_VOICES; i++) {
+                x0[i] = 0;
+                phase[i] += phase_delta[i];
+
+                if (aliases) {
+                    x0[i] = (double)wave[(int)phase[i] % wave_length];
+                } else {
+                    const int phase_int = (int)phase[i];
+                    const int index = phase_int % wave_length;
+                    double next_wave_integral = (double)wave[index];
+                    const double phase_ratio = phase[i] - phase_int;
+                    next_wave_integral += ((double)wave[index + 1] - next_wave_integral) * phase_ratio;
+                    x0[i] = (next_wave_integral - prev_wave_integral[i]) / phase_delta[i];
+                    prev_wave_integral[i] = next_wave_integral;
+                }
+
+                phase_delta[i] *= voice->phase_delta_scale[i];
+            }
+
+            double x0_sum = x0[0] + x0[1] * unison.sign;
+
+            x0_sum *= inst_volume * voice->base.expression * voice->base.volume;
+
+            float final_sample;
+            if (voice->base.filters_enabled) {
+                final_sample = (float) apply_filters(x0_sum, x1, x2, voice->base.note_filters);
+            } else {
+                final_sample = (float) x0_sum;
+            }
+
+            x2 = x1;
+            x1 = x0_sum;
+
+            voice->base.expression += voice->base.expression_delta;
+
+            // output frame
+            *out++ += final_sample;
+            *out++ += final_sample;
+        }
+
+        voice->base.note_filter_input[0] = x1;
+        voice->base.note_filter_input[1] = x2;
+
+        for (int i = 0; i < UNISON_MAX_VOICES; i++) {
+            voice->phase[i] = phase[i] / wave_length;
+            voice->phase_delta[i] = phase_delta[i] / wave_length;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+///////////////////////
+//  CHIP INSTRUMENT  //
+///////////////////////
+
+#define CHIP_VOICE_BASE_EXPRESSION 0.03375
+
+void chip_init(chip_inst_s *inst) {
+    *inst = (chip_inst_s){0};
+    inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
+
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        inst->voices[i].base.active = FALSE;
+        inst->voices[i].base.triggered = FALSE;
+    }
+
+    inst->waveform = 2;
+    inst->unison_type = 0;
+}
+
+int chip_midi_on(bpbx_inst_s *inst, int key, int velocity) {
+    assert(inst);
+    assert(inst->type == BPBX_INSTRUMENT_CHIP);
+    chip_inst_s *const chip = (chip_inst_s*)inst;
+    return wave_midi_on(inst, chip->voices, key, velocity);
+}
+
+void chip_midi_off(bpbx_inst_s *inst, int key, int velocity) {
+    assert(inst);
+    assert(inst->type == BPBX_INSTRUMENT_CHIP);
+    chip_inst_s *const chip = (chip_inst_s*)inst;
+    wave_midi_off(inst, chip->voices, key, velocity);
+}
+
+static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+    const chip_inst_s *const inst = (chip_inst_s*) base_inst;
+
+    wavetable_desc_s wavetable = chip_wavetables[inst->waveform];
+    double settings_expression_mult = CHIP_VOICE_BASE_EXPRESSION * wavetable.expression;
+
+    compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
+}
+
+static void chip_audio_render_callback(
+    float *output_buffer, size_t frames_to_compute,
+    double inst_volume, void *userdata_ptr
+) {
+    chip_inst_s *const chip = userdata_ptr;
+    const bool aliases = FALSE;
+
+    wavetable_desc_s wavetable;
+    if (aliases) {
+        wavetable = raw_chip_wavetables[chip->waveform];
+    } else {
+        wavetable = chip_wavetables[chip->waveform];
+    }
+
+    unison_desc_s unison = unison_info[chip->unison_type];
+
+    wave_audio_render_callback(
+        output_buffer, frames_to_compute, inst_volume,
+        aliases, unison, wavetable.samples, wavetable.length - 1, chip->voices);
+}
+
+void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_CHIP);
+
+    chip_inst_s *const chip = (chip_inst_s*)src_inst;
+
+    inst_audio_process(src_inst, run_ctx, &(audio_compute_s) {
+        .voice_list = chip->voices,
+        .sizeof_voice = sizeof(*chip->voices),
+
+        .compute_voice = compute_chip_voice,
+        .render_block = chip_audio_render_callback,
+
+        .userdata = chip
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////
+//  HARMONICS INSTRUMENT  //
+////////////////////////////
+
+#define HARMONICS_VOICE_BASE_EXPRESSION 0.025
+
+void harmonics_init(harmonics_inst_s *inst) {
+    *inst = (harmonics_inst_s){0};
+    inst_init(&inst->base, BPBX_INSTRUMENT_HARMONICS);
+
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+        inst->voices[i].base.active = false;
+        inst->voices[i].base.triggered = false;
+    }
+
+    inst->unison_type = BPBX_UNISON_NONE;
+    inst->controls[0] = BPBX_HARMONICS_CONTROL_MAX;
+    inst->controls[1] = BPBX_HARMONICS_CONTROL_MAX;
+
+    // for (int i = 0; i <= HARMONICS_WAVE_LENGTH; i++) {
+    //     inst->wave[i] = (float)sin((double)i / HARMONICS_WAVE_LENGTH * PI2);
+    // }
+
+    generate_harmonics(inst->controls, 64, inst->wave);
+}
+
+int harmonics_midi_on(bpbx_inst_s *inst, int key, int velocity) {
+    assert(inst);
+    assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
+    harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
+
+    int voice_index = trigger_voice(inst, harmonics->voices, sizeof(*harmonics->voices), key, velocity);
+    wave_voice_s *voice = &harmonics->voices[voice_index];
+    *voice = (wave_voice_s) {
+        .base = voice->base
+    };
+
+    return voice_index;
+}
+
+void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity) {
+    assert(inst);
+    assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
+    harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
+
+    release_voice(inst, harmonics->voices, sizeof(*harmonics->voices), key, velocity);
+}
+
+static void compute_harmonics_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+    const harmonics_inst_s *const inst = (harmonics_inst_s*) base_inst;
+
+    compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
+}
+
+static void harmonics_audio_render_callback(
+    float *output_buffer, size_t frames_to_compute,
+    double inst_volume, void *userdata_ptr
+) {
+    harmonics_inst_s *const harmonics = userdata_ptr;
+    const bool aliases = FALSE;
+
+    unison_desc_s unison = unison_info[harmonics->unison_type];
+
+    wave_audio_render_callback(
+        output_buffer, frames_to_compute, inst_volume,
+        aliases, unison, harmonics->wave, HARMONICS_WAVE_LENGTH, harmonics->voices);
+}
+
+void harmonics_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
+    assert(src_inst);
+    assert(src_inst->type == BPBX_INSTRUMENT_HARMONICS);
+
+    harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
+
+    inst_audio_process(src_inst, run_ctx, &(audio_compute_s) {
+        .voice_list = harmonics->voices,
+        .sizeof_voice = sizeof(*harmonics->voices),
+
+        .compute_voice = compute_harmonics_voice,
+        .render_block = harmonics_audio_render_callback,
+
+        .userdata = harmonics
+    });
+}
+
+
+
+
+
+
+
+
+
+////////////
+//  DATA  //
+////////////
+
+static const char *waveform_enum_values[BPBX_CHIP_WAVE_COUNT] = {
+    "rounded", "triangle", "square", "1/4 pulse", "1/8 pulse", "sawtooth",
+    "double saw", "double pulse", "spiky", "sine", "flute", "harp",
+    "sharp clarinet", "soft clarinet", "alto sax", "bassoon",
+    "trumpet", "electric guitar", "organ", "pan flute", "glitch"
+};
+
+static const char *unison_enum_values[BPBX_UNISON_COUNT] = {
+    "none", "shimmer", "hum", "honky tonk", "dissonant",
+    "fifth", "octave", "bowed", "piano", "warbled"
+};
+
+const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Wave",
+        .group = "Chip",
+        .min_value = 0,
+        .max_value = BPBX_CHIP_WAVE_COUNT - 1,
+        .default_value = BPBX_CHIP_WAVE_SQUARE,
+
+        .enum_values = waveform_enum_values
+    },
+
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Unison",
+        .group = "Chip",
+        .min_value = 0,
+        .max_value = BPBX_UNISON_COUNT - 1,
+        .default_value = BPBX_UNISON_NONE,
+
+        .enum_values = unison_enum_values
+    },
+};
+
+const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
+    BPBX_ENV_INDEX_UNISON
+};
+
+const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT] = {
+    offsetof(chip_inst_s, waveform),
+    offsetof(chip_inst_s, unison_type)
+};
+
+
+/*
+import subprocess
+
+template = """{
+    .type = BPBX_PARAM_UINT8,
+    .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+    .name = "Harmonics Control #",
+    .group = "Harmonics",
+    .min_value = 0,
+    .max_value = BPBX_HARMONICS_CONTROL_MAX,
+    .default_value = 0.0,
+},
+"""
+
+out = ""
+for i in range(28):
+    out += template.replace("#", str(i+1))
+
+with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
+    proc.stdin.write(bytes(out, "utf-8"))
+*/
+const bpbx_inst_param_info_s harmonics_param_info[] = {
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Unison",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_UNISON_COUNT - 1,
+        .default_value = BPBX_UNISON_NONE,
+
+        .enum_values = unison_enum_values
+    },
+
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 1",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 2",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 3",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 4",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 5",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 6",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 7",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 8",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 9",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 10",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 11",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 12",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 13",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 14",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 15",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 16",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 17",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 18",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 19",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 20",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 21",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 22",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 23",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 24",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 25",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 26",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 27",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+    {
+        .type = BPBX_PARAM_UINT8,
+        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+
+        .name = "Harmonics Control 28",
+        .group = "Harmonics",
+        .min_value = 0,
+        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
+    },
+
+};
+
+const bpbx_envelope_compute_index_e harmonics_env_targets[] = {
+    BPBX_ENV_INDEX_UNISON
+};
+
+/*
+import subprocess
+
+template = """    offsetof(harmonics_inst_s, controls[#]),
+"""
+
+out = ""
+for i in range(28):
+    out += template.replace("#", str(i))
+
+with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
+    proc.stdin.write(bytes(out, "utf-8"))
+*/
+const size_t harmonics_param_addresses[] = {
+    offsetof(harmonics_inst_s, unison_type),
+    offsetof(harmonics_inst_s, controls[0]),
+    offsetof(harmonics_inst_s, controls[1]),
+    offsetof(harmonics_inst_s, controls[2]),
+    offsetof(harmonics_inst_s, controls[3]),
+    offsetof(harmonics_inst_s, controls[4]),
+    offsetof(harmonics_inst_s, controls[5]),
+    offsetof(harmonics_inst_s, controls[6]),
+    offsetof(harmonics_inst_s, controls[7]),
+    offsetof(harmonics_inst_s, controls[8]),
+    offsetof(harmonics_inst_s, controls[9]),
+    offsetof(harmonics_inst_s, controls[10]),
+    offsetof(harmonics_inst_s, controls[11]),
+    offsetof(harmonics_inst_s, controls[12]),
+    offsetof(harmonics_inst_s, controls[13]),
+    offsetof(harmonics_inst_s, controls[14]),
+    offsetof(harmonics_inst_s, controls[15]),
+    offsetof(harmonics_inst_s, controls[16]),
+    offsetof(harmonics_inst_s, controls[17]),
+    offsetof(harmonics_inst_s, controls[18]),
+    offsetof(harmonics_inst_s, controls[19]),
+    offsetof(harmonics_inst_s, controls[20]),
+    offsetof(harmonics_inst_s, controls[21]),
+    offsetof(harmonics_inst_s, controls[22]),
+    offsetof(harmonics_inst_s, controls[23]),
+    offsetof(harmonics_inst_s, controls[24]),
+    offsetof(harmonics_inst_s, controls[25]),
+    offsetof(harmonics_inst_s, controls[26]),
+    offsetof(harmonics_inst_s, controls[27]),
+};

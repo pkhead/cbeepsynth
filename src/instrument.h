@@ -2,6 +2,7 @@
 #define _public_h_
 
 #include <stddef.h>
+#include <math.h>
 #include "../include/beepbox_synth.h"
 #include "envelope.h"
 #include "filtering.h"

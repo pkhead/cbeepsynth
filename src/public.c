@@ -9,7 +9,7 @@
 #include "envelope.h"
 #include "filtering.h"
 
-#include "chip.h"
+#include "wave.h"
 #include "fm.h"
 
 void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
@@ -25,6 +25,9 @@ unsigned int bpbx_param_count(bpbx_inst_type_e type) {
         
         case BPBX_INSTRUMENT_CHIP:
             return BPBX_BASE_PARAM_COUNT + BPBX_CHIP_PARAM_COUNT;
+        
+        case BPBX_INSTRUMENT_HARMONICS:
+            return BPBX_BASE_PARAM_COUNT + BPBX_HARMONICS_PARAM_COUNT;
 
         default:
             return 0;
@@ -41,6 +44,9 @@ const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned in
         
         case BPBX_INSTRUMENT_CHIP:
             return &chip_param_info[index - BPBX_BASE_PARAM_COUNT];
+
+        case BPBX_INSTRUMENT_HARMONICS:
+            return &harmonics_param_info[index - BPBX_BASE_PARAM_COUNT];
 
         default:
             return NULL;
@@ -85,6 +91,12 @@ bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
         case BPBX_INSTRUMENT_CHIP: {
             chip_inst_s *inst = malloc(sizeof(chip_inst_s));
             chip_init(inst);
+            return &inst->base;
+        }
+
+        case BPBX_INSTRUMENT_HARMONICS: {
+            harmonics_inst_s *inst = malloc(sizeof(harmonics_inst_s));
+            harmonics_init(inst);
             return &inst->base;
         }
 
@@ -141,6 +153,12 @@ static int param_helper(const bpbx_inst_s *inst, int index, void **addr, bpbx_in
             if (index >= BPBX_CHIP_PARAM_COUNT) return 1;
             *info = chip_param_info[index];
             *addr = (void*)(((uint8_t*)(chip_inst_s*)inst) + chip_param_addresses[index]);
+            break;
+
+        case BPBX_INSTRUMENT_HARMONICS:
+            if (index >= BPBX_HARMONICS_PARAM_COUNT) return 1;
+            *info = chip_param_info[index];
+            *addr = (void*)(((uint8_t*)(harmonics_inst_s*)inst) + harmonics_param_addresses[index]);
             break;
 
         default:
@@ -296,6 +314,10 @@ void bpbx_inst_midi_on(bpbx_inst_s *inst, int key, int velocity) {
         case BPBX_INSTRUMENT_CHIP:
             chip_midi_on(inst, key, velocity);
             break;
+        
+        case BPBX_INSTRUMENT_HARMONICS:
+            harmonics_midi_on(inst, key, velocity);
+            break;
 
         default: break;
     }
@@ -310,6 +332,10 @@ void bpbx_inst_midi_off(bpbx_inst_s *inst, int key, int velocity) {
         case BPBX_INSTRUMENT_CHIP:
             chip_midi_off(inst, key, velocity);
             break;
+        
+        case BPBX_INSTRUMENT_HARMONICS:
+            harmonics_midi_off(inst, key, velocity);
+            break;
 
         default: break;
     }
@@ -323,6 +349,10 @@ void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx) {
 
         case BPBX_INSTRUMENT_CHIP:
             chip_run(inst, run_ctx);
+            break;
+
+        case BPBX_INSTRUMENT_HARMONICS:
+            harmonics_run(inst, run_ctx);
             break;
 
         default:
@@ -408,6 +438,10 @@ const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type
         case BPBX_INSTRUMENT_CHIP:
             *size = CHIP_MOD_COUNT;
             return chip_env_targets;
+
+        case BPBX_INSTRUMENT_HARMONICS:
+            *size = HARMONICS_MOD_COUNT;
+            return harmonics_env_targets;
 
         default:
             return NULL;

@@ -6,7 +6,7 @@
 #include "util.h"
 
 static inline bool is_power_of_2(int n) {
-    return n & (n & (n - 1));
+    return (n & (n - 1)) == 0;
 }
 
 int count_bits(int n) {

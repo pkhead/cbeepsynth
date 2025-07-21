@@ -1,14 +1,22 @@
-#ifndef _harmonics_h_
-#define _harmonics_h_
+/**
+    This contains the definitions for all the wavetable-type instruments
+
+    It includes these instruments:
+    - Chip
+    - Custom chip
+    - Harmonics (this dynamically generates a wavetable to be used)
+**/
+#ifndef _wave_h_
+#define _wave_h_
 
 #include <stdint.h>
 #include <stddef.h>
 #include "../include/beepbox_synth.h"
-#include "../include/beepbox_instrument_data.h"
 #include "instrument.h"
+#include "wavetables.h"
 
+#define CHIP_MOD_COUNT 1
 #define HARMONICS_MOD_COUNT 1
-#define HARMONICS_WAVE_LENGTH 2048
 
 typedef struct {
     inst_base_voice_s base;
@@ -19,24 +27,42 @@ typedef struct {
 
     double prev_pitch_expression;
     uint8_t has_prev_pitch_expression;
-} harmonics_voice_s;
+} wave_voice_s;
 
 typedef struct {
     bpbx_inst_s base;
 
-    uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT];
     uint8_t unison_type;
+    uint8_t waveform;
 
-    harmonics_voice_s voices[BPBX_INST_MAX_VOICES];
+    wave_voice_s voices[BPBX_INST_MAX_VOICES];
+} chip_inst_s;
+
+typedef struct {
+    bpbx_inst_s base;
+
+    uint8_t unison_type;
+    uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT];
+
+    wave_voice_s voices[BPBX_INST_MAX_VOICES];
 
     // float instead of double to take up less space
     float wave[HARMONICS_WAVE_LENGTH + 1];
 } harmonics_inst_s;
 
+void chip_init(chip_inst_s *inst);
+int chip_midi_on(bpbx_inst_s *inst, int key, int velocity);
+void chip_midi_off(bpbx_inst_s *inst, int key, int velocity);
+void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
+
 void harmonics_init(harmonics_inst_s *inst);
 int harmonics_midi_on(bpbx_inst_s *inst, int key, int velocity);
 void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity);
 void harmonics_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
+
+extern const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT];
+extern const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT];
+extern const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT];
 
 extern const bpbx_inst_param_info_s harmonics_param_info[BPBX_HARMONICS_PARAM_COUNT];
 extern const bpbx_envelope_compute_index_e harmonics_env_targets[HARMONICS_MOD_COUNT];

@@ -72,18 +72,18 @@ noise_wavetable_s noise_wavetables[BPBX_NOISE_COUNT];
 
 #define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...) \
     {                                                       \
-        static double arr[] = {__VA_ARGS__, 0};             \
-        static double arr2[ARRLEN(arr)];                    \
+        static float arr[] = {__VA_ARGS__, 0};              \
+        static float arr2[ARRLEN(arr)];                     \
         TRANSFORM(arr, ARRLEN(arr));                        \
         perform_integral(arr, arr2, ARRLEN(arr));           \
         raw_chip_wavetables[INDEX] = (wavetable_desc_s) {   \
             .expression = EXPR,                             \
-            .values = arr,                                  \
+            .samples = arr,                                 \
             .length = ARRLEN(arr)                           \
         };                                                  \
         chip_wavetables[INDEX] = (wavetable_desc_s) {       \
             .expression = EXPR,                             \
-            .values = arr2,                                 \
+            .samples = arr2,                                \
             .length = ARRLEN(arr2)                          \
         };                                                  \
     }
@@ -96,7 +96,7 @@ noise_wavetable_s noise_wavetables[BPBX_NOISE_COUNT];
 
 #define RANDOM() ((float)rand() / RAND_MAX)
 
-static void center_wave(double *wave, size_t length) {
+static void center_wave(float *wave, size_t length) {
     length--;
 
     double sum = 0.0;
@@ -113,7 +113,7 @@ static void center_wave(double *wave, size_t length) {
     // (adding the 0 is done in the macro. this is why i subtract 1 from length.)
 }
 
-static void center_and_normalize_wave(double *wave, size_t length) {
+static void center_and_normalize_wave(float *wave, size_t length) {
     double magn = 0.0;
     center_wave(wave, length);
 
@@ -128,7 +128,7 @@ static void center_and_normalize_wave(double *wave, size_t length) {
     }
 }
 
-static void perform_integral(double *wave, double *new_wave, size_t length) {
+static void perform_integral(float *wave, float *new_wave, size_t length) {
     // Perform the integral on the wave. The synth function will perform the derivative to get the original wave back but with antialiasing.
     double cumulative = 0.0;
     for (size_t i = 0; i < length; i++) {

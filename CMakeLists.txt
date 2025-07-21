@@ -7,8 +7,7 @@ set(SOURCES
     src/instrument.c
     src/fm_algo.c
     src/fm.c
-    src/chip.c
-    src/harmonics.c
+    src/wave.c
     
     src/wavetables.c
     src/envelope.c

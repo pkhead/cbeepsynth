@@ -157,7 +157,7 @@ static int param_helper(const bpbx_inst_s *inst, int index, void **addr, bpbx_in
 
         case BPBX_INSTRUMENT_HARMONICS:
             if (index >= BPBX_HARMONICS_PARAM_COUNT) return 1;
-            *info = chip_param_info[index];
+            *info = harmonics_param_info[index];
             *addr = (void*)(((uint8_t*)(harmonics_inst_s*)inst) + harmonics_param_addresses[index]);
             break;
 

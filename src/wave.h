@@ -43,6 +43,7 @@ typedef struct {
 
     uint8_t unison_type;
     uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT];
+    uint8_t last_controls[BPBX_HARMONICS_CONTROL_COUNT];
 
     wave_voice_s voices[BPBX_INST_MAX_VOICES];
 

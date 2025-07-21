@@ -1,9 +1,12 @@
+#include "../include/beepbox_synth.h"
+
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "../include/beepbox_synth.h"
+#include <assert.h>
+
 #include "util.h"
 #include "instrument.h"
 #include "envelope.h"
@@ -12,10 +15,52 @@
 #include "wave.h"
 #include "fm.h"
 
+static const inst_vtable_s *inst_vtables[] = {
+    // BPBX_INSTRUMENT_CHIP
+    &inst_chip_vtable,
+    // BPBX_INSTRUMENT_FM
+    &inst_fm_vtable,
+    // BPBX_INSTRUMENT_NOISE
+    NULL,
+    // BPBX_INSTRUMENT_PULSE_WIDTH
+    NULL,
+    // BPBX_INSTRUMENT_HARMONICS
+    &inst_harmonics_vtable,
+    // BPBX_INSTRUMENT_SPECTRUM
+    NULL,
+    // BPBX_INSTRUMENT_PICKED_STRING
+    NULL,
+    // BPBX_INSTRUMENT_SUPERSAW
+    NULL
+};
+
 void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *major = BPBX_VERSION_MAJOR;
     *minor = BPBX_VERSION_MINOR;
     *revision = BPBX_VERSION_REVISION;
+}
+
+static void* default_alloc(size_t size, void *userdata) {
+    (void)userdata;
+    return malloc(size);
+}
+
+static void default_free(void *ptr, void *userdata) {
+    (void)userdata;
+    free(ptr);
+}
+
+static bpbx_malloc_f alloc_new = default_alloc;
+static bpbx_mfree_f alloc_free = default_free;
+static void *alloc_userdata = NULL;
+
+BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata) {
+    assert(alloc);
+    assert(free);
+
+    alloc_new = alloc;
+    alloc_free = free;
+    alloc_userdata = userdata;
 }
 
 unsigned int bpbx_param_count(bpbx_inst_type_e type) {
@@ -38,19 +83,8 @@ const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned in
     if (index < BPBX_BASE_PARAM_COUNT)
         return &base_param_info[index];
 
-    switch (type) {
-        case BPBX_INSTRUMENT_FM:
-            return &fm_param_info[index - BPBX_BASE_PARAM_COUNT];
-        
-        case BPBX_INSTRUMENT_CHIP:
-            return &chip_param_info[index - BPBX_BASE_PARAM_COUNT];
-
-        case BPBX_INSTRUMENT_HARMONICS:
-            return &harmonics_param_info[index - BPBX_BASE_PARAM_COUNT];
-
-        default:
-            return NULL;
-    }
+    assert(inst_vtables[type]);
+    return &inst_vtables[type]->param_info[index - BPBX_BASE_PARAM_COUNT];
 }
 
 unsigned int bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
@@ -81,32 +115,34 @@ unsigned int bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
 bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     init_wavetables();
 
-    switch (type) {
-        case BPBX_INSTRUMENT_FM: {
-            fm_inst_s *inst = malloc(sizeof(fm_inst_s));;
-            fm_init(inst);
-            return &inst->base;
-        }
+    const inst_vtable_s *vtable = inst_vtables[type];
+    assert(vtable);
+    if (vtable == NULL) return NULL;
 
-        case BPBX_INSTRUMENT_CHIP: {
-            chip_inst_s *inst = malloc(sizeof(chip_inst_s));
-            chip_init(inst);
-            return &inst->base;
-        }
+    // throw assertion error if any required fields don't exist
+    assert(vtable->struct_size > 0);
+    assert(vtable->inst_init);
+    assert(vtable->inst_midi_on);
+    assert(vtable->inst_midi_off);
+    assert(vtable->inst_run);
+    assert(vtable->param_count > 0 && vtable->param_info);
+    assert(vtable->param_count > 0 && vtable->param_addresses);
+    assert(vtable->envelope_target_count && vtable->envelope_targets);
 
-        case BPBX_INSTRUMENT_HARMONICS: {
-            harmonics_inst_s *inst = malloc(sizeof(harmonics_inst_s));
-            harmonics_init(inst);
-            return &inst->base;
-        }
-
-        default:
-            return NULL;
-    }
+    bpbx_inst_s *inst = alloc_new(vtable->struct_size, alloc_userdata);
+    vtable->inst_init(inst);
+    return inst;
 }
 
 void bpbx_inst_destroy(bpbx_inst_s *inst) {
-    free(inst);
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    if (vtable->inst_destroy) {
+        vtable->inst_destroy(inst);
+    }
+
+    alloc_free(inst, alloc_userdata);
 }
 
 void bpbx_inst_set_sample_rate(bpbx_inst_s *inst, double sample_rate) {
@@ -141,30 +177,13 @@ static int param_helper(const bpbx_inst_s *inst, int index, void **addr, bpbx_in
     }
 
     index -= BPBX_BASE_PARAM_COUNT;
+    
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
 
-    switch (inst->type) {
-        case BPBX_INSTRUMENT_FM:
-            if (index >= BPBX_FM_PARAM_COUNT) return 1;
-            *info = fm_param_info[index];
-            *addr = (void*)(((uint8_t*)(fm_inst_s*)inst) + fm_param_addresses[index]);
-            break;
-
-        case BPBX_INSTRUMENT_CHIP:
-            if (index >= BPBX_CHIP_PARAM_COUNT) return 1;
-            *info = chip_param_info[index];
-            *addr = (void*)(((uint8_t*)(chip_inst_s*)inst) + chip_param_addresses[index]);
-            break;
-
-        case BPBX_INSTRUMENT_HARMONICS:
-            if (index >= BPBX_HARMONICS_PARAM_COUNT) return 1;
-            *info = harmonics_param_info[index];
-            *addr = (void*)(((uint8_t*)(harmonics_inst_s*)inst) + harmonics_param_addresses[index]);
-            break;
-
-        default:
-            return 1;
-    }
-
+    if (index >= vtable->param_count) return 1;
+    *info = vtable->param_info[index];
+    *addr = (void*)(((uint8_t*)inst) + vtable->param_addresses[index]);
     return 0;
 }
 
@@ -306,58 +325,24 @@ void bpbx_inst_clear_envelopes(bpbx_inst_s *inst) {
 }
 
 void bpbx_inst_midi_on(bpbx_inst_s *inst, int key, int velocity) {
-    switch (inst->type) {
-        case BPBX_INSTRUMENT_FM:
-            fm_midi_on(inst, key, velocity);
-            break;
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
 
-        case BPBX_INSTRUMENT_CHIP:
-            chip_midi_on(inst, key, velocity);
-            break;
-        
-        case BPBX_INSTRUMENT_HARMONICS:
-            harmonics_midi_on(inst, key, velocity);
-            break;
-
-        default: break;
-    }
+    vtable->inst_midi_on(inst, key, velocity);
 }
 
 void bpbx_inst_midi_off(bpbx_inst_s *inst, int key, int velocity) {
-    switch (inst->type) {
-        case BPBX_INSTRUMENT_FM:
-            fm_midi_off(inst, key, velocity);
-            break;
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
 
-        case BPBX_INSTRUMENT_CHIP:
-            chip_midi_off(inst, key, velocity);
-            break;
-        
-        case BPBX_INSTRUMENT_HARMONICS:
-            harmonics_midi_off(inst, key, velocity);
-            break;
-
-        default: break;
-    }
+    vtable->inst_midi_off(inst, key, velocity);
 }
 
 void bpbx_inst_run(bpbx_inst_s* inst, const bpbx_run_ctx_s *const run_ctx) {
-    switch (inst->type) {
-        case BPBX_INSTRUMENT_FM:
-            fm_run(inst, run_ctx);
-            break;
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
 
-        case BPBX_INSTRUMENT_CHIP:
-            chip_run(inst, run_ctx);
-            break;
-
-        case BPBX_INSTRUMENT_HARMONICS:
-            harmonics_run(inst, run_ctx);
-            break;
-
-        default:
-            break;
-    }
+    vtable->inst_run(inst, run_ctx);
 }
 
 double bpbx_samples_fade_out(double setting, double bpm, double sample_rate) {
@@ -430,22 +415,11 @@ const char** bpbx_envelope_curve_preset_names() {
 }
 
 const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type, int *size) {
-    switch (type) {
-        case BPBX_INSTRUMENT_FM:
-            *size = FM_MOD_COUNT;
-            return fm_env_targets;
-        
-        case BPBX_INSTRUMENT_CHIP:
-            *size = CHIP_MOD_COUNT;
-            return chip_env_targets;
+    const inst_vtable_s *vtable = inst_vtables[type];
+    assert(vtable);
 
-        case BPBX_INSTRUMENT_HARMONICS:
-            *size = HARMONICS_MOD_COUNT;
-            return harmonics_env_targets;
-
-        default:
-            return NULL;
-    }
+    *size = vtable->envelope_target_count;
+    return vtable->envelope_targets;
 }
 
 void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params) {

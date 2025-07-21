@@ -98,7 +98,7 @@ static void setup_algorithm(fm_inst_s *inst) {
     }
 }
 
-void fm_init(fm_inst_s *inst) {
+void bpbx_inst_init_fm(fm_inst_s *inst) {
     *inst = (fm_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_FM);
 
@@ -653,3 +653,26 @@ static int algo_associated_carriers[BPBX_FM_ALGORITHM_COUNT][4] = {
 };
 
 static double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
+
+
+
+
+
+
+
+
+const inst_vtable_s inst_fm_vtable = {
+    .struct_size = sizeof(fm_inst_s),
+
+    .param_count = BPBX_FM_PARAM_COUNT,
+    .param_info = fm_param_info,
+    .param_addresses = fm_param_addresses,
+
+    .envelope_target_count = FM_MOD_COUNT,
+    .envelope_targets = fm_env_targets,
+
+    .inst_init = (inst_init_f)bpbx_inst_init_fm,
+    .inst_midi_on = fm_midi_on,
+    .inst_midi_off = fm_midi_off,
+    .inst_run = fm_run
+};

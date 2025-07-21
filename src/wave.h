@@ -51,22 +51,17 @@ typedef struct {
     float wave[HARMONICS_WAVE_LENGTH + 1];
 } harmonics_inst_s;
 
-void chip_init(chip_inst_s *inst);
+void bpbx_inst_init_chip(chip_inst_s *inst);
 int chip_midi_on(bpbx_inst_s *inst, int key, int velocity);
 void chip_midi_off(bpbx_inst_s *inst, int key, int velocity);
 void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
 
-void harmonics_init(harmonics_inst_s *inst);
+void bpbx_inst_init_harmonics(harmonics_inst_s *inst);
 int harmonics_midi_on(bpbx_inst_s *inst, int key, int velocity);
 void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity);
 void harmonics_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx);
 
-extern const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT];
-extern const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT];
-extern const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT];
-
-extern const bpbx_inst_param_info_s harmonics_param_info[BPBX_HARMONICS_PARAM_COUNT];
-extern const bpbx_envelope_compute_index_e harmonics_env_targets[HARMONICS_MOD_COUNT];
-extern const size_t harmonics_param_addresses[BPBX_HARMONICS_PARAM_COUNT];
+extern const inst_vtable_s inst_chip_vtable;
+extern const inst_vtable_s inst_harmonics_vtable;
 
 #endif

@@ -277,7 +277,13 @@ typedef struct {
 
 typedef struct bpbx_inst_s bpbx_inst_s;
 
+typedef void* (*bpbx_malloc_f)(size_t size, void *userdata);
+typedef void (*bpbx_mfree_f)(void *ptr, void *userdata);
+
 BEEPBOX_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
+
+// allocation/deallocation will only occur in bpbx_inst_new and bpbx_inst_destroy
+BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata);
 
 BEEPBOX_API unsigned int bpbx_param_count(bpbx_inst_type_e type);
 BEEPBOX_API const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned int index);

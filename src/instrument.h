@@ -57,6 +57,25 @@ typedef struct bpbx_inst_s {
     double mod_wheel; // last stored state of modulation wheel
 } bpbx_inst_s;
 
+typedef void (*inst_init_f)(bpbx_inst_s *inst);
+typedef void (*inst_destroy_f)(bpbx_inst_s *inst);
+
+typedef struct {
+    const size_t            struct_size;
+    const inst_init_f       inst_init;
+    const inst_destroy_f    inst_destroy;
+    const uint32_t          param_count;
+    const bpbx_inst_param_info_s* param_info;
+    const size_t*           param_addresses;
+
+    const size_t            envelope_target_count;
+    const bpbx_envelope_compute_index_e* envelope_targets;
+    
+    int         (*inst_midi_on)(bpbx_inst_s *inst, int key, int velocity);
+    void        (*inst_midi_off)(bpbx_inst_s *inst, int key, int velocity);
+    void        (*inst_run)(bpbx_inst_s *inst, const bpbx_run_ctx_s *run_ctx);
+} inst_vtable_s;
+
 typedef struct {
     uint8_t triggered; // triggered, but not active until the next tick
     uint8_t active;

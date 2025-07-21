@@ -196,7 +196,7 @@ static void wave_audio_render_callback(
 
 #define CHIP_VOICE_BASE_EXPRESSION 0.03375
 
-void chip_init(chip_inst_s *inst) {
+void bpbx_inst_init_chip(chip_inst_s *inst) {
     *inst = (chip_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
 
@@ -298,7 +298,7 @@ void chip_run(bpbx_inst_s *src_inst, const bpbx_run_ctx_s *const run_ctx) {
 
 #define HARMONICS_VOICE_BASE_EXPRESSION 0.025
 
-void harmonics_init(harmonics_inst_s *inst) {
+void bpbx_inst_init_harmonics(harmonics_inst_s *inst) {
     *inst = (harmonics_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_HARMONICS);
 
@@ -404,7 +404,7 @@ static const char *unison_enum_values[BPBX_UNISON_COUNT] = {
     "fifth", "octave", "bowed", "piano", "warbled"
 };
 
-const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
+static const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -432,14 +432,22 @@ const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
     },
 };
 
-const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
+static const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
     BPBX_ENV_INDEX_UNISON
 };
 
-const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT] = {
+static const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT] = {
     offsetof(chip_inst_s, waveform),
     offsetof(chip_inst_s, unison_type)
 };
+
+
+
+
+
+
+
+
 
 
 /*
@@ -807,4 +815,41 @@ const size_t harmonics_param_addresses[] = {
     offsetof(harmonics_inst_s, controls[25]),
     offsetof(harmonics_inst_s, controls[26]),
     offsetof(harmonics_inst_s, controls[27]),
+};
+
+
+
+
+
+
+const inst_vtable_s inst_chip_vtable = {
+    .struct_size = sizeof(chip_inst_s),
+
+    .param_count = BPBX_CHIP_PARAM_COUNT,
+    .param_info = chip_param_info,
+    .param_addresses = chip_param_addresses,
+
+    .envelope_target_count = CHIP_MOD_COUNT,
+    .envelope_targets = chip_env_targets,
+
+    .inst_init = (inst_init_f)bpbx_inst_init_chip,
+    .inst_midi_on = chip_midi_on,
+    .inst_midi_off = chip_midi_off,
+    .inst_run = chip_run
+};
+
+const inst_vtable_s inst_harmonics_vtable = {
+    .struct_size = sizeof(harmonics_inst_s),
+
+    .param_count = BPBX_HARMONICS_PARAM_COUNT,
+    .param_info = harmonics_param_info,
+    .param_addresses = harmonics_param_addresses,
+
+    .envelope_target_count = HARMONICS_MOD_COUNT,
+    .envelope_targets = harmonics_env_targets,
+
+    .inst_init = (inst_init_f)bpbx_inst_init_harmonics,
+    .inst_midi_on = harmonics_midi_on,
+    .inst_midi_off = harmonics_midi_off,
+    .inst_run = harmonics_run
 };

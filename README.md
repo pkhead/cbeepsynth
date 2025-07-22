@@ -51,7 +51,7 @@ mkdir build
 cd build
 cmake -DBEEPBOX_SYNTH_BUILD_SHARED=1 ..
 cmake --build .
-# it will create a shared object named beepboxsynth
+# it will create a shared object/DLL named bpbxsynth
 ```
 
 ## Credits

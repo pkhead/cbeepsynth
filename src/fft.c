@@ -5,11 +5,11 @@
 #include <stdbool.h>
 #include "util.h"
 
-static inline bool is_power_of_2(int n) {
+static inline bool is_power_of_2(unsigned int n) {
     return (n & (n - 1)) == 0;
 }
 
-int count_bits(int n) {
+int count_bits(unsigned int n) {
     assert(n != 0);
     assert(is_power_of_2(n) && "FFT array length must be a power of 2!");
 
@@ -34,18 +34,18 @@ void fft_scale_array(float *array, size_t length, double factor) {
 // Rearranges the elements of the array, swapping the element at an index
 // with an element at an index that is the bitwise reverse of the first
 // index in base 2. Useful for computing the FFT.
-void reverse_index_bits(float *array, size_t array_length) {
+void reverse_index_bits(float *array, unsigned int array_length) {
     const int bit_count = count_bits(array_length);
     assert(bit_count <= 16 && "FFT array length must not be greater than 2^16");
-    const int final_shift = 16 - bit_count;
-    for (int i = 0; i < array_length; i++) {
+    const unsigned int final_shift = 16 - bit_count;
+    for (unsigned int i = 0; i < array_length; i++) {
         // TODO: bit order reversal intrinsics?
-        int j;
+        unsigned int j;
 		j = ((i & 0xaaaa) >> 1) | ((i & 0x5555) << 1);
 		j = ((j & 0xcccc) >> 2) | ((j & 0x3333) << 2);
 		j = ((j & 0xf0f0) >> 4) | ((j & 0x0f0f) << 4);
         j = ((j           >> 8) | ((j &   0xff) << 8)) >> final_shift;
-
+		
 		if (j > i) {
 			float temp = array[i];
 			array[i] = array[j];
@@ -54,7 +54,7 @@ void reverse_index_bits(float *array, size_t array_length) {
     }
 }
 
-void fft_inverse_real_fourier_transform(float *array, size_t array_length) {
+void fft_inverse_real_fourier_transform(float *array, unsigned int array_length) {
     assert(array_length >= 4 && "FFT array length must be at least 4.");
 	const int total_passes = count_bits(array_length);
 
@@ -68,7 +68,7 @@ void fft_inverse_real_fourier_transform(float *array, size_t array_length) {
 		const double sin_increment = sin(radians_increment);
 		const double oscillator_multiplier = 2.0 * cos_increment;
 			
-		for (int startIndex = 0; startIndex < array_length; startIndex += stride) {
+		for (unsigned int startIndex = 0; startIndex < array_length; startIndex += stride) {
 			const int start_index_a = startIndex;
 			const int mid_index_a = start_index_a + mid_sub_stride;
 			const int start_index_b = start_index_a + sub_stride;
@@ -142,7 +142,7 @@ void fft_inverse_real_fourier_transform(float *array, size_t array_length) {
 	}
 	*/
 	// The final passes with strides 4 and 2, combined into one loop.
-	for (int index = 0; index < array_length; index += 4) {
+	for (unsigned int index = 0; index < array_length; index += 4) {
 		const int index1 = index + 1;
 		const int index2 = index + 2;
 		const int index3 = index + 3;

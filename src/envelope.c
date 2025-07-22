@@ -89,14 +89,14 @@ void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x,
     env_computer->mod_wheel[1] = mod_w;
 }
 
-static int is_filter_target(bpbx_envelope_compute_index_e index) {
-    return
-        (index >= BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 &&
-        index <= BPBX_ENV_INDEX_NOTE_FILTER_FREQ7) ||
-        (index >= BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 &&
-        index <= BPBX_ENV_INDEX_NOTE_FILTER_GAIN7) ||
-        index == BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS;
-}
+// static int is_filter_target(bpbx_envelope_compute_index_e index) {
+//     return
+//         (index >= BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 &&
+//         index <= BPBX_ENV_INDEX_NOTE_FILTER_FREQ7) ||
+//         (index >= BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 &&
+//         index <= BPBX_ENV_INDEX_NOTE_FILTER_GAIN7) ||
+//         index == BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS;
+// }
 
 static int get_filter_target(bpbx_envelope_compute_index_e index) {
     // i'd rather make a huge switch statement than write the bounds checking

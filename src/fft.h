@@ -15,6 +15,6 @@ void fft_scale_array(float *array, size_t length, double factor);
 // ascending frequency, and elements N/2+1 through N-1 correspond to the
 // imaginary values, representing sine wave amplitudes in descending frequency.
 // Generates real-valued time-domain samples. Overwrites the input array.
-void fft_inverse_real_fourier_transform(float *array, size_t array_length);
+void fft_inverse_real_fourier_transform(float *array, unsigned int array_length);
 
 #endif

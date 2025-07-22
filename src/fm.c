@@ -157,7 +157,6 @@ static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice
     fm_voice_s *const fm_voice = (fm_voice_s*)voice;
 
     const double sample_len = compute_data->varying.sample_len;
-    const double samples_per_tick = compute_data->varying.samples_per_tick;
     const double rounded_samples_per_tick = compute_data->varying.rounded_samples_per_tick;
 
     voice_compute_varying_s *const varying = &compute_data->varying;

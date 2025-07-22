@@ -31,7 +31,6 @@ static void compute_wave_voice(
     wave_voice_s *const wave_voice = (wave_voice_s*) voice;
 
     const double sample_len = compute_data->varying.sample_len;
-    const double samples_per_tick = compute_data->varying.samples_per_tick;
     const double rounded_samples_per_tick = compute_data->varying.rounded_samples_per_tick;
 
     voice_compute_varying_s *const varying = &compute_data->varying;
@@ -333,8 +332,6 @@ void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity) {
 }
 
 static void compute_harmonics_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
-    const harmonics_inst_s *const inst = (harmonics_inst_s*) base_inst;
-
     compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
 }
 

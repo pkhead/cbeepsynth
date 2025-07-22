@@ -9,7 +9,7 @@
 static void harmonics_perform_integral(float *wave, size_t length) {
     // Old ver used in harmonics/picked string instruments, manipulates wave in place.
     double cumulative = 0.0;
-    for (int i = 0; i < length; i++) {
+    for (size_t i = 0; i < length; i++) {
         const double temp = (double)wave[i];
         wave[i] += cumulative;
         cumulative += temp;

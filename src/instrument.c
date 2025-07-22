@@ -105,6 +105,7 @@ int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key,
 }
 
 void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
+    (void)inst;
     (void)velocity;
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {

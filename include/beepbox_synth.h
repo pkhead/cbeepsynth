@@ -49,7 +49,7 @@ extern "C" {
 
 #define BPBX_VERSION_MAJOR 0
 #define BPBX_VERSION_MINOR 2
-#define BPBX_VERSION_REVISION 0
+// to get the revision, call bpbx_version
 
 #define BPBX_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box
 #define BPBX_ENVELOPE_CURVE_PRESET_COUNT 26

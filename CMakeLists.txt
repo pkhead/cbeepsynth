@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(beepbox_synth VERSION 0.1.0)
+project(beepbox_synth VERSION 0.2.0)
 
 set(SOURCES
     src/public.c
@@ -27,10 +27,15 @@ set(TARGET_INCLUDES
     PUBLIC include
 )
 
+set(TARGET_DEFINITIONS
+    BPBX_VERSION_REVISION=${PROJECT_VERSION_PATCH}
+)
+
 # static target
 if (BEEPBOX_SYNTH_BUILD_STATIC)
     add_library(beepbox_synth_static STATIC ${SOURCES})
     set_target_properties(beepbox_synth_static PROPERTIES ${TARGET_PROPERTIES})
+    target_compile_definitions(beepbox_synth_static PUBLIC ${TARGET_DEFINITIONS})
     target_include_directories(beepbox_synth_static ${TARGET_INCLUDES})
 
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -44,10 +49,13 @@ if (BEEPBOX_SYNTH_BUILD_SHARED)
     set_target_properties(beepbox_synth_shared PROPERTIES
         ${TARGET_PROPERTIES}
         C_VISIBILITY_PRESET hidden
-        OUTPUT_NAME "beepboxsynth"
+        OUTPUT_NAME "bpbxsynth"
     )
     target_include_directories(beepbox_synth_shared ${TARGET_INCLUDES})
-    target_compile_definitions(beepbox_synth_shared PRIVATE BPBX_SHARED)
+    target_compile_definitions(beepbox_synth_shared
+        PRIVATE BPBX_SHARED
+        PUBLIC ${TARGET_DEFINITIONS}
+    )
     
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
         target_compile_options(beepbox_synth_shared PRIVATE -Wall -Wextra -Wpedantic)

@@ -1,5 +1,5 @@
-#ifndef _public_h_
-#define _public_h_
+#ifndef _instrument_h_
+#define _instrument_h_
 
 #include <stddef.h>
 #include <math.h>
@@ -58,6 +58,8 @@ typedef struct bpbx_inst_s {
 typedef void (*inst_init_f)(bpbx_inst_s *inst);
 typedef void (*inst_destroy_f)(bpbx_inst_s *inst);
 
+// (showing this to someone who isn't too familiar with C code)
+// this is a really elegant solution i swear!!
 typedef struct {
     const size_t            struct_size;
     const inst_init_f       inst_init;
@@ -69,11 +71,20 @@ typedef struct {
     const size_t            envelope_target_count;
     const bpbx_envelope_compute_index_e* envelope_targets;
     
-    int         (*inst_midi_on)(bpbx_inst_s *inst, int key, int velocity);
-    void        (*inst_midi_off)(bpbx_inst_s *inst, int key, int velocity);
-    void        (*inst_tick)(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
-    void        (*inst_run)(bpbx_inst_s *inst, float *samples, size_t frame_count);
+    int (*const inst_midi_on)
+            (bpbx_inst_s *inst, int key, int velocity);
+    void (*const inst_midi_off)
+            (bpbx_inst_s *inst, int key, int velocity);
+    void (*const inst_tick)
+            (bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
+    void (*const inst_run)
+            (bpbx_inst_s *inst, float *samples, size_t frame_count);
 } inst_vtable_s;
+// (for c, at least)
+// was using a switch statement cus i was lazy and thought "eh maybe it won't be that bad"
+// then got to the third switch case and was like yeah you know what i don't want to edit 5
+// switch statements everytime i add a new instrument LOL. i'm going to use the concept of
+// those newfangled "virtual tables"
 
 typedef struct {
     uint8_t triggered; // triggered, but not active until the next tick

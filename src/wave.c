@@ -42,8 +42,8 @@ static void compute_wave_voice(
 
     const double interval_start = compute_data->varying.interval_start;
     const double interval_end = compute_data->varying.interval_end;
-    const double start_pitch = (double)voice->key + interval_start;
-    const double end_pitch = (double)voice->key + interval_end;
+    const double start_pitch = voice->current_key + interval_start;
+    const double end_pitch = voice->current_key + interval_end;
 
     // pitch expression
     double pitch_expression_start;
@@ -99,7 +99,7 @@ static void wave_audio_render_callback(
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         wave_voice_s *voice = voice_list + i;
-        if (!voice->base.active) continue;
+        if (!voice->base.computing) continue;
         float *out = output_buffer;
 
         if (unison.voices == 1) voice->phase[1] = voice->phase[0];

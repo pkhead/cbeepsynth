@@ -2,11 +2,21 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 #include "instrument.h"
 #include "util.h"
 
 #define VOLUME_LOG_SCALE 0.1428
+#define TICKS_PER_ARPEGGIO 3
 #define GET_VOICE(voice_list, size, idx) ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
+
+#define ARPEGGIO_PATTERN_COUNT 8
+typedef struct {
+    uint8_t length;
+    uint8_t pitches[8]; // 8 is the maximum length of the array
+} arpeggio_pattern_s;
+static const arpeggio_pattern_s arpeggio_patterns[ARPEGGIO_PATTERN_COUNT];
+static const arpeggio_pattern_s normal_two_note_arpeggio;
 
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
     *inst = (bpbx_inst_s) {
@@ -16,7 +26,10 @@ void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
         .volume = 0.0,
         .panning = 50.0,
         .fade_in = 0.0,
-        .fade_out = 0.0
+        .fade_out = 0.0,
+
+        .active_chord_id = UINT8_MAX,
+        .last_active_chord_id = UINT8_MAX
     };
 
     for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
@@ -76,24 +89,111 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
     return effect;
 }
 
+// get list of voices in a chord, sorted by ascending chord index
+uint8_t get_chord_list(
+    inst_base_voice_s voices[BPBX_INST_MAX_VOICES], size_t sizeof_voice,
+    uint8_t chord_id, inst_base_voice_s *out_list[BPBX_INST_MAX_VOICES]
+) {
+    uint8_t length = 0;
+
+    // first, add voices of the same chord id to the list
+    for (int j = 0; j < BPBX_INST_MAX_VOICES; ++j) {
+        inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
+        if (v->chord_id == chord_id && v->active) {
+            out_list[length++] = v;
+        }
+    }
+
+    // then, sort the list (insertion sort)
+    for (uint8_t j = 1; j < length; j++) {
+        for (uint8_t k = j; k > 0 && out_list[k]->chord_index < out_list[k-1]->chord_index; --k) {
+            inst_base_voice_s *tmp = out_list[k];
+            out_list[k] = out_list[k-1];
+            out_list[k-1] = tmp;
+        }
+    }
+
+    return length;
+}
+
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
     int voice_index = 0;
+    uint8_t chord_id;
+    uint8_t chord_index;
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    // find free voice index
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
         if (GET_VOICE(voices, sizeof_voice, i)->triggered) continue;
         voice_index = i;
         break;
     }
 
+    if (inst->chord_type == BPBX_CHORD_TYPE_SIMULTANEOUS) {
+        chord_index = 0;
+        chord_id = (uint8_t)voice_index;
+    } else {
+        // if no chord is active, find unused chord index
+        // otherwise, chord id will be the active chord id
+        // (obviously trading cpu for memory here)
+        // hmm... guess i could make a lookup table with the size of BPBX_INST_MAX_VOICES
+        // hmm... Maybe i'll do that later i don't really care right now.
+        if (inst->active_chord_id == UINT8_MAX) {
+            chord_id = 0;
+            chord_index = 0;
+            while (true) {
+                bool need_rescan = false;
+
+                for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                    inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
+                    if (!voice->active) continue;
+                    if (voice->chord_id == chord_id) {
+                        ++chord_id;
+                        need_rescan = true;
+                    }
+                }
+
+                if (!need_rescan) break;
+            }
+
+            inst->active_chord_id = chord_id;
+        } else {
+            chord_id = inst->active_chord_id;
+
+            // find max used chord index, and set this
+            // voice's chord index to be that plus one
+            // (it should already be contiguous)
+            bool did_find = false;
+            chord_index = 0;
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
+                if (voice->active && !voice->released && voice->chord_id == chord_id) {
+                    if (voice->chord_index >= chord_index) {
+                        did_find = true;
+                        chord_index = voice->chord_index;
+                    }
+                }
+            }
+
+            if (did_find) chord_index++;
+        }
+    }
+
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, voice_index);
     memset(voice, 0, sizeof_voice);
     *voice = (inst_base_voice_s) {
+        .active = TRUE,
         .triggered = TRUE,
         .released = FALSE,
+        .computing = FALSE,
+
+        .chord_id = chord_id,
+        .chord_index = chord_index,
+
         .key = key < 0 ? 0 : (uint16_t)key,
         .volume = velocity / 127.f,
         .has_prev_vibrato = FALSE
     };
+    voice->current_key = (double)voice->key;
 
     for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
         dyn_biquad_reset_output(voice->note_filters + i);
@@ -111,7 +211,23 @@ void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if (voice->triggered && !voice->released && voice->key == key) {
-            voice->released = 1;
+            voice->released = true;
+
+            // release chord if this is the last note in it
+            bool release_chord = true;
+            const uint8_t chord_id = voice->chord_id;
+            for (int j = 0; j < BPBX_INST_MAX_VOICES; j++) {
+                inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
+                if (v->active && !v->released && v->chord_id == chord_id) {
+                    release_chord = false;
+                    break;
+                }
+            }
+
+            if (release_chord) {
+                inst->active_chord_id = UINT8_MAX;
+            }
+
             break;
         }
     }
@@ -324,7 +440,12 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
 
     const double mod_x = inst->mod_x;
     const double mod_y = inst->mod_y;
-    const double mod_w = run_ctx->mod_wheel;    
+    const double mod_w = run_ctx->mod_wheel;
+    
+    // if chord type is disabled, set chord type to simultaneous
+    if (!inst->active_effects[BPBX_INSTFX_CHORD_TYPE]) {
+        inst->chord_type = BPBX_CHORD_TYPE_SIMULTANEOUS;
+    }
 
     // update vibrato lfo
     bpbx_vibrato_params_s vibrato = inst->vibrato;
@@ -333,6 +454,86 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     inst->vibrato_time_start = inst->vibrato_time_end;
     inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
 
+    // choke every released note in a chord that is still active
+    for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+        inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+        if (!voice->active) continue;
+        if (voice->released && voice->chord_id == inst->active_chord_id) {
+            voice->triggered = FALSE;
+            voice->active = FALSE;
+            voice->computing = FALSE;
+
+            // readjust chord indices, so that the earliest voice
+            // has chord index 0, and that the indices are contiguous
+            // it will use insertion sort for this.
+            inst_base_voice_s *sort_voice_list[BPBX_INST_MAX_VOICES];
+            uint8_t length = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sort_voice_list);
+
+            // finally, reapply voice indices
+            for (uint8_t j = 0; j < length; j++) {
+                sort_voice_list[j]->chord_index = j;
+            }
+        }
+    }
+
+    switch (inst->chord_type) {
+        // these make the instrument monophonic per chord
+        case BPBX_CHORD_TYPE_ARPEGGIO:
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+                if (!voice->active || !voice->triggered) continue;
+
+                if (voice->chord_index == 0) {
+                    voice->computing = true;
+                    inst_base_voice_s *sorted_voices[BPBX_INST_MAX_VOICES];
+                    uint8_t pitch_count = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sorted_voices);
+
+                    // arpeggio speed setting: 12
+                    const double arpeggio = voice->time_ticks / TICKS_PER_ARPEGGIO;
+                    uint8_t arpeggio_index;
+                    if (pitch_count - 1 >= ARPEGGIO_PATTERN_COUNT) {
+                        arpeggio_index = (uint8_t)fmod(arpeggio, pitch_count);
+                    } else {
+                        const arpeggio_pattern_s *pattern;
+
+                        // TODO: uncomment this when i add fast two note arpeggio option
+                        if (pitch_count == 2 /* && inst->fast_two_note_arpeggio */) {
+                            pattern = &normal_two_note_arpeggio;
+                        } else {
+                            pattern = &arpeggio_patterns[pitch_count - 1];
+                        }
+                        
+                        arpeggio_index = pattern->pitches[ (uint8_t)fmod(arpeggio, pattern->length) ];
+                    }
+                    
+                    voice->current_key = (double)sorted_voices[arpeggio_index]->key;
+                } else {
+                    voice->computing = false;
+                }
+            }
+            break;
+        
+        case BPBX_CHORD_TYPE_CUSTOM_INTERVAL:
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+                if (!voice->active || !voice->triggered) continue;
+                voice->computing = voice->chord_index == 0;
+            }
+            break;
+
+        case BPBX_CHORD_TYPE_STRUM:
+            // TO-DO
+            break;
+
+        case BPBX_CHORD_TYPE_SIMULTANEOUS:
+            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+                if (!voice->active || !voice->triggered) continue;
+                voice->computing = true;
+            }
+            break;
+    }
+
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
@@ -340,10 +541,9 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         if (voice->is_on_last_tick) {
             voice->triggered = FALSE;
             voice->active = FALSE;
+            voice->computing = FALSE;
             continue;
         }
-        
-        voice->active = TRUE;
 
         voice_compute_s compute_data = {
             .constants = {
@@ -369,6 +569,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
 
     inst->last_eq = inst->eq;
     inst->last_note_filter = inst->note_filter;
+    inst->last_active_chord_id = inst->active_chord_id;
 }
 
 
@@ -383,6 +584,21 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
 ////////////
 //  DATA  //
 ////////////
+
+static const arpeggio_pattern_s arpeggio_patterns[ARPEGGIO_PATTERN_COUNT] = {
+    { .length = 1, .pitches = {0} },
+    { .length = 2, .pitches = {0, 1} }, // this is the fast version
+    { .length = 4, .pitches = {0, 1, 2, 1} },
+    { .length = 4, .pitches = {0, 1, 2, 3} },
+    { .length = 5, .pitches = {0, 1, 2, 3, 4} },
+    { .length = 6, .pitches = {0, 1, 2, 3, 4, 5} },
+    { .length = 7, .pitches = {0, 1, 2, 3, 4, 5, 6} },
+    { .length = 8, .pitches = {0, 1, 2, 3, 4, 5, 6, 7} },
+};
+
+static const arpeggio_pattern_s normal_two_note_arpeggio = {
+    .length = 4, .pitches = {0, 0, 1, 1}
+};
 
 static const char *bool_enum_values[] = {"Off", "On"};
 static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};

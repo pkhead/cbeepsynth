@@ -169,8 +169,8 @@ static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice
 
         int associated_carrier_idx = algo_associated_carriers[inst->algorithm][op] - 1;
         const double freq_mult = freq_data->mult;
-        const double pitch_start = (double)voice->key + varying->interval_start + carrier_intervals[associated_carrier_idx];
-        const double pitch_end = (double)voice->key + varying->interval_end + carrier_intervals[associated_carrier_idx];
+        const double pitch_start = voice->current_key + varying->interval_start + carrier_intervals[associated_carrier_idx];
+        const double pitch_end = voice->current_key + varying->interval_end + carrier_intervals[associated_carrier_idx];
         const double base_freq_start = key_to_hz_d(pitch_start);
         const double base_freq_end = key_to_hz_d(pitch_end);
         const double hz_offset = freq_data->hz_offset;
@@ -282,7 +282,7 @@ void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
     
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         fm_voice_s *voice = fm->voices + i;
-        if (!voice->base.active) continue;
+        if (!voice->base.computing) continue;
 
         float *output_sample = samples;
         

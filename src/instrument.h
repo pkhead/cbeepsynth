@@ -27,6 +27,9 @@ typedef struct bpbx_inst_s {
 
     uint8_t transition_type;
     uint8_t chord_type;
+    uint8_t active_chord_id;
+    uint8_t last_active_chord_id;
+
     double pitch_shift; // aka coarse detune
     double detune; // aka fine detune
 
@@ -87,12 +90,22 @@ typedef struct {
 // those newfangled "virtual tables"
 
 typedef struct {
-    uint8_t triggered; // triggered, but not active until the next tick
-    uint8_t active;
+    // TODO: consolidate these fields into a singular "flags" bitfield
+    uint8_t triggered; // triggered, but not computing until the next tick
+    uint8_t active; // this voice is currently reserved
     uint8_t released;
-    uint8_t is_on_last_tick;
+    uint8_t computing; // this voice is elligble being computed.
+                       // set to true on the first frame after it was triggered.
+    uint8_t is_on_last_tick; // this voice will be freed on the start of the next tick
+    
+    // unique identifier for the chord this note belongs to
+    uint8_t chord_id;
+    // chronological index of the note within the chord
+    uint8_t chord_index;
+
     uint16_t key;
     
+    double current_key; // modified by chord type
     float volume;
 
     uint8_t has_prev_vibrato;

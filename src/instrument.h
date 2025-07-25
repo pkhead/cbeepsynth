@@ -13,6 +13,7 @@
 #define UNISON_MAX_VOICES 2
 #define EXPRESSION_REFERENCE_PITCH 16 // A low "E" as a MIDI pitch.
 #define PITCH_DAMPING 48
+#define ARPEGGIO_SPEED_SETTING_COUNT 51
 
 typedef struct bpbx_inst_s {
     bpbx_inst_type_e type;
@@ -27,11 +28,15 @@ typedef struct bpbx_inst_s {
 
     uint8_t transition_type;
     uint8_t chord_type;
+    uint8_t fast_two_note_arpeggio;
+
     uint8_t active_chord_id;
     uint8_t last_active_chord_id;
 
     double pitch_shift; // aka coarse detune
     double detune; // aka fine detune
+    double arpeggio_speed;
+    double strum_speed;
 
     uint8_t vibrato_preset;
     bpbx_vibrato_params_s vibrato;
@@ -52,6 +57,7 @@ typedef struct bpbx_inst_s {
     // this is in seconds
     double vibrato_time_start;
     double vibrato_time_end;
+    double arp_time;
 
     double mod_x;
     double mod_y;
@@ -187,6 +193,7 @@ void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
 void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
 void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params);
+double inst_calc_arp_speed(double arp_speed_setting);
 
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);

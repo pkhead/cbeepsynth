@@ -18,7 +18,6 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define _beepbox_instrument_data_h_
 
 #define BPBX_INST_MAX_VOICES 16
-#define BPBX_BASE_PARAM_COUNT 68
 
 typedef enum {
     // basic params
@@ -37,6 +36,9 @@ typedef enum {
     // chord type params
     BPBX_PARAM_ENABLE_CHORD_TYPE,
     BPBX_PARAM_CHORD_TYPE,
+    BPBX_PARAM_ARPEGGIO_SPEED,
+    BPBX_PARAM_FAST_TWO_NOTE_ARPEGGIO,
+    BPBX_PARAM_STRUM_SPEED,
 
     // pitch shift params
     BPBX_PARAM_ENABLE_PITCH_SHIFT,
@@ -106,6 +108,8 @@ typedef enum {
     BPBX_PARAM_EQ_TYPE7,
     BPBX_PARAM_EQ_FREQ7,
     BPBX_PARAM_EQ_GAIN7,
+
+    BPBX_BASE_PARAM_COUNT
 } bpbx_inst_param_e;
 
 /////////////

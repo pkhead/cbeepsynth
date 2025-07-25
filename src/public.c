@@ -161,6 +161,7 @@ void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, double bpm) {
     const double time_secs = bpm / 60.0 * beat;
     inst->vibrato_time_start = time_secs * vibrato_params.speed;
     inst->vibrato_time_end = inst->vibrato_time_start + sec_per_tick;
+    inst->arp_time = beat * inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
 static int param_helper(const bpbx_inst_s *inst, uint32_t index, void **addr, bpbx_inst_param_info_s *info) {

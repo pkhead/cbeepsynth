@@ -18,6 +18,15 @@ typedef struct {
 static const arpeggio_pattern_s arpeggio_patterns[ARPEGGIO_PATTERN_COUNT];
 static const arpeggio_pattern_s normal_two_note_arpeggio;
 
+static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
+    0, 0.0625, 0.125, 0.2, 0.25, 1.0 / 3, 0.4, 0.5, 2.0 / 3, 0.75, 0.8, 0.9, 1,
+    1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
+    2.7, 2.8, 2.9, 3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4, 4.15, 4.3, 4.5,
+    4.8, 5, 5.5, 6, 8,
+
+    8.0 // dummy value in edge case for interpolation
+};
+
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
     *inst = (bpbx_inst_s) {
         .type = type,
@@ -27,6 +36,7 @@ void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
         .panning = 50.0,
         .fade_in = 0.0,
         .fade_out = 0.0,
+        .arpeggio_speed = 12,
 
         .active_chord_id = UINT8_MAX,
         .last_active_chord_id = UINT8_MAX
@@ -441,7 +451,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     const double mod_x = inst->mod_x;
     const double mod_y = inst->mod_y;
     const double mod_w = run_ctx->mod_wheel;
-    
+
     // if chord type is disabled, set chord type to simultaneous
     if (!inst->active_effects[BPBX_INSTFX_CHORD_TYPE]) {
         inst->chord_type = BPBX_CHORD_TYPE_SIMULTANEOUS;
@@ -470,6 +480,9 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             uint8_t length = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sort_voice_list);
 
             // finally, reapply voice indices
+            // bug?: if the base note is released, then there will be a discontinuity
+            // causing an audible click. but honestly idc, i don't think anyone should
+            // be using arpeggio in such a way that that will occur anyway.
             for (uint8_t j = 0; j < length; j++) {
                 sort_voice_list[j]->chord_index = j;
             }
@@ -488,25 +501,27 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
                     inst_base_voice_s *sorted_voices[BPBX_INST_MAX_VOICES];
                     uint8_t pitch_count = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sorted_voices);
 
-                    // arpeggio speed setting: 12
-                    const double arpeggio = voice->time_ticks / TICKS_PER_ARPEGGIO;
-                    uint8_t arpeggio_index;
-                    if (pitch_count - 1 >= ARPEGGIO_PATTERN_COUNT) {
-                        arpeggio_index = (uint8_t)fmod(arpeggio, pitch_count);
+                    if (pitch_count == 1) {
+                        voice->current_key = (double)voice->key;
                     } else {
-                        const arpeggio_pattern_s *pattern;
-
-                        // TODO: uncomment this when i add fast two note arpeggio option
-                        if (pitch_count == 2 /* && inst->fast_two_note_arpeggio */) {
-                            pattern = &normal_two_note_arpeggio;
+                        const double arpeggio = inst->arp_time / TICKS_PER_ARPEGGIO;
+                        uint8_t arpeggio_index;
+                        if (pitch_count - 1 >= ARPEGGIO_PATTERN_COUNT) {
+                            arpeggio_index = (uint8_t)fmod(arpeggio, pitch_count);
                         } else {
-                            pattern = &arpeggio_patterns[pitch_count - 1];
+                            const arpeggio_pattern_s *pattern;
+
+                            if (pitch_count == 2 && !inst->fast_two_note_arpeggio) {
+                                pattern = &normal_two_note_arpeggio;
+                            } else {
+                                pattern = &arpeggio_patterns[pitch_count - 1];
+                            }
+                            
+                            arpeggio_index = pattern->pitches[ (uint8_t)fmod(arpeggio, pattern->length) ];
                         }
                         
-                        arpeggio_index = pattern->pitches[ (uint8_t)fmod(arpeggio, pattern->length) ];
+                        voice->current_key = (double)sorted_voices[arpeggio_index]->key;
                     }
-                    
-                    voice->current_key = (double)sorted_voices[arpeggio_index]->key;
                 } else {
                     voice->computing = false;
                 }
@@ -514,6 +529,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             break;
         
         case BPBX_CHORD_TYPE_CUSTOM_INTERVAL:
+            // TODO: custom interval chord type
             for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice->active || !voice->triggered) continue;
@@ -522,7 +538,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             break;
 
         case BPBX_CHORD_TYPE_STRUM:
-            // TO-DO
+            // TO-DO: strum chord type
             break;
 
         case BPBX_CHORD_TYPE_SIMULTANEOUS:
@@ -570,6 +586,20 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     inst->last_eq = inst->eq;
     inst->last_note_filter = inst->note_filter;
     inst->last_active_chord_id = inst->active_chord_id;
+
+    // update arpeggio time
+    inst->arp_time += inst_calc_arp_speed(inst->arpeggio_speed);
+}
+
+double inst_calc_arp_speed(double speed_setting) {
+    // uses linear interpolation between array elements for non-integer values
+    speed_setting = clampd(speed_setting, 0.0, ARPEGGIO_SPEED_SETTING_COUNT - 1);
+
+    double arpeggio_speed = arpeggio_speed_scale[(int)floor(speed_setting)];
+    arpeggio_speed = fmod(speed_setting, 1.0) * 
+        (arpeggio_speed_scale[(int)floor(speed_setting + 1.0)] - arpeggio_speed)
+         + arpeggio_speed;
+    return arpeggio_speed;
 }
 
 
@@ -606,6 +636,12 @@ static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
 static const char *chord_type_values[] = {"Simultaneous", "Strum", "Arpeggio", "Custom Interval"};
 static const char *vibrato_preset_values[] = {"None", "Light", "Delayed", "Heavy", "Shaky", "Custom"};
 static const char *vibrato_values[] = {"Normal", "Shaky"};
+static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
+    "x0", "x0.0625", "x0.125", "x0.2", "x0.25", "x0.3333", "x0.4", "x0.5", "x0.6666", "x0.75", "x0.8",
+    "x0.9", "x1", "x1.1", "x1.2", "x1.3", "x1.4", "x1.5", "x1.6", "x1.7", "x1.8", "x1.9", "x2", "x2.1",
+    "x2.2", "x2.3", "x2.4", "x2.5", "x2.6", "x2.7", "x2.8", "x2.9", "x3", "x3.1", "x3.2", "x3.3", "x3.4",
+    "x3.5", "x3.6", "x3.7", "x3.8", "x3.9", "x4", "x4.15", "x4.3", "x4.5", "x4.8", "x5", "x5.5", "x6", "x8"
+};
 
 #define FILTER_MAX_FREQ 33
 #define FILTER_MAX_GAIN 14
@@ -729,6 +765,37 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = 3,
         .default_value = 0,
         .enum_values = chord_type_values
+    },
+    {
+        .name = "Arpeggio Speed",
+        .group = "Effects/Chord Type",
+
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0,
+        .max_value = ARPEGGIO_SPEED_SETTING_COUNT - 1,
+        .default_value = 12, // 1.0x speed,
+
+        .enum_values = arpeggio_speed_values
+    },
+    {
+        .name = "Fast Two-Note Arpeggio",
+        .group = "Effects/Chord Type",
+
+        .type = BPBX_PARAM_UINT8,
+        .min_value = 0,
+        .max_value = 1,
+        .default_value = 0,
+
+        .enum_values = bool_enum_values
+    },
+    {
+        .name = "Strum Speed",
+        .group = "Effects/Chord Type",
+
+        .type = BPBX_PARAM_DOUBLE,
+        .min_value = 0,
+        .max_value = 10,
+        .default_value = 1.0
     },
 
     // pitch shift
@@ -1371,6 +1438,9 @@ size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
     // chord type
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_CHORD_TYPE]),
     offsetof(bpbx_inst_s, chord_type),
+    offsetof(bpbx_inst_s, arpeggio_speed),
+    offsetof(bpbx_inst_s, fast_two_note_arpeggio),
+    offsetof(bpbx_inst_s, strum_speed),
 
     // pitch shift
     offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_PITCH_SHIFT]),

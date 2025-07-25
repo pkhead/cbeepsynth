@@ -51,14 +51,16 @@ typedef struct {
 } harmonics_inst_s;
 
 void bpbx_inst_init_chip(chip_inst_s *inst);
-int chip_midi_on(bpbx_inst_s *inst, int key, int velocity);
-void chip_midi_off(bpbx_inst_s *inst, int key, int velocity);
+bpbx_voice_id chip_note_on(bpbx_inst_s *inst, int key, double velocity);
+void chip_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
+void chip_note_all_off(bpbx_inst_s *inst);
 void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
 void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
 
 void bpbx_inst_init_harmonics(harmonics_inst_s *inst);
-int harmonics_midi_on(bpbx_inst_s *inst, int key, int velocity);
-void harmonics_midi_off(bpbx_inst_s *inst, int key, int velocity);
+bpbx_voice_id harmonics_note_on(bpbx_inst_s *inst, int key, double velocity);
+void harmonics_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
+void harmonics_note_all_off(bpbx_inst_s *inst);
 void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
 void harmonics_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
 

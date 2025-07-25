@@ -56,8 +56,9 @@ static inline double fm_calc_op(const double phase_mix) {
 }
 
 void bpbx_inst_init_fm(fm_inst_s *inst);
-int fm_midi_on(bpbx_inst_s *inst, int key, int velocity);
-void fm_midi_off(bpbx_inst_s *inst, int key, int velocity);
+bpbx_voice_id fm_note_on(bpbx_inst_s *inst, int key, double velocity);
+void fm_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
+void fm_note_all_off(bpbx_inst_s *inst);
 void fm_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
 void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
 

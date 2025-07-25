@@ -114,8 +114,9 @@ bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     // throw assertion error if any required fields don't exist
     assert(vtable->struct_size > 0);
     assert(vtable->inst_init);
-    assert(vtable->inst_midi_on);
-    assert(vtable->inst_midi_off);
+    assert(vtable->inst_note_on);
+    assert(vtable->inst_note_off);
+    assert(vtable->inst_note_all_off);
     assert(vtable->inst_tick);
     assert(vtable->inst_run);
     assert(vtable->param_count > 0 && vtable->param_info);
@@ -319,18 +320,25 @@ void bpbx_inst_clear_envelopes(bpbx_inst_s *inst) {
     inst->envelope_count = 0;
 }
 
-void bpbx_inst_begin_note(bpbx_inst_s *inst, int key, int velocity) {
+bpbx_voice_id bpbx_inst_begin_note(bpbx_inst_s *inst, int key, double velocity) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 
-    vtable->inst_midi_on(inst, key, velocity);
+    return vtable->inst_note_on(inst, key, velocity);
 }
 
-void bpbx_inst_end_note(bpbx_inst_s *inst, int key, int velocity) {
+void bpbx_inst_end_note(bpbx_inst_s *inst, bpbx_voice_id id) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 
-    vtable->inst_midi_off(inst, key, velocity);
+    vtable->inst_note_off(inst, id);
+}
+
+void bpbx_inst_end_all_notes(bpbx_inst_s *inst) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    vtable->inst_note_all_off(inst);
 }
 
 void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx) {

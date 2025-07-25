@@ -80,14 +80,14 @@ typedef struct {
     const size_t            envelope_target_count;
     const bpbx_envelope_compute_index_e* envelope_targets;
     
-    int (*const inst_midi_on)
-            (bpbx_inst_s *inst, int key, int velocity);
-    void (*const inst_midi_off)
-            (bpbx_inst_s *inst, int key, int velocity);
-    void (*const inst_tick)
-            (bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
-    void (*const inst_run)
-            (bpbx_inst_s *inst, float *samples, size_t frame_count);
+    bpbx_voice_id (*const inst_note_on)(bpbx_inst_s *inst, int key, double velocity);
+    void          (*const inst_note_off)(bpbx_inst_s *inst, bpbx_voice_id id);
+    void          (*const inst_note_choke)(bpbx_inst_s *inst, bpbx_voice_id id);
+    void          (*const inst_note_modulate)(bpbx_inst_s *inst, bpbx_voice_id, uint32_t param, double value);
+    void          (*const inst_note_all_off)(bpbx_inst_s *inst);
+
+    void (*const inst_tick)(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
+    void (*const inst_run)(bpbx_inst_s *inst, float *samples, size_t frame_count);
 } inst_vtable_s;
 // (for c, at least)
 // was using a switch statement cus i was lazy and thought "eh maybe it won't be that bad"
@@ -190,10 +190,14 @@ typedef struct {
 
 void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type);
 
-int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
-void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity);
+bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, double velocity);
+void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
+// void choke_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
+void release_all_voices(bpbx_inst_s *inst, void *voices, size_t sizeof_voice);
 void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params);
 double inst_calc_arp_speed(double arp_speed_setting);
+
+#define GENERIC_LIST(list) (list), sizeof(*(list))
 
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);

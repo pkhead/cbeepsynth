@@ -126,7 +126,7 @@ uint8_t get_chord_list(
     return length;
 }
 
-int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
+bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, double velocity) {
     int voice_index = 0;
     uint8_t chord_id;
     uint8_t chord_index;
@@ -200,7 +200,7 @@ int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key,
         .chord_index = chord_index,
 
         .key = key < 0 ? 0 : (uint16_t)key,
-        .volume = velocity / 127.f,
+        .volume = velocity,
         .has_prev_vibrato = FALSE
     };
     voice->current_key = (double)voice->key;
@@ -211,35 +211,37 @@ int trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key,
 
     envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
 
-    return voice_index;
+    return (bpbx_voice_id) voice_index;
 }
 
-void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, int velocity) {
-    (void)inst;
-    (void)velocity;
+void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id) {
+    inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
+    if (voice->triggered && voice->active && !voice->released) {
+        voice->released = true;
 
+        // release chord if this is the last note in it
+        bool release_chord = true;
+        const uint8_t chord_id = voice->chord_id;
+        for (int j = 0; j < BPBX_INST_MAX_VOICES; j++) {
+            inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
+            if (v->active && !v->released && v->chord_id == chord_id) {
+                release_chord = false;
+                break;
+            }
+        }
+
+        if (release_chord) {
+            inst->active_chord_id = UINT8_MAX;
+        }
+    }
+}
+
+void release_all_voices(bpbx_inst_s *inst, void *voices, size_t sizeof_voice) {
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
-        if (voice->triggered && !voice->released && voice->key == key) {
-            voice->released = true;
-
-            // release chord if this is the last note in it
-            bool release_chord = true;
-            const uint8_t chord_id = voice->chord_id;
-            for (int j = 0; j < BPBX_INST_MAX_VOICES; j++) {
-                inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
-                if (v->active && !v->released && v->chord_id == chord_id) {
-                    release_chord = false;
-                    break;
-                }
-            }
-
-            if (release_chord) {
-                inst->active_chord_id = UINT8_MAX;
-            }
-
-            break;
-        }
+        if ((voice->triggered || voice->active) && !voice->released) {
+            release_voice(inst, voices, sizeof_voice, i);
+        } 
     }
 }
 

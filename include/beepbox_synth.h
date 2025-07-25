@@ -296,6 +296,8 @@ typedef enum {
 
 typedef void (*bpbx_log_f)(bpbx_log_severity_e severity, const char *msg, void *userdata);
 
+typedef int8_t bpbx_voice_id;
+
 /**
  * @brief Obtain the version of the library.
  *
@@ -551,19 +553,26 @@ BEEPBOX_API void bpbx_inst_clear_envelopes(bpbx_inst_s *inst);
  *
  * @param inst Pointer to the instrument.
  * @param key The MIDI key of the note.
- * @param velocity The velocity of the note, from 0-127.
+ * @param velocity The velocity of the note, from 0-1.
+ * @returns The ID of the newly created voice.
  */
-BEEPBOX_API void bpbx_inst_begin_note(bpbx_inst_s *inst, int key, int velocity);
+BEEPBOX_API bpbx_voice_id bpbx_inst_begin_note(bpbx_inst_s *inst, int key, double velocity);
 
 /**
  * @brief Send a note off event to an instrument.
  *
  * @note The velocity parameter is non-functional.
  * @param inst Pointer to the instrument.
- * @param key The MIDI key of the note to end.
- * @param velocity The velocity of the note, from 0-127.
+ * @param id The ID of the note to end.
  */
-BEEPBOX_API void bpbx_inst_end_note(bpbx_inst_s *inst, int key, int velocity);
+BEEPBOX_API void bpbx_inst_end_note(bpbx_inst_s *inst, bpbx_voice_id id);
+
+/**
+ * @brief Turn off all active notes of an instrument.
+ *
+ * @param inst Pointer to the instrument.
+ */
+BEEPBOX_API void bpbx_inst_end_all_notes(bpbx_inst_s *inst);
 
 // if you know the length of each note, and the result of this is negative,
 // call midi_off that positive number of ticks before the note actually ends.

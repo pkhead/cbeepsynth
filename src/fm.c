@@ -122,13 +122,13 @@ void bpbx_inst_init_fm(fm_inst_s *inst) {
     inst->feedback = 0;
 }
 
-int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
+bpbx_voice_id fm_note_on(bpbx_inst_s *inst, int key, double velocity) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
-    int voice_index = trigger_voice(inst, fm->voices, sizeof(*fm->voices), key, velocity);
-    fm_voice_s *voice = &fm->voices[voice_index];
+    bpbx_voice_id voice_id = trigger_voice(inst, GENERIC_LIST(fm->voices), key, velocity);
+    fm_voice_s *voice = &fm->voices[voice_id];
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
         voice->op_states[op] = (fm_voice_opstate_s) {
@@ -141,15 +141,23 @@ int fm_midi_on(bpbx_inst_s *inst, int key, int velocity) {
         };
     }
 
-    return voice_index;
+    return voice_id;
 }
 
-void fm_midi_off(bpbx_inst_s *inst, int key, int velocity) {
+void fm_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
-    release_voice(inst, fm->voices, sizeof(*fm->voices), key, velocity);
+    release_voice(inst, GENERIC_LIST(fm->voices), id);
+}
+
+void fm_note_all_off(bpbx_inst_s *inst) {
+    assert(inst);
+    assert(inst->type == BPBX_INSTRUMENT_FM);
+    fm_inst_s *const fm = (fm_inst_s*)inst;
+
+    release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
 static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *const voice, voice_compute_s *compute_data) {
@@ -670,8 +678,10 @@ const inst_vtable_s inst_fm_vtable = {
     .envelope_targets = fm_env_targets,
 
     .inst_init = (inst_init_f)bpbx_inst_init_fm,
-    .inst_midi_on = fm_midi_on,
-    .inst_midi_off = fm_midi_off,
+    .inst_note_on = fm_note_on,
+    .inst_note_off = fm_note_off,
+    .inst_note_all_off = fm_note_all_off,
+
     .inst_tick = fm_tick,
     .inst_run = fm_run
 };

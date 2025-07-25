@@ -62,6 +62,9 @@ typedef struct bpbx_inst_s {
     double mod_x;
     double mod_y;
     double mod_wheel; // last stored state of modulation wheel
+
+    bpbx_inst_callbacks_s callbacks;
+    void *userdata;
 } bpbx_inst_s;
 
 typedef void (*inst_init_f)(bpbx_inst_s *inst);

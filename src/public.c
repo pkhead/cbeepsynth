@@ -150,6 +150,18 @@ bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst) {
     return inst->type;
 }
 
+bpbx_inst_callbacks_s* bpbx_inst_get_callback_table(bpbx_inst_s *inst) {
+    return &inst->callbacks;
+}
+
+void* bpbx_inst_get_userdata(bpbx_inst_s *inst) {
+    return inst->userdata;
+}
+
+void bpbx_inst_set_userdata(bpbx_inst_s *inst, void *userdata) {
+    inst->userdata = userdata;
+}
+
 void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, double bpm) {
     bpbx_vibrato_params_s vibrato_params = inst->vibrato;
     bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato_params);

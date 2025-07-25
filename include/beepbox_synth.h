@@ -298,6 +298,15 @@ typedef void (*bpbx_log_f)(bpbx_log_severity_e severity, const char *msg, void *
 
 typedef int8_t bpbx_voice_id;
 
+typedef struct {
+    /**
+     * Called when a voice is finished being processed.
+     * @param inst Pointer to the instrument.
+     * @param id The ID of the voice.
+     */
+    void (*voice_end)(bpbx_inst_s *inst, bpbx_voice_id id);
+} bpbx_inst_callbacks_s;
+
 /**
  * @brief Obtain the version of the library.
  *
@@ -376,6 +385,33 @@ BEEPBOX_API void bpbx_inst_destroy(bpbx_inst_s* inst);
  * @return The BPBX_INSTRUMENT_* enum that identifies the instrument type.
  */
 BEEPBOX_API bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst);
+
+/**
+ * @brief Get the callback table of the instrument.
+ *
+ * This will return a pointer to the callback table structure of the instrument
+ * These functions are called during inst_tick or inst_run.
+ *
+ * @param inst Pointer to the instrument.
+ * @return Pointer to the bpbx_inst_callbacks_s structure.
+ */
+BEEPBOX_API bpbx_inst_callbacks_s* bpbx_inst_get_callback_table(bpbx_inst_s *inst);
+
+/**
+ * Obtain the user-set opaque pointer associated with an instrument.
+ *
+ * @param inst Pointer to the instrument.
+ * @return The user-set opaque pointer, or NULL if it was not set.
+ */
+BEEPBOX_API void* bpbx_inst_get_userdata(bpbx_inst_s *inst);
+
+/**
+ * Associate an instrument with an opaque pointer.
+ *
+ * @param inst Pointer to the instrument.
+ * @param userdata The pointer to associate with the instrument.
+ */
+BEEPBOX_API void bpbx_inst_set_userdata(bpbx_inst_s *inst, void *userdata);
 
 /**
  * @brief Set the sample rate of an instrument.

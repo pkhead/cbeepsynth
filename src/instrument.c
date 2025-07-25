@@ -471,6 +471,9 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         if (!voice->active) continue;
         if (voice->released && voice->chord_id == inst->active_chord_id) {
+            if (inst->callbacks.voice_end)
+                inst->callbacks.voice_end(inst, i);
+            
             voice->triggered = FALSE;
             voice->active = FALSE;
             voice->computing = FALSE;
@@ -557,6 +560,9 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         
         if (!voice->triggered) continue;
         if (voice->is_on_last_tick) {
+            if (inst->callbacks.voice_end)
+                inst->callbacks.voice_end(inst, i);
+            
             voice->triggered = FALSE;
             voice->active = FALSE;
             voice->computing = FALSE;

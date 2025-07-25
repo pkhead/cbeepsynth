@@ -76,6 +76,9 @@ const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned in
         return &base_param_info[index];
 
     assert(inst_vtables[type]);
+    assert(memcmp(inst_vtables[type]->param_info[index - BPBX_BASE_PARAM_COUNT].id, "\0\0\0\0\0\0\0\0", 8));
+    assert(index - BPBX_BASE_PARAM_COUNT < inst_vtables[type]->param_count);
+
     return &inst_vtables[type]->param_info[index - BPBX_BASE_PARAM_COUNT];
 }
 

@@ -450,7 +450,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
-
+        .id = "fmAlgthm",
         .name = "Algorithm",
         .group = "FM",
         .min_value = 0,
@@ -463,6 +463,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .id = "fmOp1Frq",
         .name = "Operator 1 Frequency",
         .group = "FM",
 
@@ -474,6 +475,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     },
     {
         .type = BPBX_PARAM_DOUBLE,
+        .id = "fmOp1Vol",
         .name = "Operator 1 Volume",
         .group = "FM",
 
@@ -485,6 +487,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .id = "fmOp2Frq",
         .name = "Operator 2 Frequency",
         .group = "FM",
         
@@ -496,6 +499,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     },
     {
         .type = BPBX_PARAM_DOUBLE,
+        .id = "fmOp2Vol",
         .name = "Operator 2 Volume",
         .group = "FM",
 
@@ -507,6 +511,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .id = "fmOp3Frq",
         .name = "Operator 3 Frequency",
         .group = "FM",
 
@@ -518,6 +523,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     },
     {
         .type = BPBX_PARAM_DOUBLE,
+        .id = "fmOp3Vol",
         .name = "Operator 3 Volume",
         .group = "FM",
 
@@ -529,6 +535,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .id = "fmOp4Frq",
         .name = "Operator 4 Frequency",
         .group = "FM",
 
@@ -540,6 +547,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     },
     {
         .type = BPBX_PARAM_DOUBLE,
+        .id = "fmOp4Vol",
         .name = "Operator 4 Volume",
         .group = "FM",
 
@@ -552,6 +560,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "fmFdbTyp",
         .name = "Feedback Type",
         .group = "FM",
         .min_value = 0,
@@ -563,6 +572,7 @@ const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
 
     {
         .type = BPBX_PARAM_DOUBLE,
+        .id = "fmFdbVol",
         .name = "Feedback Volume",
         .group = "FM",
 

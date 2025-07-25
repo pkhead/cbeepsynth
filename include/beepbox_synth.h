@@ -230,6 +230,7 @@ typedef struct {
 
     const char *name;
     const char *group;
+    char id[8];
 
     double min_value;
     double max_value;

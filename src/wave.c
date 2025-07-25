@@ -410,6 +410,7 @@ static const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "wvWavfrm",
         .name = "Wave",
         .group = "Chip",
         .min_value = 0,
@@ -423,6 +424,7 @@ static const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "wvUnison",
         .name = "Unison",
         .group = "Chip",
         .min_value = 0,
@@ -458,6 +460,7 @@ template = """{
     .type = BPBX_PARAM_UINT8,
     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+    .id = "hmHarm@",
     .name = "Harmonics #x",
     .group = "Harmonics",
     .min_value = 0,
@@ -468,7 +471,7 @@ template = """{
 
 out = ""
 for i in range(28):
-    out += template.replace("#", str(i+1))
+    out += template.replace("#", str(i+1)).replace("@", str(i+1).zfill(2))
 
 with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
     proc.stdin.write(bytes(out, "utf-8"))
@@ -478,6 +481,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmUnison",
         .name = "Unison",
         .group = "Harmonics",
         .min_value = 0,
@@ -491,16 +495,18 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm01",
         .name = "Harmonics 1x",
         .group = "Harmonics",
         .min_value = 0,
         .max_value = BPBX_HARMONICS_CONTROL_MAX,
-        .default_value = BPBX_HARMONICS_CONTROL_MAX,
+        .default_value = 0.0,
     },
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm02",
         .name = "Harmonics 2x",
         .group = "Harmonics",
         .min_value = 0,
@@ -511,6 +517,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm03",
         .name = "Harmonics 3x",
         .group = "Harmonics",
         .min_value = 0,
@@ -521,6 +528,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm04",
         .name = "Harmonics 4x",
         .group = "Harmonics",
         .min_value = 0,
@@ -531,6 +539,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm05",
         .name = "Harmonics 5x",
         .group = "Harmonics",
         .min_value = 0,
@@ -541,6 +550,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm06",
         .name = "Harmonics 6x",
         .group = "Harmonics",
         .min_value = 0,
@@ -551,6 +561,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm07",
         .name = "Harmonics 7x",
         .group = "Harmonics",
         .min_value = 0,
@@ -561,6 +572,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm08",
         .name = "Harmonics 8x",
         .group = "Harmonics",
         .min_value = 0,
@@ -571,6 +583,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm09",
         .name = "Harmonics 9x",
         .group = "Harmonics",
         .min_value = 0,
@@ -581,6 +594,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm10",
         .name = "Harmonics 10x",
         .group = "Harmonics",
         .min_value = 0,
@@ -591,6 +605,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm11",
         .name = "Harmonics 11x",
         .group = "Harmonics",
         .min_value = 0,
@@ -601,6 +616,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm12",
         .name = "Harmonics 12x",
         .group = "Harmonics",
         .min_value = 0,
@@ -611,6 +627,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm13",
         .name = "Harmonics 13x",
         .group = "Harmonics",
         .min_value = 0,
@@ -621,6 +638,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm14",
         .name = "Harmonics 14x",
         .group = "Harmonics",
         .min_value = 0,
@@ -631,6 +649,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm15",
         .name = "Harmonics 15x",
         .group = "Harmonics",
         .min_value = 0,
@@ -641,6 +660,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm16",
         .name = "Harmonics 16x",
         .group = "Harmonics",
         .min_value = 0,
@@ -651,6 +671,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm17",
         .name = "Harmonics 17x",
         .group = "Harmonics",
         .min_value = 0,
@@ -661,6 +682,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm18",
         .name = "Harmonics 18x",
         .group = "Harmonics",
         .min_value = 0,
@@ -671,6 +693,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm19",
         .name = "Harmonics 19x",
         .group = "Harmonics",
         .min_value = 0,
@@ -681,6 +704,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm20",
         .name = "Harmonics 20x",
         .group = "Harmonics",
         .min_value = 0,
@@ -691,6 +715,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm21",
         .name = "Harmonics 21x",
         .group = "Harmonics",
         .min_value = 0,
@@ -701,6 +726,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm22",
         .name = "Harmonics 22x",
         .group = "Harmonics",
         .min_value = 0,
@@ -711,6 +737,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm23",
         .name = "Harmonics 23x",
         .group = "Harmonics",
         .min_value = 0,
@@ -721,6 +748,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm24",
         .name = "Harmonics 24x",
         .group = "Harmonics",
         .min_value = 0,
@@ -731,6 +759,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm25",
         .name = "Harmonics 25x",
         .group = "Harmonics",
         .min_value = 0,
@@ -741,6 +770,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm26",
         .name = "Harmonics 26x",
         .group = "Harmonics",
         .min_value = 0,
@@ -751,6 +781,7 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm27",
         .name = "Harmonics 27x",
         .group = "Harmonics",
         .min_value = 0,
@@ -761,12 +792,14 @@ const bpbx_inst_param_info_s harmonics_param_info[] = {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
 
+        .id = "hmHarm28",
         .name = "Harmonics 28x",
         .group = "Harmonics",
         .min_value = 0,
         .max_value = BPBX_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
+
 };
 
 const bpbx_envelope_compute_index_e harmonics_env_targets[] = {

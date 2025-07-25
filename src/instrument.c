@@ -562,7 +562,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         if (voice->is_on_last_tick) {
             if (inst->callbacks.voice_end)
                 inst->callbacks.voice_end(inst, i);
-            
+
             voice->triggered = FALSE;
             voice->active = FALSE;
             voice->computing = FALSE;
@@ -680,6 +680,7 @@ const unison_desc_s unison_info[BPBX_UNISON_COUNT] = {
 bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // general
     {
+        .id = "inVolume",
         .name = "Volume",
         .group = "General",
 
@@ -689,6 +690,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 0.0
     },
     {
+        .id = "inFadeIn",
         .name = "Fade In",
         .group = "General",
 
@@ -698,6 +700,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 0.0
     },
     {
+        .id = "inFadeOu",
         .name = "Fade Out",
         .group = "General",
 
@@ -709,6 +712,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // modulation params
     {
+        .id = "inModulX",
         .name = "Modulation X",
         .group = "Modulation",
 
@@ -718,6 +722,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 0.0
     },
     {
+        .id = "inModulY",
         .name = "Modulation Y",
         .group = "Modulation",
 
@@ -729,6 +734,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // transition type
     {
+        .id = "inTrnsTg",
         .name = "Transition Type Toggle",
         .group = "Effects/Transition Type",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -740,6 +746,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inTrnsTy",
         .name = "Transition Type",
         .group = "Effects/Transition Type",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -753,6 +760,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // chord type
     {
+        .id = "inChdTog",
         .name = "Chord Type Toggle",
         .group = "Effects/Chord Type",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -764,6 +772,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inChdTyp",
         .name = "Chord Type",
         .group = "Effects/Chord Type",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -775,6 +784,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = chord_type_values
     },
     {
+        .id = "inArpSpd",
         .name = "Arpeggio Speed",
         .group = "Effects/Chord Type",
 
@@ -786,6 +796,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = arpeggio_speed_values
     },
     {
+        .id = "in2NtMde",
         .name = "Fast Two-Note Arpeggio",
         .group = "Effects/Chord Type",
 
@@ -797,6 +808,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inStrmSp",
         .name = "Strum Speed",
         .group = "Effects/Chord Type",
 
@@ -808,6 +820,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // pitch shift
     {
+        .id = "inPtSfTg",
         .name = "Pitch Shift Toggle",
         .group = "Effects/Pitch Shift",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -819,6 +832,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inPtSfVl",
         .name = "Pitch Shift (st)",
         .group = "Effects/Pitch Shift",
 
@@ -830,6 +844,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // detune
     {
+        .id = "inCntsTg",
         .name = "Detune Toggle",
         .group = "Effects/Detune",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -841,6 +856,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inCntsVl",
         .name = "Detune (c)",
         .group = "Effects/Detune",
 
@@ -852,6 +868,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     // vibrato
     {
+        .id = "inVibTog",
         .name = "Vibrato Toggle",
         .group = "Effects/Vibrato",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -863,6 +880,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inVibPrs",
         .name = "Vibrato Preset",
         .group = "Effects/Vibrato",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -874,6 +892,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = vibrato_preset_values
     },
     {
+        .id = "inVibAmp",
         .name = "Vibrato Depth",
         .group = "Effects/Vibrato",
 
@@ -885,6 +904,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values
     },
     {
+        .id = "inVibSpd",
         .name = "Vibrato Speed",
         .group = "Effects/Vibrato",
 
@@ -894,6 +914,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 1.0,
     },
     {
+        .id = "inVibDly",
         .name = "Vibrato Delay",
         .group = "Effects/Vibrato",
 
@@ -903,6 +924,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .default_value = 0,
     },
     {
+        .id = "inVibTyp",
         .name = "Vibrato Type",
         .group = "Effects/Vibrato",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -917,6 +939,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // note filter
     /*
     local template = [[{
+        .id = "inFlTp@",
         .name = "Note Filter # Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -927,6 +950,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz@",
         .name = "Note Filter # Freq.",
         .group = "Effects/Note Filter",
         
@@ -935,6 +959,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb@",
         .name = "Note Filter # Gain",
         .group = "Effects/Note Filter",
         
@@ -946,7 +971,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
     local build = {}
     for i=1, 8 do
-        local repl = template:gsub("#", tostring(i))
+        local repl = template:gsub("#", tostring(i)):gsub("@", string.format("%02i", i))
         table.insert(build, repl)
     end
 
@@ -957,6 +982,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     p:close()
     */
     {
+        .id = "inNFlTog",
         .name = "Note Filter Toggle",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -967,6 +993,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = bool_enum_values,
     },
     {
+        .id = "inFlTp01",
         .name = "Note Filter 1 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -977,6 +1004,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz01",
         .name = "Note Filter 1 Freq.",
         .group = "Effects/Note Filter",
         
@@ -985,6 +1013,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb01",
         .name = "Note Filter 1 Gain",
         .group = "Effects/Note Filter",
         
@@ -993,6 +1022,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp02",
         .name = "Note Filter 2 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1003,6 +1033,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz02",
         .name = "Note Filter 2 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1011,6 +1042,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb02",
         .name = "Note Filter 2 Gain",
         .group = "Effects/Note Filter",
         
@@ -1019,6 +1051,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp03",
         .name = "Note Filter 3 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1029,6 +1062,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz03",
         .name = "Note Filter 3 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1037,6 +1071,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb03",
         .name = "Note Filter 3 Gain",
         .group = "Effects/Note Filter",
         
@@ -1045,6 +1080,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp04",
         .name = "Note Filter 4 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1055,6 +1091,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz04",
         .name = "Note Filter 4 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1063,6 +1100,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb04",
         .name = "Note Filter 4 Gain",
         .group = "Effects/Note Filter",
         
@@ -1071,6 +1109,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp05",
         .name = "Note Filter 5 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1081,6 +1120,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz05",
         .name = "Note Filter 5 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1089,6 +1129,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb05",
         .name = "Note Filter 5 Gain",
         .group = "Effects/Note Filter",
         
@@ -1097,6 +1138,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp06",
         .name = "Note Filter 6 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1107,6 +1149,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz06",
         .name = "Note Filter 6 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1115,6 +1158,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb06",
         .name = "Note Filter 6 Gain",
         .group = "Effects/Note Filter",
         
@@ -1123,6 +1167,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp07",
         .name = "Note Filter 7 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1133,6 +1178,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz07",
         .name = "Note Filter 7 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1141,6 +1187,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb07",
         .name = "Note Filter 7 Gain",
         .group = "Effects/Note Filter",
         
@@ -1149,6 +1196,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_GAIN,
     },
     {
+        .id = "inFlTp08",
         .name = "Note Filter 8 Type",
         .group = "Effects/Note Filter",
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -1159,6 +1207,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .enum_values = filt_type_enum,
     },
     {
+        .id = "inFlHz08",
         .name = "Note Filter 8 Freq.",
         .group = "Effects/Note Filter",
         
@@ -1167,6 +1216,7 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .max_value = FILTER_MAX_FREQ,
     },
     {
+        .id = "inFlDb08",
         .name = "Note Filter 8 Gain",
         .group = "Effects/Note Filter",
         
@@ -1219,214 +1269,214 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     p:write(str)
     p:close()
     */
-    {
-        .name = "EQ 1 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    // {
+    //     .name = "EQ 1 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 1 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 1 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 1 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 1 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 2 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 2 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 2 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 2 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 2 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 2 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 3 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 3 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 3 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 3 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 3 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 3 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 4 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 4 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 4 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 4 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 4 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 4 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 5 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 5 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 5 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 5 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 5 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 5 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 6 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 6 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 6 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 6 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 6 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 6 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 7 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 7 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 7 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 7 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 7 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 7 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
-    {
-        .name = "EQ 8 Type",
-        .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
+    // {
+    //     .name = "EQ 8 Type",
+    //     .group = "EQ",
+    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
-        .min_value = 0,
-        .max_value = 3,
-        .enum_values = filt_type_enum,
-    },
-    {
-        .name = "EQ 8 Freq.",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_UINT8,
+    //     .min_value = 0,
+    //     .max_value = 3,
+    //     .enum_values = filt_type_enum,
+    // },
+    // {
+    //     .name = "EQ 8 Freq.",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_FREQ,
-    },
-    {
-        .name = "EQ 8 Gain",
-        .group = "EQ",
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_FREQ,
+    // },
+    // {
+    //     .name = "EQ 8 Gain",
+    //     .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = FILTER_MAX_GAIN,
-    },
+    //     .type = BPBX_PARAM_DOUBLE,
+    //     .min_value = 0,
+    //     .max_value = FILTER_MAX_GAIN,
+    // },
 };
 
 size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
@@ -1492,30 +1542,4 @@ size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
     offsetof(bpbx_inst_s, note_filter.type    [7]),
     offsetof(bpbx_inst_s, note_filter.freq_idx[7]),
     offsetof(bpbx_inst_s, note_filter.gain_idx[7]),
-
-    // eq filter params
-    offsetof(bpbx_inst_s, eq.type    [0]),
-    offsetof(bpbx_inst_s, eq.freq_idx[0]),
-    offsetof(bpbx_inst_s, eq.gain_idx[0]),
-    offsetof(bpbx_inst_s, eq.type    [1]),
-    offsetof(bpbx_inst_s, eq.freq_idx[1]),
-    offsetof(bpbx_inst_s, eq.gain_idx[1]),
-    offsetof(bpbx_inst_s, eq.type    [2]),
-    offsetof(bpbx_inst_s, eq.freq_idx[2]),
-    offsetof(bpbx_inst_s, eq.gain_idx[2]),
-    offsetof(bpbx_inst_s, eq.type    [3]),
-    offsetof(bpbx_inst_s, eq.freq_idx[3]),
-    offsetof(bpbx_inst_s, eq.gain_idx[3]),
-    offsetof(bpbx_inst_s, eq.type    [4]),
-    offsetof(bpbx_inst_s, eq.freq_idx[4]),
-    offsetof(bpbx_inst_s, eq.gain_idx[4]),
-    offsetof(bpbx_inst_s, eq.type    [5]),
-    offsetof(bpbx_inst_s, eq.freq_idx[5]),
-    offsetof(bpbx_inst_s, eq.gain_idx[5]),
-    offsetof(bpbx_inst_s, eq.type    [6]),
-    offsetof(bpbx_inst_s, eq.freq_idx[6]),
-    offsetof(bpbx_inst_s, eq.gain_idx[6]),
-    offsetof(bpbx_inst_s, eq.type    [7]),
-    offsetof(bpbx_inst_s, eq.freq_idx[7]),
-    offsetof(bpbx_inst_s, eq.gain_idx[7]),
 };

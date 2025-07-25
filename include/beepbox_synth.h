@@ -286,6 +286,16 @@ typedef struct bpbx_inst_s bpbx_inst_s;
 typedef void* (*bpbx_malloc_f)(size_t size, void *userdata);
 typedef void (*bpbx_mfree_f)(void *ptr, void *userdata);
 
+typedef enum {
+    BPBX_LOG_DEBUG,
+    BPBX_LOG_INFO,
+    BPBX_LOG_WARNING,
+    BPBX_LOG_ERROR,
+    BPBX_LOG_FATAL,
+} bpbx_log_severity_e;
+
+typedef void (*bpbx_log_f)(bpbx_log_severity_e severity, const char *msg, void *userdata);
+
 /**
  * @brief Obtain the version of the library.
  *
@@ -310,6 +320,17 @@ BEEPBOX_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revisi
  * @param userdata An opaque pointer passed to the two allocation functions.
  */
 BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata);
+
+/**
+ * @brief Set the log function for the library.
+ *
+ * Set the log function to be used by the library. The given log function
+ * must be thread-safe.
+ *
+ * @param log_func The log function to use.
+ * @param userdata An opaque pointer to be passed to the given log function.
+ */
+BEEPBOX_API void bpbx_set_log_func(bpbx_log_f log_func, void *userdata);
 
 /**
  * @brief Obtain the number of parameters for a given instrument type.

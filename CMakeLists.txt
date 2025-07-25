@@ -13,6 +13,7 @@ set(SOURCES
     src/envelope.c
     src/filtering.c
     src/fft.c
+    src/log.c
 )
 
 set(TARGET_PROPERTIES

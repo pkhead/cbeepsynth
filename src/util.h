@@ -1,7 +1,8 @@
 #ifndef _util_h_
 #define _util_h_
 
-#include "math.h"
+#include <math.h>
+#include "../include/beepbox_synth.h"
 
 #define PI 3.14159265359
 #define PI2 (2.0 * 3.14159265359)
@@ -58,5 +59,11 @@ static inline float key_to_hz_f(int key) {
 static inline double key_to_hz_d(double key) {
     return pow(2.0, (key - 69) / 12.0) * 440.0;
 }
+
+// defined in log.c
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((format(printf, 2, 3)))
+#endif
+void logmsgf(bpbx_log_severity_e severity, const char *msg, ...);
 
 #endif

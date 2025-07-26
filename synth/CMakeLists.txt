@@ -56,7 +56,7 @@ if (BEEPBOX_SYNTH_BUILD_SHARED)
     target_include_directories(beepbox_synth_shared PRIVATE ${TARGET_INCLUDES})
     target_include_directories(beepbox_synth_shared PUBLIC ${PROJECT_SOURCE_DIR}/include)
     target_compile_definitions(beepbox_synth_shared
-        PRIVATE BPBX_SHARED
+        PRIVATE BPBXSYN_SHARED
         PUBLIC ${TARGET_DEFINITIONS}
     )
     

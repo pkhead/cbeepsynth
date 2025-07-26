@@ -118,7 +118,6 @@ BPBX_API bool bpbx_noise_channel_init(bpbx_channel_s *channel, const bpbx_song_s
 BPBX_API bool bpbx_mod_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
 BPBX_API void bpbx_channel_free(bpbx_channel_s *channel);
 
-
 #ifdef __cplusplus
 }
 #endif

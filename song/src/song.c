@@ -3,9 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-
-
-BPBX_API bool bpbx_song_init(bpbx_song_s *song,
+bool bpbx_song_init(bpbx_song_s *song,
     uint8_t pitch_channel_count, uint8_t noise_channel_count, uint8_t mod_channel_count,
     uint16_t length, uint16_t pattern_count)
 {
@@ -49,7 +47,7 @@ BPBX_API bool bpbx_song_init(bpbx_song_s *song,
     return true;
 }
 
-BPBX_API bool bpbx_song_init_default(bpbx_song_s *song) {
+bool bpbx_song_init_default(bpbx_song_s *song) {
     return bpbx_song_init(song, 3, 1, 0, 32, 8);
 }
 
@@ -66,7 +64,6 @@ void bpbx_song_free(bpbx_song_s *song) {
     song->mod_channel_count = 0;
 }
 
-BPBX_API
 uint16_t bpbx_song_channel_count(const bpbx_song_s *song) {
     return song->pitch_channel_count + song->noise_channel_count + song->mod_channel_count;
 }
@@ -85,25 +82,25 @@ static bool channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
     return true;
 }
 
-BPBX_API bool bpbx_pitch_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
+bool bpbx_pitch_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
     if (!channel_init(channel, song)) return false;
     channel->channel_type = BPBX_CHANNEL_PITCH;
     return true;
 }
 
-BPBX_API bool bpbx_noise_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
+bool bpbx_noise_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
     if (!channel_init(channel, song)) return false;
     channel->channel_type = BPBX_CHANNEL_NOISE;
     return true;
 }
 
-BPBX_API bool bpbx_mod_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
+bool bpbx_mod_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song) {
     if (!channel_init(channel, song)) return false;
     channel->channel_type = BPBX_CHANNEL_MOD;
     return true;
 }
 
-BPBX_API void bpbx_channel_free(bpbx_channel_s *channel) {
+void bpbx_channel_free(bpbx_channel_s *channel) {
     free(channel->patterns);
     free(channel->track);
     channel->patterns = NULL;
@@ -111,6 +108,16 @@ BPBX_API void bpbx_channel_free(bpbx_channel_s *channel) {
 }
 
 bool bpbx_song_set_length(bpbx_song_s *song, uint16_t new_length, bpbx_resize_mode_e resize_mode) {
+    assert(false && "not yet implemented");
+    return false;
+}
+
+BPBX_API bool bpbx_song_set_pitch_channel_count(bpbx_song_s *song, uint8_t new_count) {
+    assert(false && "not yet implemented");
+    return false;
+}
+
+BPBX_API bool bpbx_song_set_pattern_count(bpbx_song_s *song, uint16_t new_count) {
     assert(false && "not yet implemented");
     return false;
 }

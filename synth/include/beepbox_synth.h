@@ -32,7 +32,7 @@ extern "C" {
 #ifdef _WIN32
 #   if defined(BPBXSYN_SHARED) && defined(BPBXSYN_SHARED_IMPORT)
 #       define BPBXSYN_API __declspec(dllimport)
-#   elif defined(BPBX_SHARED)
+#   elif defined(BPBXSYN_SHARED)
 #       define BPBXSYN_API __declspec(dllexport)
 #   else
 #       define BPBXSYN_API

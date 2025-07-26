@@ -9,8 +9,8 @@
 //  GENERIC  //
 ///////////////
 
-static inline bpbx_voice_id wave_midi_on(bpbx_inst_s *inst, wave_voice_s *voice_list, int key, int velocity) {
-    int voice_index = trigger_voice(inst, GENERIC_LIST(voice_list), key, velocity);
+static inline bpbx_voice_id wave_note_on(bpbx_inst_s *inst, wave_voice_s *voice_list, int key, double velocity) {
+    bpbx_voice_id voice_index = trigger_voice(inst, GENERIC_LIST(voice_list), key, velocity);
     wave_voice_s *voice = &voice_list[voice_index];
     *voice = (wave_voice_s) {
         .base = voice->base
@@ -19,7 +19,7 @@ static inline bpbx_voice_id wave_midi_on(bpbx_inst_s *inst, wave_voice_s *voice_
     return voice_index;
 }
 
-static inline void wave_midi_off(bpbx_inst_s *inst, wave_voice_s *voice_list, bpbx_voice_id id) {
+static inline void wave_note_off(bpbx_inst_s *inst, wave_voice_s *voice_list, bpbx_voice_id id) {
     release_voice(inst, GENERIC_LIST(voice_list), id);
 }
 
@@ -213,14 +213,14 @@ bpbx_voice_id chip_note_on(bpbx_inst_s *inst, int key, double velocity) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
-    return wave_midi_on(inst, chip->voices, key, velocity);
+    return wave_note_on(inst, chip->voices, key, velocity);
 }
 
 void chip_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
-    wave_midi_off(inst, chip->voices, id);
+    wave_note_off(inst, chip->voices, id);
 }
 
 void chip_note_all_off(bpbx_inst_s *inst) {
@@ -321,21 +321,14 @@ bpbx_voice_id harmonics_note_on(bpbx_inst_s *inst, int key, double velocity) {
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
 
-    bpbx_voice_id voice_index = trigger_voice(inst, harmonics->voices, sizeof(*harmonics->voices), key, velocity);
-    wave_voice_s *voice = &harmonics->voices[voice_index];
-    *voice = (wave_voice_s) {
-        .base = voice->base
-    };
-
-    return voice_index;
+    return wave_note_on(inst, harmonics->voices, key, velocity);
 }
 
 void harmonics_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
-
-    release_voice(inst, harmonics->voices, sizeof(*harmonics->voices), id);
+    wave_note_off(inst, harmonics->voices, id);
 }
 
 void harmonics_note_all_off(bpbx_inst_s *inst) {

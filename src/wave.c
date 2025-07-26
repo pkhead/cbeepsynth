@@ -99,7 +99,7 @@ static void wave_audio_render_callback(
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         wave_voice_s *voice = voice_list + i;
-        if (!voice->base.computing) continue;
+        if (!voice_is_computing(&voice->base)) continue;
         float *out = output_buffer;
 
         if (unison.voices == 1) voice->phase[1] = voice->phase[0];
@@ -201,8 +201,7 @@ void bpbx_inst_init_chip(chip_inst_s *inst) {
     inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        inst->voices[i].base.active = FALSE;
-        inst->voices[i].base.triggered = FALSE;
+        inst->voices[i].base.flags = 0;
     }
 
     inst->waveform = 2;
@@ -304,8 +303,7 @@ void bpbx_inst_init_harmonics(harmonics_inst_s *inst) {
     inst_init(&inst->base, BPBX_INSTRUMENT_HARMONICS);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        inst->voices[i].base.active = false;
-        inst->voices[i].base.triggered = false;
+        inst->voices[i].base.flags = 0;
     }
 
     inst->unison_type = BPBX_UNISON_NONE;

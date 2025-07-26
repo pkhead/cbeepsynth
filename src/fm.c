@@ -103,8 +103,7 @@ void bpbx_inst_init_fm(fm_inst_s *inst) {
     inst_init(&inst->base, BPBX_INSTRUMENT_FM);
 
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
-        inst->voices[i].base.active = FALSE;
-        inst->voices[i].base.triggered = FALSE;
+        inst->voices[i].base.flags = 0;
     }
 
     inst->algorithm = 0;
@@ -290,7 +289,7 @@ void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
     
     for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
         fm_voice_s *voice = fm->voices + i;
-        if (!voice->base.computing) continue;
+        if (!voice_is_computing(&voice->base)) continue;
 
         float *output_sample = samples;
         

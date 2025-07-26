@@ -2,6 +2,7 @@
 #define _instrument_h_
 
 #include <stddef.h>
+#include <stdbool.h>
 #include <math.h>
 #include "../include/beepbox_synth.h"
 #include "envelope.h"
@@ -98,14 +99,23 @@ typedef struct {
 // switch statements everytime i add a new instrument LOL. i'm going to use the concept of
 // those newfangled "virtual tables"
 
+enum {
+    VOICE_FLAG_ACTIVE               = (1 << 0), // the voice is currently reserved
+    VOICE_FLAG_TRIGGERED            = (1 << 1), // triggered, but not computing until the next tick
+    VOICE_FLAG_RELEASED             = (1 << 2),
+    VOICE_FLAG_COMPUTING            = (1 << 3), // voice is fully active
+    VOICE_FLAG_IS_ON_LAST_TICK      = (1 << 4), // this voice will be freed on the start of the next tick
+    VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 5), // for vibrato continuity
+    VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 6),
+};
+
+#define voice_is_active(voice)    ((voice)->flags & VOICE_FLAG_ACTIVE)
+#define voice_is_triggered(voice) ((voice)->flags & VOICE_FLAG_TRIGGERED)
+#define voice_is_released(voice)  ((voice)->flags & VOICE_FLAG_RELEASED)
+#define voice_is_computing(voice) ((voice)->flags & VOICE_FLAG_COMPUTING)
+
 typedef struct {
-    // TODO: consolidate these fields into a singular "flags" bitfield
-    uint8_t triggered; // triggered, but not computing until the next tick
-    uint8_t active; // this voice is currently reserved
-    uint8_t released;
-    uint8_t computing; // this voice is elligble being computed.
-                       // set to true on the first frame after it was triggered.
-    uint8_t is_on_last_tick; // this voice will be freed on the start of the next tick
+    uint8_t flags; // VOICE_FLAG_*
     
     // unique identifier for the chord this note belongs to
     uint8_t chord_id;
@@ -117,9 +127,7 @@ typedef struct {
     double current_key; // modified by chord type
     float volume;
 
-    uint8_t has_prev_vibrato;
     double prev_vibrato;
-    
     double expression;
     double expression_delta;
 
@@ -136,8 +144,8 @@ typedef struct {
     double secs_since_release;
     double ticks_since_release;
 
-    uint8_t filters_enabled;
     double note_filter_input[2]; // x[-1] and x[-2]
+    bool filters_enabled;
     dyn_biquad_s note_filters[FILTER_GROUP_COUNT];
 
     envelope_computer_s env_computer;

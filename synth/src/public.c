@@ -35,10 +35,10 @@ static const inst_vtable_s *inst_vtables[] = {
 };
 
 BPBXSYN_API
-void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
-    *major = BPBX_VERSION_MAJOR;
-    *minor = BPBX_VERSION_MINOR;
-    *revision = BPBX_VERSION_REVISION;
+void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
+    *major = BPBXSYN_VERSION_MAJOR;
+    *minor = BPBXSYN_VERSION_MINOR;
+    *revision = BPBXSYN_VERSION_REVISION;
 }
 
 static void* default_alloc(size_t size, void *userdata) {

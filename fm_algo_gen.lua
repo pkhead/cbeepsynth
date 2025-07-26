@@ -312,5 +312,5 @@ do
 
     lines[#lines+1] = "};"
     
-    write_lines_to_file("src/fm_algo.c", lines)
+    write_lines_to_file("synth/src/fm_algo.c", lines)
 end

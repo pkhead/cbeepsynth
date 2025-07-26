@@ -47,8 +47,8 @@ extern "C" {
 
 #include "beepbox_instrument_data.h"
 
-#define BPBX_VERSION_MAJOR 0
-#define BPBX_VERSION_MINOR 2
+#define BPBXSYN_VERSION_MAJOR 0
+#define BPBXSYN_VERSION_MINOR 2
 // to get the revision, call bpbx_version
 
 #define BPBX_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box
@@ -309,7 +309,7 @@ typedef struct {
 } bpbx_synth_callbacks_s;
 
 /**
- * @brief Obtain the version of the library.
+ * @brief Obtain the version of the synth library.
  *
  * This will write the major, minor, and revision numbers of the current version
  * of cbeepsynth into the given output parameters.
@@ -318,7 +318,7 @@ typedef struct {
  * @param[out] minor Minor version number
  * @param[out] revision Revision version number
  */
-BPBXSYN_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
+BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
 
 /**
  * @brief Set custom allocators.

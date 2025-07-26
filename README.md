@@ -1,7 +1,13 @@
 # cbeepsynth
-This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C library. It also implements some modded additions.
+This is a port of the [BeepBox](https://beepbox.co) synthesizers/effects and song player, written as a C library. It also implements some modded additions.
 
-**To be implemented:**
+- **bpbxsyn:** The synthesizer library, located under the `synth/` directory.
+- **beepbox:** The song player library, located under the `song/` directory.
+
+This project is structured such that the synth library can be used independently of the song player library.
+
+## To Be Implemented:
+### Synth
 - Instruments:
     - Custom chip
     - FM6 (from mods)
@@ -22,6 +28,10 @@ This is a port of the [BeepBox](https://beepbox.co) synthesizers, written as a C
     - Reverb
     - Compressor/Limiter (in one)
 
+### Song
+- Loading BeepBox/JummBox song URL data into a song structure.
+- Song playback
+
 ## Building/Usage
 Clone or get this repository as a Git submodule
 ```bash
@@ -35,23 +45,59 @@ A Lua 5.1+ interpreter is needed if you wish to regenerate the FM algorithm code
 lua fm_algo_gen.lua
 ```
 
-### Use as a CMake static library
+### Synth
+#### Use as a CMake static library
 ```cmake
 # include the library
-set(BEEPBOX_SYNTH_BUILD_STATIC 1)
+set(BEEPBOX_SYNTH_BUILD_STATIC TRUE)
 add_subdirectory(deps/cbeepsynth)
 
 # link with the library
 target_link_libraries(your_target PRIVATE beepbox_synth_static)
 ```
 
-### Create a shared library
+#### Create a shared library
 ```bash
 mkdir build
 cd build
 cmake -DBEEPBOX_SYNTH_BUILD_SHARED=1 ..
 cmake --build .
 # it will create a shared object/DLL named bpbxsynth
+```
+
+### Song
+#### Use as a CMake static library
+```cmake
+# there are three ways to link bpbxsynth with the beepbox song player:
+
+# 1. build bpbxsynth as a static library
+set(BEEPBOX_SYNTH_BUILD_STATIC TRUE)
+set(BEEPBOX_BUILD_STATIC TRUE)
+set(BEEPBOX_SYNTH_LIB beepbox_synth_static)
+
+# 2. build bpbxsynth as a dynamic library
+set(BEEPBOX_SYNTH_BUILD_SHARED TRUE)
+set(BEEPBOX_BUILD_STATIC TRUE)
+set(BEEPBOX_SYNTH_LIB beepbox_synth_shared)
+
+# 3. find the bpbxsynth package on your system, and link with it ?
+find_package(BeepBoxSynth REQUIRED)
+set(BEEPBOX_BUILD_STATIC TRUE)
+set(BEEPBOX_SYNTH_LIB BeepBoxSynth::LibName)
+
+add_subdirectory(deps/cbeepsynth)
+
+# link with the library
+target_link_libraries(your_target PRIVATE beepbox_static)
+```
+
+#### Create a shared library
+```bash
+mkdir build
+cd build
+cmake -DBEEPBOX_BUILD_SHARED=1 -DBEEPBOX_SYNTH_BUILD_STATIC=1 -DBEEPBOX_SYNTH_LIB=beepbox_synth_static ..
+cmake --build .
+# it will create a shared object/DLL named beepbox
 ```
 
 ## Credits

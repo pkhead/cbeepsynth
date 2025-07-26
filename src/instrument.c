@@ -586,7 +586,6 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         compute_voice_post(voice, &compute_data);
     }
 
-    inst->last_eq = inst->eq;
     inst->last_note_filter = inst->note_filter;
     inst->last_active_chord_id = inst->active_chord_id;
 

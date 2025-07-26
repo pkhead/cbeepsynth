@@ -44,12 +44,10 @@ typedef struct bpbx_inst_s {
 
     // current state of note filter 
     filter_group_s note_filter;
-    filter_group_s eq;
 
     // previous state of note filter
     // interpolated per-tick as usual
     filter_group_s last_note_filter;
-    filter_group_s last_eq;
 
     // envelopes
     uint8_t envelope_count;

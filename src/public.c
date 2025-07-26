@@ -34,6 +34,7 @@ static const inst_vtable_s *inst_vtables[] = {
     NULL
 };
 
+BPBXSYN_API
 void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *major = BPBX_VERSION_MAJOR;
     *minor = BPBX_VERSION_MINOR;
@@ -54,7 +55,8 @@ static bpbx_malloc_f alloc_new = default_alloc;
 static bpbx_mfree_f alloc_free = default_free;
 static void *alloc_userdata = NULL;
 
-BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata) {
+BPBXSYN_API
+void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata) {
     assert(alloc);
     assert(free);
 
@@ -63,7 +65,8 @@ BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void
     alloc_userdata = userdata;
 }
 
-unsigned int bpbx_param_count(bpbx_inst_type_e type) {
+BPBXSYN_API
+unsigned int bpbx_param_count(bpbx_synth_type_e type) {
     const inst_vtable_s *vtable = inst_vtables[type];
     assert(vtable);
 
@@ -71,7 +74,8 @@ unsigned int bpbx_param_count(bpbx_inst_type_e type) {
     return BPBX_BASE_PARAM_COUNT + vtable->param_count;
 }
 
-const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned int index) {
+BPBXSYN_API
+const bpbx_param_info_s* bpbx_param_info(bpbx_synth_type_e type, unsigned int index) {
     if (index < BPBX_BASE_PARAM_COUNT)
         return &base_param_info[index];
 
@@ -82,24 +86,25 @@ const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned in
     return &inst_vtables[type]->param_info[index - BPBX_BASE_PARAM_COUNT];
 }
 
-uint32_t bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
+BPBXSYN_API
+uint32_t bpbx_effect_toggle_param(bpbx_synthfx_type_e type) {
     switch (type) {
-        case BPBX_INSTFX_TRANSITION_TYPE:
+        case BPBX_SYNTHFX_TRANSITION_TYPE:
             return BPBX_PARAM_ENABLE_TRANSITION_TYPE;
 
-        case BPBX_INSTFX_CHORD_TYPE:
+        case BPBX_SYNTHFX_CHORD_TYPE:
             return BPBX_PARAM_ENABLE_CHORD_TYPE;
 
-        case BPBX_INSTFX_PITCH_SHIFT:
+        case BPBX_SYNTHFX_PITCH_SHIFT:
             return BPBX_PARAM_ENABLE_PITCH_SHIFT;
 
-        case BPBX_INSTFX_DETUNE:
+        case BPBX_SYNTHFX_DETUNE:
             return BPBX_PARAM_ENABLE_DETUNE;
 
-        case BPBX_INSTFX_VIBRATO:
+        case BPBX_SYNTHFX_VIBRATO:
             return BPBX_PARAM_ENABLE_VIBRATO;
 
-        case BPBX_INSTFX_NOTE_FILTER:
+        case BPBX_SYNTHFX_NOTE_FILTER:
             return BPBX_PARAM_ENABLE_NOTE_FILTER;
 
         default:
@@ -107,7 +112,8 @@ uint32_t bpbx_effect_toggle_param(bpbx_instfx_type_e type) {
     }
 }
 
-bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
+BPBXSYN_API
+bpbx_synth_s* bpbx_synth_new(bpbx_synth_type_e type) {
     init_wavetables();
 
     const inst_vtable_s *vtable = inst_vtables[type];
@@ -126,13 +132,14 @@ bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e type) {
     assert(vtable->param_count > 0 && vtable->param_addresses);
     assert(vtable->envelope_target_count && vtable->envelope_targets);
 
-    bpbx_inst_s *inst = alloc_new(vtable->struct_size, alloc_userdata);
+    bpbx_synth_s *inst = alloc_new(vtable->struct_size, alloc_userdata);
     if (inst)
         vtable->inst_init(inst);
     return inst;
 }
 
-void bpbx_inst_destroy(bpbx_inst_s *inst) {
+BPBXSYN_API
+void bpbx_synth_destroy(bpbx_synth_s *inst) {
     if (inst) {
         const inst_vtable_s *vtable = inst_vtables[inst->type];
         assert(vtable);
@@ -145,27 +152,33 @@ void bpbx_inst_destroy(bpbx_inst_s *inst) {
     }
 }
 
-void bpbx_inst_set_sample_rate(bpbx_inst_s *inst, double sample_rate) {
+BPBXSYN_API
+void bpbx_synth_set_sample_rate(bpbx_synth_s *inst, double sample_rate) {
     inst->sample_rate = sample_rate;
 }
 
-bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst) {
+BPBXSYN_API
+bpbx_synth_type_e bpbx_synth_type(const bpbx_synth_s *inst) {
     return inst->type;
 }
 
-bpbx_inst_callbacks_s* bpbx_inst_get_callback_table(bpbx_inst_s *inst) {
+BPBXSYN_API
+bpbx_synth_callbacks_s* bpbx_synth_get_callback_table(bpbx_synth_s *inst) {
     return &inst->callbacks;
 }
 
-void* bpbx_inst_get_userdata(bpbx_inst_s *inst) {
+BPBXSYN_API
+void* bpbx_synth_get_userdata(bpbx_synth_s *inst) {
     return inst->userdata;
 }
 
-void bpbx_inst_set_userdata(bpbx_inst_s *inst, void *userdata) {
+BPBXSYN_API
+void bpbx_synth_set_userdata(bpbx_synth_s *inst, void *userdata) {
     inst->userdata = userdata;
 }
 
-void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, double bpm) {
+BPBXSYN_API
+void bpbx_synth_begin_transport(bpbx_synth_s *inst, double beat, double bpm) {
     bpbx_vibrato_params_s vibrato_params = inst->vibrato;
     bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato_params);
 
@@ -180,7 +193,7 @@ void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, double bpm) {
     inst->arp_time = beat * inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
-static int param_helper(const bpbx_inst_s *inst, uint32_t index, void **addr, bpbx_inst_param_info_s *info) {
+static int param_helper(const bpbx_synth_s *inst, uint32_t index, void **addr, bpbx_param_info_s *info) {
     if (index < BPBX_BASE_PARAM_COUNT) {
         *info = base_param_info[index];
         *addr = (void*)(((uint8_t*)inst) + base_param_offsets[index]);
@@ -198,9 +211,10 @@ static int param_helper(const bpbx_inst_s *inst, uint32_t index, void **addr, bp
     return 0;
 }
 
-int bpbx_inst_set_param_int(bpbx_inst_s* inst, uint32_t index, int value) {
+BPBXSYN_API
+int bpbx_synth_set_param_int(bpbx_synth_s* inst, uint32_t index, int value) {
     void *addr;
-    bpbx_inst_param_info_s info;
+    bpbx_param_info_s info;
 
     if (param_helper(inst, index, &addr, &info))
         return 1;
@@ -227,9 +241,10 @@ int bpbx_inst_set_param_int(bpbx_inst_s* inst, uint32_t index, int value) {
     return 0;
 }
 
-int bpbx_inst_set_param_double(bpbx_inst_s* inst, uint32_t index, double value) {
+BPBXSYN_API
+int bpbx_synth_set_param_double(bpbx_synth_s* inst, uint32_t index, double value) {
     void *addr;
-    bpbx_inst_param_info_s info;
+    bpbx_param_info_s info;
 
     if (param_helper(inst, index, &addr, &info))
         return 1;
@@ -252,9 +267,10 @@ int bpbx_inst_set_param_double(bpbx_inst_s* inst, uint32_t index, double value) 
     return 0;
 }
 
-int bpbx_inst_get_param_int(const bpbx_inst_s* inst, uint32_t index, int *value) {
+BPBXSYN_API
+int bpbx_synth_get_param_int(const bpbx_synth_s* inst, uint32_t index, int *value) {
     void *addr;
-    bpbx_inst_param_info_s info;
+    bpbx_param_info_s info;
 
     if (param_helper(inst, index, &addr, &info))
         return 1;
@@ -275,9 +291,10 @@ int bpbx_inst_get_param_int(const bpbx_inst_s* inst, uint32_t index, int *value)
     return 0;
 }
 
-int bpbx_inst_get_param_double(const bpbx_inst_s* inst, uint32_t index, double *value) {
+BPBXSYN_API
+int bpbx_synth_get_param_double(const bpbx_synth_s* inst, uint32_t index, double *value) {
     void *addr;
-    bpbx_inst_param_info_s info;
+    bpbx_param_info_s info;
 
     if (param_helper(inst, index, &addr, &info))
         return 1;
@@ -299,16 +316,19 @@ int bpbx_inst_get_param_double(const bpbx_inst_s* inst, uint32_t index, double *
     return 0;
 }
 
-uint8_t bpbx_inst_envelope_count(const bpbx_inst_s *inst) {
+BPBXSYN_API
+uint8_t bpbx_synth_envelope_count(const bpbx_synth_s *inst) {
     return inst->envelope_count;
 }
 
-bpbx_envelope_s* bpbx_inst_get_envelope(bpbx_inst_s *inst, uint8_t index) {
+BPBXSYN_API
+bpbx_envelope_s* bpbx_synth_get_envelope(bpbx_synth_s *inst, uint8_t index) {
     // if (index >= inst->envelope_count) return NULL; 
     return inst->envelopes + index;
 }
 
-bpbx_envelope_s* bpbx_inst_add_envelope(bpbx_inst_s *inst) {
+BPBXSYN_API
+bpbx_envelope_s* bpbx_synth_add_envelope(bpbx_synth_s *inst) {
     if (inst->envelope_count == BPBX_MAX_ENVELOPE_COUNT)
         return NULL;
 
@@ -320,7 +340,8 @@ bpbx_envelope_s* bpbx_inst_add_envelope(bpbx_inst_s *inst) {
     return new_env;
 }
 
-void bpbx_inst_remove_envelope(bpbx_inst_s *inst, uint8_t index) {
+BPBXSYN_API
+void bpbx_synth_remove_envelope(bpbx_synth_s *inst, uint8_t index) {
     if (index >= BPBX_MAX_ENVELOPE_COUNT) return;
     if (inst->envelope_count == 0) return;
 
@@ -331,47 +352,55 @@ void bpbx_inst_remove_envelope(bpbx_inst_s *inst, uint8_t index) {
     inst->envelope_count--;
 }
 
-void bpbx_inst_clear_envelopes(bpbx_inst_s *inst) {
+BPBXSYN_API
+void bpbx_synth_clear_envelopes(bpbx_synth_s *inst) {
     inst->envelope_count = 0;
 }
 
-bpbx_voice_id bpbx_inst_begin_note(bpbx_inst_s *inst, int key, double velocity) {
+BPBXSYN_API
+bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 
     return vtable->inst_note_on(inst, key, velocity);
 }
 
-void bpbx_inst_end_note(bpbx_inst_s *inst, bpbx_voice_id id) {
+BPBXSYN_API
+void bpbx_synth_end_note(bpbx_synth_s *inst, bpbx_voice_id id) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 
     vtable->inst_note_off(inst, id);
 }
 
-void bpbx_inst_end_all_notes(bpbx_inst_s *inst) {
+BPBXSYN_API
+void bpbx_synth_end_all_notes(bpbx_synth_s *inst) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 
     vtable->inst_note_all_off(inst);
 }
 
-void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx) {
+BPBXSYN_API
+void bpbx_synth_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *tick_ctx) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
     vtable->inst_tick(inst, tick_ctx);
 }
 
-void bpbx_inst_run(bpbx_inst_s* inst, float *out_samples, size_t frame_count) {
+BPBXSYN_API
+void bpbx_synth_run(bpbx_synth_s* inst, float *out_samples, size_t frame_count) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
     vtable->inst_run(inst, out_samples, frame_count);
 }
 
+BPBXSYN_API
 double bpbx_calc_samples_per_tick(double bpm, double sample_rate) {
     return calc_samples_per_tick(bpm, sample_rate);
 }
 
+BPBXSYN_API
 double bpbx_ticks_fade_out(double setting) {
     return ticks_fade_out(setting);
 }
@@ -416,6 +445,7 @@ const char *env_index_names[] = {
     "saw↔pulse", // BPBX_ENV_INDEX_SUPERSAW_SHAPE
 };
 
+BPBXSYN_API
 const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index) {
     if (index < 0 || index >= sizeof(env_index_names)/sizeof(*env_index_names))
         return NULL;
@@ -423,7 +453,7 @@ const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index) {
     return env_index_names[index];
 }
 
-
+BPBXSYN_API
 const char** bpbx_envelope_curve_preset_names(void) {
     static int need_init = 1;
     static const char* env_curve_names[BPBX_ENVELOPE_CURVE_PRESET_COUNT + 1];
@@ -440,7 +470,8 @@ const char** bpbx_envelope_curve_preset_names(void) {
     return env_curve_names;
 }
 
-const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type, int *size) {
+BPBXSYN_API
+const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_synth_type_e type, int *size) {
     const inst_vtable_s *vtable = inst_vtables[type];
     assert(vtable);
 
@@ -448,6 +479,7 @@ const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type
     return vtable->envelope_targets;
 }
 
+BPBXSYN_API
 void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params) {
     if (preset == BPBX_VIBRATO_PRESET_CUSTOM) return;
 
@@ -489,14 +521,17 @@ void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_param
     }
 }
 
+BPBXSYN_API
 double bpbx_freq_setting_to_hz(double freq_setting) {
     return get_hz_from_setting_value(freq_setting);
 }
 
+BPBXSYN_API
 double bpbx_linear_gain_to_setting(double gain) {
     return log2(gain) / FILTER_GAIN_STEP + BPBX_FILTER_GAIN_CENTER;
 }
 
+BPBXSYN_API
 void bpbx_analyze_freq_response(
     bpbx_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbx_complex_s *out)

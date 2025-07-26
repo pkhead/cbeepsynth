@@ -30,18 +30,18 @@ extern "C" {
 #endif
 
 #ifdef _WIN32
-#   if defined(BPBX_SHARED) && defined(BPBX_SHARED_IMPORT)
-#       define BEEPBOX_API __declspec(dllimport)
+#   if defined(BPBXSYN_SHARED) && defined(BPBXSYN_SHARED_IMPORT)
+#       define BPBXSYN_API __declspec(dllimport)
 #   elif defined(BPBX_SHARED)
-#       define BEEPBOX_API __declspec(dllexport)
+#       define BPBXSYN_API __declspec(dllexport)
 #   else
-#       define BEEPBOX_API
+#       define BPBXSYN_API
 #   endif
 #else
-#   ifdef BPBX_SHARED
-#       define BEEPBOX_API __attribute__((visibility("default")))
+#   ifdef BPBXSYN_SHARED
+#       define BPBXSYN_API __attribute__((visibility("default")))
 #   else
-#       define BEEPBOX_API
+#       define BPBXSYN_API
 #   endif
 #endif
 
@@ -70,16 +70,16 @@ typedef enum {
     BPBX_INSTRUMENT_SPECTRUM,
     BPBX_INSTRUMENT_PICKED_STRING,
     BPBX_INSTRUMENT_SUPERSAW,
-} bpbx_inst_type_e;
+} bpbx_synth_type_e;
 
 typedef enum {
-    BPBX_INSTFX_TRANSITION_TYPE,
-    BPBX_INSTFX_CHORD_TYPE,
-    BPBX_INSTFX_PITCH_SHIFT,
-    BPBX_INSTFX_DETUNE,
-    BPBX_INSTFX_VIBRATO,
-    BPBX_INSTFX_NOTE_FILTER
-} bpbx_instfx_type_e;
+    BPBX_SYNTHFX_TRANSITION_TYPE,
+    BPBX_SYNTHFX_CHORD_TYPE,
+    BPBX_SYNTHFX_PITCH_SHIFT,
+    BPBX_SYNTHFX_DETUNE,
+    BPBX_SYNTHFX_VIBRATO,
+    BPBX_SYNTHFX_NOTE_FILTER
+} bpbx_synthfx_type_e;
 
 typedef enum {
     BPBX_TRANSITION_TYPE_NORMAL,
@@ -172,11 +172,11 @@ typedef enum {
     BPBX_PARAM_UINT8,
     BPBX_PARAM_INT,
     BPBX_PARAM_DOUBLE
-} bpbx_inst_param_type_e;
+} bpbx_param_type_e;
 
 typedef enum {
     BPBX_PARAM_FLAG_NO_AUTOMATION = 1
-} bpbx_inst_param_flags_e;
+} bpbx_param_flags_e;
 
 typedef enum {
     BPBX_ENV_INDEX_NONE,
@@ -225,8 +225,8 @@ typedef struct {
 } bpbx_envelope_s;
 
 typedef struct {
-    bpbx_inst_param_type_e type;
-    uint32_t flags; // bpbx_inst_param_flags_e
+    bpbx_param_type_e type;
+    uint32_t flags; // bpbx_param_flags_e
 
     const char *name;
     const char *group;
@@ -237,7 +237,7 @@ typedef struct {
     double default_value;
 
     const char **enum_values;
-} bpbx_inst_param_info_s;
+} bpbx_param_info_s;
 
 typedef struct {
     double depth; // in beepbox code, this was quantized to increments of 0.04
@@ -252,7 +252,7 @@ typedef struct {
      *
      * @important Do not set this to zero or a very low value! The rate at which certain
      *            computations are done depends on the transport's tempo. See the documentation on
-     *            @ref bpbx_inst_tick for more information.
+     *            @ref bpbx_synth_tick for more information.
      *
      * If you don't have tempo information, set it to a placeholder value like 150.
      **/
@@ -282,7 +282,7 @@ typedef struct {
     double imag;
 } bpbx_complex_s;
 
-typedef struct bpbx_inst_s bpbx_inst_s;
+typedef struct bpbx_synth_s bpbx_synth_s;
 
 typedef void* (*bpbx_malloc_f)(size_t size, void *userdata);
 typedef void (*bpbx_mfree_f)(void *ptr, void *userdata);
@@ -305,8 +305,8 @@ typedef struct {
      * @param inst Pointer to the instrument.
      * @param id The ID of the voice.
      */
-    void (*voice_end)(bpbx_inst_s *inst, bpbx_voice_id id);
-} bpbx_inst_callbacks_s;
+    void (*voice_end)(bpbx_synth_s *inst, bpbx_voice_id id);
+} bpbx_synth_callbacks_s;
 
 /**
  * @brief Obtain the version of the library.
@@ -318,20 +318,20 @@ typedef struct {
  * @param[out] minor Minor version number
  * @param[out] revision Revision version number
  */
-BEEPBOX_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
+BPBXSYN_API void bpbx_version(uint32_t *major, uint32_t *minor, uint32_t *revision);
 
 /**
  * @brief Set custom allocators.
  *
  * Use this function if you want cbeepsynth to use a custom allocator instead of
  * the one in the C standard library. Note that these allocator functions will only
- * be called in bpbx_inst_new and bpbx_inst_destroy, so they don't need to be thread-safe.
+ * be called in bpbx_synth_new and bpbx_synth_destroy, so they don't need to be thread-safe.
  *
  * @param alloc The function to allocate a new block of memory.
  * @param free The function to free an allocated block of memory.
  * @param userdata An opaque pointer passed to the two allocation functions.
  */
-BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata);
+BPBXSYN_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void *userdata);
 
 /**
  * @brief Set the log function for the library.
@@ -342,7 +342,7 @@ BEEPBOX_API void bpbx_set_allocator(bpbx_malloc_f alloc, bpbx_mfree_f free, void
  * @param log_func The log function to use.
  * @param userdata An opaque pointer to be passed to the given log function.
  */
-BEEPBOX_API void bpbx_set_log_func(bpbx_log_f log_func, void *userdata);
+BPBXSYN_API void bpbx_set_log_func(bpbx_log_f log_func, void *userdata);
 
 /**
  * @brief Obtain the number of parameters for a given instrument type.
@@ -350,16 +350,16 @@ BEEPBOX_API void bpbx_set_log_func(bpbx_log_f log_func, void *userdata);
  * @param type The BPBX_INSTRUMENT_* enum that identifies the instrument type.
  * @return The number of parameters the instrument type has.
  */
-BEEPBOX_API unsigned int bpbx_param_count(bpbx_inst_type_e type);
+BPBXSYN_API unsigned int bpbx_param_count(bpbx_synth_type_e type);
 
 /**
  * @brief Obtain information for a specific parameter of an instrument type.
  *
  * @param type The BPBX_INSTRUMENT_* enum that identifies the instrument type.
  * @param index The BPBX_PARAM_* or BPBX_{inst}_PARAM_* enum that identifies the parameter.
- * @return The bpbx_inst_param_info_s struct containing information about the parameter.
+ * @return The bpbx_param_info_s struct containing information about the parameter.
  */
-BEEPBOX_API const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type, unsigned int index);
+BPBXSYN_API const bpbx_param_info_s* bpbx_param_info(bpbx_synth_type_e type, unsigned int index);
 
 /**
  * @brief Allocate a new instrument of a given type.
@@ -370,14 +370,14 @@ BEEPBOX_API const bpbx_inst_param_info_s* bpbx_param_info(bpbx_inst_type_e type,
  * @param inst_type The BPBX_INSTRUMENT_* enum that identifies the instrument type.
  * @return Pointer to the newly allocated instrument. NULL on error.
  */
-BEEPBOX_API bpbx_inst_s* bpbx_inst_new(bpbx_inst_type_e inst_type);
+BPBXSYN_API bpbx_synth_s* bpbx_synth_new(bpbx_synth_type_e inst_type);
 
 /**
  * @brief Free a previously allocated instrument.
  *
  * @param inst Pointer to the instrument struct to free. Does nothing if NULL is passed.
  */
-BEEPBOX_API void bpbx_inst_destroy(bpbx_inst_s* inst);
+BPBXSYN_API void bpbx_synth_destroy(bpbx_synth_s* inst);
 
 /**
  * @brief Obtains the type of an instrument.
@@ -385,7 +385,7 @@ BEEPBOX_API void bpbx_inst_destroy(bpbx_inst_s* inst);
  * @param inst Pointer to the instrument.
  * @return The BPBX_INSTRUMENT_* enum that identifies the instrument type.
  */
-BEEPBOX_API bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst);
+BPBXSYN_API bpbx_synth_type_e bpbx_synth_type(const bpbx_synth_s *inst);
 
 /**
  * @brief Get the callback table of the instrument.
@@ -394,9 +394,9 @@ BEEPBOX_API bpbx_inst_type_e bpbx_inst_type(const bpbx_inst_s *inst);
  * These functions are called during inst_tick or inst_run.
  *
  * @param inst Pointer to the instrument.
- * @return Pointer to the bpbx_inst_callbacks_s structure.
+ * @return Pointer to the bpbx_synth_callbacks_s structure.
  */
-BEEPBOX_API bpbx_inst_callbacks_s* bpbx_inst_get_callback_table(bpbx_inst_s *inst);
+BPBXSYN_API bpbx_synth_callbacks_s* bpbx_synth_get_callback_table(bpbx_synth_s *inst);
 
 /**
  * Obtain the user-set opaque pointer associated with an instrument.
@@ -404,7 +404,7 @@ BEEPBOX_API bpbx_inst_callbacks_s* bpbx_inst_get_callback_table(bpbx_inst_s *ins
  * @param inst Pointer to the instrument.
  * @return The user-set opaque pointer, or NULL if it was not set.
  */
-BEEPBOX_API void* bpbx_inst_get_userdata(bpbx_inst_s *inst);
+BPBXSYN_API void* bpbx_synth_get_userdata(bpbx_synth_s *inst);
 
 /**
  * Associate an instrument with an opaque pointer.
@@ -412,7 +412,7 @@ BEEPBOX_API void* bpbx_inst_get_userdata(bpbx_inst_s *inst);
  * @param inst Pointer to the instrument.
  * @param userdata The pointer to associate with the instrument.
  */
-BEEPBOX_API void bpbx_inst_set_userdata(bpbx_inst_s *inst, void *userdata);
+BPBXSYN_API void bpbx_synth_set_userdata(bpbx_synth_s *inst, void *userdata);
 
 /**
  * @brief Set the sample rate of an instrument.
@@ -420,7 +420,7 @@ BEEPBOX_API void bpbx_inst_set_userdata(bpbx_inst_s *inst, void *userdata);
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
  */
-BEEPBOX_API void bpbx_inst_set_sample_rate(bpbx_inst_s *inst, double sample_rate);
+BPBXSYN_API void bpbx_synth_set_sample_rate(bpbx_synth_s *inst, double sample_rate);
 
 /**
  * @brief Signal to an instrument that transport playback has started.
@@ -432,7 +432,7 @@ BEEPBOX_API void bpbx_inst_set_sample_rate(bpbx_inst_s *inst, double sample_rate
  * @param beat The beat that the transport started on.
  * @param bpm The tempo of the transport, in beats per minute.
  */
-BEEPBOX_API void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, double bpm);
+BPBXSYN_API void bpbx_synth_begin_transport(bpbx_synth_s *inst, double beat, double bpm);
 
 /**
  * @brief Set an instrument's parameter to an integer value.
@@ -445,7 +445,7 @@ BEEPBOX_API void bpbx_inst_begin_transport(bpbx_inst_s *inst, double beat, doubl
  * @param value The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BEEPBOX_API int bpbx_inst_set_param_int(bpbx_inst_s* inst, uint32_t param, int value);
+BPBXSYN_API int bpbx_synth_set_param_int(bpbx_synth_s* inst, uint32_t param, int value);
 
 /**
  * @brief Set an instrument's parameter to a floating-point value.
@@ -458,7 +458,7 @@ BEEPBOX_API int bpbx_inst_set_param_int(bpbx_inst_s* inst, uint32_t param, int v
  * @param value The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BEEPBOX_API int bpbx_inst_set_param_double(bpbx_inst_s* inst, uint32_t param, double value);
+BPBXSYN_API int bpbx_synth_set_param_double(bpbx_synth_s* inst, uint32_t param, double value);
 
 /**
  * @brief Get the value of an instrument's parameter as an integer value.
@@ -471,7 +471,7 @@ BEEPBOX_API int bpbx_inst_set_param_double(bpbx_inst_s* inst, uint32_t param, do
  * @param[out] value The output value.
  * @return 0 on success, and 1 on failure.
  */
-BEEPBOX_API int bpbx_inst_get_param_int(const bpbx_inst_s* inst, uint32_t param, int *value);
+BPBXSYN_API int bpbx_synth_get_param_int(const bpbx_synth_s* inst, uint32_t param, int *value);
 
 /**
  * @brief Get the value of an instrument's parameter as a floating-point value.
@@ -483,17 +483,17 @@ BEEPBOX_API int bpbx_inst_get_param_int(const bpbx_inst_s* inst, uint32_t param,
  * @param[out] value The output value.
  * @return 0 on success, and 1 on failure.
  */
-BEEPBOX_API int bpbx_inst_get_param_double(const bpbx_inst_s* inst, uint32_t param, double *value);
+BPBXSYN_API int bpbx_synth_get_param_double(const bpbx_synth_s* inst, uint32_t param, double *value);
 
 /**
  * @brief Get the parameter index of a note effect toggle.
  *
  * This returns the instrument index of the toggle parameter for a given note effect.
  *
- * @param type The BPBX_INSTFX_* enum that identifies the note effect type.
+ * @param type The BPBX_SYNTHFX_* enum that identifies the note effect type.
  * @return The parameter index on success, and UINT32_MAX on failure.
  */
-BEEPBOX_API uint32_t bpbx_effect_toggle_param(bpbx_instfx_type_e type);
+BPBXSYN_API uint32_t bpbx_effect_toggle_param(bpbx_synthfx_type_e type);
 
 /**
  * @brief Get the name of an envelope.
@@ -505,7 +505,7 @@ BEEPBOX_API uint32_t bpbx_effect_toggle_param(bpbx_instfx_type_e type);
  * @param inst The BPBX_ENV_INDEX_* enum that identifies the envelope target.
  * @return The C string on success, and NULL on error.
  */
-BEEPBOX_API const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index);
+BPBXSYN_API const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e index);
 
 // returns the array of curve preset names.
 // the array is terminated by a null pointer.
@@ -520,7 +520,7 @@ BEEPBOX_API const char* bpbx_envelope_index_name(bpbx_envelope_compute_index_e i
  *
  * @return The null-terminated list of names.
  */
-BEEPBOX_API const char** bpbx_envelope_curve_preset_names(void);
+BPBXSYN_API const char** bpbx_envelope_curve_preset_names(void);
 
 /**
  * @brief Get the list of possible envelope targets for a given instrument type. *
@@ -529,7 +529,7 @@ BEEPBOX_API const char** bpbx_envelope_curve_preset_names(void);
  * @param[out] size Output parameter, giving the size of the output list.
  * @return List of envelope target indices.
  */
-BEEPBOX_API const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst_type_e type, int *size);
+BPBXSYN_API const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_synth_type_e type, int *size);
 
 /**
  * @brief Get the number of active envelopes for an instrument.
@@ -537,7 +537,7 @@ BEEPBOX_API const bpbx_envelope_compute_index_e* bpbx_envelope_targets(bpbx_inst
  * @param inst Pointer to the instrument.
  * @return The number of active envelopes.
  */
-BEEPBOX_API uint8_t bpbx_inst_envelope_count(const bpbx_inst_s *inst);
+BPBXSYN_API uint8_t bpbx_synth_envelope_count(const bpbx_synth_s *inst);
 // note: envelopes are stored contiguously and in order, so it is valid to treat the return value
 // as an array.
 
@@ -551,7 +551,7 @@ BEEPBOX_API uint8_t bpbx_inst_envelope_count(const bpbx_inst_s *inst);
  * @param inst Pointer to the instrument.
  * @param index The index to the envelope configuration.
  */
-BEEPBOX_API bpbx_envelope_s* bpbx_inst_get_envelope(bpbx_inst_s *inst, uint8_t index);
+BPBXSYN_API bpbx_envelope_s* bpbx_synth_get_envelope(bpbx_synth_s *inst, uint8_t index);
 
 /**
  * @brief Add a new envelope to an instrument.
@@ -565,7 +565,7 @@ BEEPBOX_API bpbx_envelope_s* bpbx_inst_get_envelope(bpbx_inst_s *inst, uint8_t i
  * @param inst Pointer to the instrument.
  * @return On success, pointer to the envelope configuration structure. NULL on failure.
  */
-BEEPBOX_API bpbx_envelope_s* bpbx_inst_add_envelope(bpbx_inst_s *inst);
+BPBXSYN_API bpbx_envelope_s* bpbx_synth_add_envelope(bpbx_synth_s *inst);
 
 /**
  * @brief Removes an instrument's envelope.
@@ -576,14 +576,14 @@ BEEPBOX_API bpbx_envelope_s* bpbx_inst_add_envelope(bpbx_inst_s *inst);
  * @param inst Pointer to the instrument.
  * @param sample_rate The index of the envelope to remove
  */
-BEEPBOX_API void bpbx_inst_remove_envelope(bpbx_inst_s *inst, uint8_t index);
+BPBXSYN_API void bpbx_synth_remove_envelope(bpbx_synth_s *inst, uint8_t index);
 
 /**
  * @brief Clears all the active envelopes of an instrument.
  *
  * @param inst Pointer to the instrument.
  */
-BEEPBOX_API void bpbx_inst_clear_envelopes(bpbx_inst_s *inst);
+BPBXSYN_API void bpbx_synth_clear_envelopes(bpbx_synth_s *inst);
 
 /**
  * @brief Send a note on event to an instrument.
@@ -593,7 +593,7 @@ BEEPBOX_API void bpbx_inst_clear_envelopes(bpbx_inst_s *inst);
  * @param velocity The velocity of the note, from 0-1.
  * @returns The ID of the newly created voice.
  */
-BEEPBOX_API bpbx_voice_id bpbx_inst_begin_note(bpbx_inst_s *inst, int key, double velocity);
+BPBXSYN_API bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity);
 
 /**
  * @brief Send a note off event to an instrument.
@@ -602,14 +602,14 @@ BEEPBOX_API bpbx_voice_id bpbx_inst_begin_note(bpbx_inst_s *inst, int key, doubl
  * @param inst Pointer to the instrument.
  * @param id The ID of the note to end.
  */
-BEEPBOX_API void bpbx_inst_end_note(bpbx_inst_s *inst, bpbx_voice_id id);
+BPBXSYN_API void bpbx_synth_end_note(bpbx_synth_s *inst, bpbx_voice_id id);
 
 /**
  * @brief Turn off all active notes of an instrument.
  *
  * @param inst Pointer to the instrument.
  */
-BEEPBOX_API void bpbx_inst_end_all_notes(bpbx_inst_s *inst);
+BPBXSYN_API void bpbx_synth_end_all_notes(bpbx_synth_s *inst);
 
 // if you know the length of each note, and the result of this is negative,
 // call midi_off that positive number of ticks before the note actually ends.
@@ -621,13 +621,13 @@ BEEPBOX_API void bpbx_inst_end_all_notes(bpbx_inst_s *inst);
  * given the value of the fade out parameter of an instrument.
  *
  * If you know the length of each note, and the result of this is a negative value,
- * call bpbx_inst_end_note that positive number of ticks before the note actually ends.
+ * call bpbx_synth_end_note that positive number of ticks before the note actually ends.
  *
  * @param inst Pointer to the instrument.
  * @param setting The value of the fade-out parameter of a (hypothetical) instrument.
  * @return The signed fade-out length in ticks, as a double.
  */
-BEEPBOX_API double bpbx_ticks_fade_out(double setting);
+BPBXSYN_API double bpbx_ticks_fade_out(double setting);
 
 /**
  * @brief Get the vibrato parameters of a vibrato preset.
@@ -635,13 +635,13 @@ BEEPBOX_API double bpbx_ticks_fade_out(double setting);
  * @param      preset The BPBX_VIBRATO_PRESET_* enum that identifies the vibrato preset.
  * @param[out] params Pointer to an output structure where the vibrato parameters will be written.
  */
-BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params);
+BPBXSYN_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_vibrato_params_s *params);
 
 /**
  * @brief Calculates the number of audio frames per tick.
  *
  * This calculates the number of audio frames that need to be computed in-between
- * each call to bpbx_inst_tick, given the tempo of the transport and the audio
+ * each call to bpbx_synth_tick, given the tempo of the transport and the audio
  * output's sample rate.
  *
  * If you do not have a transport, or do not know its tempo, it is fine to use a
@@ -652,7 +652,7 @@ BEEPBOX_API void bpbx_vibrato_preset_params(bpbx_vibrato_preset_e preset, bpbx_v
  * @param sample_rate The sample rate of the audio output.
  * @return The samples per tick, as a double.
  */
-BEEPBOX_API double bpbx_calc_samples_per_tick(double bpm, double sample_rate);
+BPBXSYN_API double bpbx_calc_samples_per_tick(double bpm, double sample_rate);
 
 /**
  * @brief Tick an instrument.
@@ -666,7 +666,7 @@ BEEPBOX_API double bpbx_calc_samples_per_tick(double bpm, double sample_rate);
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
  */
-BEEPBOX_API void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_ctx);
+BPBXSYN_API void bpbx_synth_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *tick_ctx);
 // mono output
 
 /**
@@ -679,7 +679,7 @@ BEEPBOX_API void bpbx_inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *tick_c
  * @param out_samples The mono audio output buffer.
  * @param frame_count The number of frames to render to the output buffer.
  */
-BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, float *out_samples, size_t frame_count);
+BPBXSYN_API void bpbx_synth_run(bpbx_synth_s* inst, float *out_samples, size_t frame_count);
 
 /**
  * @brief Convert the frequency setting of a hypothetical filter to Hz.
@@ -689,7 +689,7 @@ BEEPBOX_API void bpbx_inst_run(bpbx_inst_s* inst, float *out_samples, size_t fra
  * @param freq_setting The frequency setting of a hypothetical BeepBox filter.
  * @return The frequency in Hz.
  */
-BEEPBOX_API double bpbx_freq_setting_to_hz(double freq_setting);
+BPBXSYN_API double bpbx_freq_setting_to_hz(double freq_setting);
 
 /**
  * @brief Convert a linear gain value to the units for the gain/volume setting of a filter.
@@ -700,7 +700,7 @@ BEEPBOX_API double bpbx_freq_setting_to_hz(double freq_setting);
  * @param gain Linear gain.
  * @return The same gain represented in the unit of the gain/volume of a filter.
  */
-BEEPBOX_API double bpbx_linear_gain_to_setting(double gain);
+BPBXSYN_API double bpbx_linear_gain_to_setting(double gain);
 
 /**
  * @brief Analyze the frequency response of a filter.
@@ -716,7 +716,7 @@ BEEPBOX_API double bpbx_linear_gain_to_setting(double gain);
  * @param      sample_rate The sample rate to reference with.
  * @param[out] The output complex number
  */
-BEEPBOX_API void bpbx_analyze_freq_response(
+BPBXSYN_API void bpbx_analyze_freq_response(
     bpbx_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbx_complex_s *out);
 

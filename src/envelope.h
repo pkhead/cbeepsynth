@@ -56,7 +56,7 @@ void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, dou
 void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w);
 
 void compute_envelopes(
-    const bpbx_inst_s *instrument, envelope_computer_s *env_computer,
+    const bpbx_synth_s *instrument, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 );
 

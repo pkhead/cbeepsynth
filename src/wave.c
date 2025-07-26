@@ -9,7 +9,7 @@
 //  GENERIC  //
 ///////////////
 
-static inline bpbx_voice_id wave_note_on(bpbx_inst_s *inst, wave_voice_s *voice_list, int key, double velocity) {
+static inline bpbx_voice_id wave_note_on(bpbx_synth_s *inst, wave_voice_s *voice_list, int key, double velocity) {
     bpbx_voice_id voice_index = trigger_voice(inst, GENERIC_LIST(voice_list), key, velocity);
     wave_voice_s *voice = &voice_list[voice_index];
     *voice = (wave_voice_s) {
@@ -19,12 +19,12 @@ static inline bpbx_voice_id wave_note_on(bpbx_inst_s *inst, wave_voice_s *voice_
     return voice_index;
 }
 
-static inline void wave_note_off(bpbx_inst_s *inst, wave_voice_s *voice_list, bpbx_voice_id id) {
+static inline void wave_note_off(bpbx_synth_s *inst, wave_voice_s *voice_list, bpbx_voice_id id) {
     release_voice(inst, GENERIC_LIST(voice_list), id);
 }
 
 static void compute_wave_voice(
-    const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data,
+    const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data,
     const double base_expression
 ) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
@@ -97,7 +97,7 @@ static void wave_audio_render_callback(
 
     memset(output_buffer, 0, frames_to_compute * sizeof(float));
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         wave_voice_s *voice = voice_list + i;
         if (!voice_is_computing(&voice->base)) continue;
         float *out = output_buffer;
@@ -196,11 +196,11 @@ static void wave_audio_render_callback(
 
 #define CHIP_VOICE_BASE_EXPRESSION 0.03375
 
-void bpbx_inst_init_chip(chip_inst_s *inst) {
+void bpbx_synth_init_chip(chip_inst_s *inst) {
     *inst = (chip_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
@@ -208,28 +208,28 @@ void bpbx_inst_init_chip(chip_inst_s *inst) {
     inst->unison_type = 0;
 }
 
-bpbx_voice_id chip_note_on(bpbx_inst_s *inst, int key, double velocity) {
+bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     return wave_note_on(inst, chip->voices, key, velocity);
 }
 
-void chip_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
+void chip_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     wave_note_off(inst, chip->voices, id);
 }
 
-void chip_note_all_off(bpbx_inst_s *inst) {
+void chip_note_all_off(bpbx_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     release_all_voices(inst, GENERIC_LIST(chip->voices));
 }
 
-static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_chip_voice(const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
 
     wavetable_desc_s wavetable = chip_wavetables[inst->waveform];
@@ -238,7 +238,7 @@ static void compute_chip_voice(const bpbx_inst_s *const base_inst, inst_base_voi
     compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
 }
 
-void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+void chip_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBX_INSTRUMENT_CHIP);
 
@@ -252,7 +252,7 @@ void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     });
 }
 
-void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+void chip_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
     chip_inst_s *const chip = (chip_inst_s*) src_inst;
     const bool aliases = FALSE;
 
@@ -298,11 +298,11 @@ void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
 
 #define HARMONICS_VOICE_BASE_EXPRESSION 0.025
 
-void bpbx_inst_init_harmonics(harmonics_inst_s *inst) {
+void bpbx_synth_init_harmonics(harmonics_inst_s *inst) {
     *inst = (harmonics_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_HARMONICS);
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
@@ -314,7 +314,7 @@ void bpbx_inst_init_harmonics(harmonics_inst_s *inst) {
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
 }
 
-bpbx_voice_id harmonics_note_on(bpbx_inst_s *inst, int key, double velocity) {
+bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
@@ -322,14 +322,14 @@ bpbx_voice_id harmonics_note_on(bpbx_inst_s *inst, int key, double velocity) {
     return wave_note_on(inst, harmonics->voices, key, velocity);
 }
 
-void harmonics_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
+void harmonics_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
     wave_note_off(inst, harmonics->voices, id);
 }
 
-void harmonics_note_all_off(bpbx_inst_s *inst) {
+void harmonics_note_all_off(bpbx_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
@@ -337,11 +337,11 @@ void harmonics_note_all_off(bpbx_inst_s *inst) {
     release_all_voices(inst, harmonics->voices, sizeof(*harmonics->voices));
 }
 
-static void compute_harmonics_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_harmonics_voice(const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
     compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
 }
 
-void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+void harmonics_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBX_INSTRUMENT_HARMONICS);
 
@@ -355,7 +355,7 @@ void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     });
 }
 
-void harmonics_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+void harmonics_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
     const bool aliases = FALSE;
 
@@ -396,7 +396,7 @@ static const char *unison_enum_values[BPBX_UNISON_COUNT] = {
     "fifth", "octave", "bowed", "piano", "warbled"
 };
 
-static const bpbx_inst_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
+static const bpbx_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -467,7 +467,7 @@ for i in range(28):
 with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
     proc.stdin.write(bytes(out, "utf-8"))
 */
-const bpbx_inst_param_info_s harmonics_param_info[] = {
+const bpbx_param_info_s harmonics_param_info[] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -857,7 +857,7 @@ const inst_vtable_s inst_chip_vtable = {
     .envelope_target_count = CHIP_MOD_COUNT,
     .envelope_targets = chip_env_targets,
 
-    .inst_init = (inst_init_f)bpbx_inst_init_chip,
+    .inst_init = (inst_init_f)bpbx_synth_init_chip,
     .inst_note_on = chip_note_on,
     .inst_note_off = chip_note_off,
     .inst_note_all_off = chip_note_all_off,
@@ -876,7 +876,7 @@ const inst_vtable_s inst_harmonics_vtable = {
     .envelope_target_count = HARMONICS_MOD_COUNT,
     .envelope_targets = harmonics_env_targets,
 
-    .inst_init = (inst_init_f)bpbx_inst_init_harmonics,
+    .inst_init = (inst_init_f)bpbx_synth_init_harmonics,
     .inst_note_on = harmonics_note_on,
     .inst_note_off = harmonics_note_off,
     .inst_note_all_off = harmonics_note_all_off,

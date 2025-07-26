@@ -35,7 +35,7 @@ typedef struct {
 } fm_voice_s;
 
 typedef struct {
-    bpbx_inst_s base;
+    bpbx_synth_s base;
 
     uint8_t algorithm;
     uint8_t freq_ratios[FM_OP_COUNT];
@@ -45,7 +45,7 @@ typedef struct {
     double feedback;
 
     int carrier_count;
-    fm_voice_s voices[BPBX_INST_MAX_VOICES];
+    fm_voice_s voices[BPBX_SYNTH_MAX_VOICES];
 } fm_inst_s;
 
 static inline double fm_calc_op(const double phase_mix) {
@@ -55,12 +55,12 @@ static inline double fm_calc_op(const double phase_mix) {
     return sample + (sine_wave_d[index+1] - sample) * (phase_mix - phase_int);
 }
 
-void bpbx_inst_init_fm(fm_inst_s *inst);
-bpbx_voice_id fm_note_on(bpbx_inst_s *inst, int key, double velocity);
-void fm_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
-void fm_note_all_off(bpbx_inst_s *inst);
-void fm_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
-void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
+void bpbx_synth_init_fm(fm_inst_s *inst);
+bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity);
+void fm_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
+void fm_note_all_off(bpbx_synth_s *inst);
+void fm_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
+void fm_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count);
 
 extern const inst_vtable_s inst_fm_vtable;
 

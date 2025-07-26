@@ -27,8 +27,8 @@ static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
     8.0 // dummy value in edge case for interpolation
 };
 
-void inst_init(bpbx_inst_s *inst, bpbx_inst_type_e type) {
-    *inst = (bpbx_inst_s) {
+void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type) {
+    *inst = (bpbx_synth_s) {
         .type = type,
         .sample_rate = 0.0,
 
@@ -101,13 +101,13 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
 
 // get list of voices in a chord, sorted by ascending chord index
 uint8_t get_chord_list(
-    inst_base_voice_s voices[BPBX_INST_MAX_VOICES], size_t sizeof_voice,
-    uint8_t chord_id, inst_base_voice_s *out_list[BPBX_INST_MAX_VOICES]
+    inst_base_voice_s voices[BPBX_SYNTH_MAX_VOICES], size_t sizeof_voice,
+    uint8_t chord_id, inst_base_voice_s *out_list[BPBX_SYNTH_MAX_VOICES]
 ) {
     uint8_t length = 0;
 
     // first, add voices of the same chord id to the list
-    for (int j = 0; j < BPBX_INST_MAX_VOICES; ++j) {
+    for (int j = 0; j < BPBX_SYNTH_MAX_VOICES; ++j) {
         inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
         if (v->chord_id == chord_id && voice_is_active(v)) {
             out_list[length++] = v;
@@ -126,13 +126,13 @@ uint8_t get_chord_list(
     return length;
 }
 
-bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, int key, double velocity) {
+bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, int key, double velocity) {
     int voice_index = 0;
     uint8_t chord_id;
     uint8_t chord_index;
 
     // find free voice index
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
         if (voice_is_triggered( GET_VOICE(voices, sizeof_voice, i) )) continue;
         voice_index = i;
         break;
@@ -145,7 +145,7 @@ bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice
         // if no chord is active, find unused chord index
         // otherwise, chord id will be the active chord id
         // (obviously trading cpu for memory here)
-        // hmm... guess i could make a lookup table with the size of BPBX_INST_MAX_VOICES
+        // hmm... guess i could make a lookup table with the size of BPBX_SYNTH_MAX_VOICES
         // hmm... Maybe i'll do that later i don't really care right now.
         if (inst->active_chord_id == UINT8_MAX) {
             chord_id = 0;
@@ -153,7 +153,7 @@ bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice
             while (true) {
                 bool need_rescan = false;
 
-                for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+                for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
                     if (!voice_is_active(voice)) continue;
                     if (voice->chord_id == chord_id) {
@@ -174,7 +174,7 @@ bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice
             // (it should already be contiguous)
             bool did_find = false;
             chord_index = 0;
-            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
                 if (voice_is_active(voice) && !voice_is_released(voice) && voice->chord_id == chord_id) {
                     if (voice->chord_index >= chord_index) {
@@ -210,7 +210,7 @@ bpbx_voice_id trigger_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice
     return (bpbx_voice_id) voice_index;
 }
 
-void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id) {
+void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id) {
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
     if (voice_is_triggered(voice) && voice_is_active(voice) && !voice_is_released(voice)) {
         voice->flags |= VOICE_FLAG_RELEASED;
@@ -218,7 +218,7 @@ void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_vo
         // release chord if this is the last note in it
         bool release_chord = true;
         const uint8_t chord_id = voice->chord_id;
-        for (int j = 0; j < BPBX_INST_MAX_VOICES; j++) {
+        for (int j = 0; j < BPBX_SYNTH_MAX_VOICES; j++) {
             inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
             if (voice_is_active(v) && !voice_is_released(v) && v->chord_id == chord_id) {
                 release_chord = false;
@@ -232,8 +232,8 @@ void release_voice(bpbx_inst_s *inst, void *voices, size_t sizeof_voice, bpbx_vo
     }
 }
 
-void release_all_voices(bpbx_inst_s *inst, void *voices, size_t sizeof_voice) {
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_released(voice)) {
             release_voice(inst, voices, sizeof_voice, i);
@@ -243,7 +243,7 @@ void release_all_voices(bpbx_inst_s *inst, void *voices, size_t sizeof_voice) {
 
 static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_struct) {
     const voice_compute_constants_s *const compute_data = &compute_struct->constants;
-    const bpbx_inst_s *const inst = compute_data->inst;
+    const bpbx_synth_s *const inst = compute_data->inst;
 
     const double sample_len = compute_struct->varying.sample_len
         = 1.f / compute_data->sample_rate;
@@ -298,7 +298,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     }
 
     // pitch shift
-    if (inst->active_effects[BPBX_INSTFX_PITCH_SHIFT]) {
+    if (inst->active_effects[BPBX_SYNTHFX_PITCH_SHIFT]) {
         const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_PITCH_SHIFT];
         const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_PITCH_SHIFT];
 
@@ -307,7 +307,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     }
 
     // detune
-    if (inst->active_effects[BPBX_INSTFX_DETUNE]) {
+    if (inst->active_effects[BPBX_SYNTHFX_DETUNE]) {
         const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_DETUNE];
         const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_DETUNE];
 
@@ -316,7 +316,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     }
 
     // vibrato
-    if (inst->active_effects[BPBX_INSTFX_VIBRATO]) {
+    if (inst->active_effects[BPBX_SYNTHFX_VIBRATO]) {
         const bpbx_vibrato_params_s vibrato_params = *compute_data->vibrato_params;
 
         int delay_ticks = vibrato_params.delay * 2;
@@ -360,7 +360,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
 
     // note filter
     double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
-    voice->filters_enabled = inst->active_effects[BPBX_INSTFX_NOTE_FILTER];
+    voice->filters_enabled = inst->active_effects[BPBX_SYNTHFX_NOTE_FILTER];
     if (voice->filters_enabled) {
         // get modulation for all freqs
         const double note_all_freqs_envelope_start =
@@ -436,7 +436,7 @@ static void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *
     }
 }
 
-void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params)
+void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params)
 {
     const double sample_rate = inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
@@ -451,7 +451,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     const double mod_w = run_ctx->mod_wheel;
 
     // if chord type is disabled, set chord type to simultaneous
-    if (!inst->active_effects[BPBX_INSTFX_CHORD_TYPE]) {
+    if (!inst->active_effects[BPBX_SYNTHFX_CHORD_TYPE]) {
         inst->chord_type = BPBX_CHORD_TYPE_SIMULTANEOUS;
     }
 
@@ -463,7 +463,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
 
     // choke every released note in a chord that is still active
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         if (!voice_is_active(voice)) continue;
         if (voice_is_released(voice) && voice->chord_id == inst->active_chord_id) {
@@ -475,7 +475,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             // readjust chord indices, so that the earliest voice
             // has chord index 0, and that the indices are contiguous
             // it will use insertion sort for this.
-            inst_base_voice_s *sort_voice_list[BPBX_INST_MAX_VOICES];
+            inst_base_voice_s *sort_voice_list[BPBX_SYNTH_MAX_VOICES];
             uint8_t length = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sort_voice_list);
 
             // finally, reapply voice indices
@@ -491,13 +491,13 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
     switch (inst->chord_type) {
         // these make the instrument monophonic per chord
         case BPBX_CHORD_TYPE_ARPEGGIO:
-            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
 
                 if (voice->chord_index == 0) {
                     voice->flags |= VOICE_FLAG_COMPUTING;
-                    inst_base_voice_s *sorted_voices[BPBX_INST_MAX_VOICES];
+                    inst_base_voice_s *sorted_voices[BPBX_SYNTH_MAX_VOICES];
                     uint8_t pitch_count = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sorted_voices);
 
                     if (pitch_count == 1) {
@@ -529,7 +529,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
         
         case BPBX_CHORD_TYPE_CUSTOM_INTERVAL:
             // TODO: custom interval chord type
-            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
                 
@@ -544,7 +544,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             break;
 
         case BPBX_CHORD_TYPE_SIMULTANEOUS:
-            for (int i = 0; i < BPBX_INST_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
                 voice->flags |= VOICE_FLAG_COMPUTING;
@@ -552,7 +552,7 @@ void inst_tick(bpbx_inst_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_co
             break;
     }
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
         if (!voice_is_triggered(voice)) continue;
@@ -671,7 +671,7 @@ const unison_desc_s unison_info[BPBX_UNISON_COUNT] = {
     { .voices = 2, .spread = 0.25, .offset = 0.05, .expression = 0.9, .sign = -0.8 },
 };
 
-bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
+bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // general
     {
         .id = "inVolume",
@@ -1475,65 +1475,65 @@ bpbx_inst_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
 
 size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
     // general
-    offsetof(bpbx_inst_s, volume),
-    offsetof(bpbx_inst_s, fade_in),
-    offsetof(bpbx_inst_s, fade_out),
+    offsetof(bpbx_synth_s, volume),
+    offsetof(bpbx_synth_s, fade_in),
+    offsetof(bpbx_synth_s, fade_out),
 
     // modulation
-    offsetof(bpbx_inst_s, mod_x),
-    offsetof(bpbx_inst_s, mod_y),
+    offsetof(bpbx_synth_s, mod_x),
+    offsetof(bpbx_synth_s, mod_y),
 
     // transition type
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_TRANSITION_TYPE]),
-    offsetof(bpbx_inst_s, transition_type),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_TRANSITION_TYPE]),
+    offsetof(bpbx_synth_s, transition_type),
 
     // chord type
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_CHORD_TYPE]),
-    offsetof(bpbx_inst_s, chord_type),
-    offsetof(bpbx_inst_s, arpeggio_speed),
-    offsetof(bpbx_inst_s, fast_two_note_arpeggio),
-    offsetof(bpbx_inst_s, strum_speed),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_CHORD_TYPE]),
+    offsetof(bpbx_synth_s, chord_type),
+    offsetof(bpbx_synth_s, arpeggio_speed),
+    offsetof(bpbx_synth_s, fast_two_note_arpeggio),
+    offsetof(bpbx_synth_s, strum_speed),
 
     // pitch shift
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_PITCH_SHIFT]),
-    offsetof(bpbx_inst_s, pitch_shift),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_PITCH_SHIFT]),
+    offsetof(bpbx_synth_s, pitch_shift),
 
     // detune
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_DETUNE]),
-    offsetof(bpbx_inst_s, detune),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_DETUNE]),
+    offsetof(bpbx_synth_s, detune),
 
     // vibrato
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_VIBRATO]),
-    offsetof(bpbx_inst_s, vibrato_preset),
-    offsetof(bpbx_inst_s, vibrato.depth),
-    offsetof(bpbx_inst_s, vibrato.speed),
-    offsetof(bpbx_inst_s, vibrato.delay),
-    offsetof(bpbx_inst_s, vibrato.type),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_VIBRATO]),
+    offsetof(bpbx_synth_s, vibrato_preset),
+    offsetof(bpbx_synth_s, vibrato.depth),
+    offsetof(bpbx_synth_s, vibrato.speed),
+    offsetof(bpbx_synth_s, vibrato.delay),
+    offsetof(bpbx_synth_s, vibrato.type),
 
     // note filter params
-    offsetof(bpbx_inst_s, active_effects[BPBX_INSTFX_NOTE_FILTER]),
-    offsetof(bpbx_inst_s, note_filter.type    [0]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[0]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[0]),
-    offsetof(bpbx_inst_s, note_filter.type    [1]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[1]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[1]),
-    offsetof(bpbx_inst_s, note_filter.type    [2]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[2]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[2]),
-    offsetof(bpbx_inst_s, note_filter.type    [3]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[3]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[3]),
-    offsetof(bpbx_inst_s, note_filter.type    [4]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[4]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[4]),
-    offsetof(bpbx_inst_s, note_filter.type    [5]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[5]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[5]),
-    offsetof(bpbx_inst_s, note_filter.type    [6]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[6]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[6]),
-    offsetof(bpbx_inst_s, note_filter.type    [7]),
-    offsetof(bpbx_inst_s, note_filter.freq_idx[7]),
-    offsetof(bpbx_inst_s, note_filter.gain_idx[7]),
+    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_NOTE_FILTER]),
+    offsetof(bpbx_synth_s, note_filter.type    [0]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[0]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[0]),
+    offsetof(bpbx_synth_s, note_filter.type    [1]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[1]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[1]),
+    offsetof(bpbx_synth_s, note_filter.type    [2]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[2]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[2]),
+    offsetof(bpbx_synth_s, note_filter.type    [3]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[3]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[3]),
+    offsetof(bpbx_synth_s, note_filter.type    [4]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[4]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[4]),
+    offsetof(bpbx_synth_s, note_filter.type    [5]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[5]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[5]),
+    offsetof(bpbx_synth_s, note_filter.type    [6]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[6]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[6]),
+    offsetof(bpbx_synth_s, note_filter.type    [7]),
+    offsetof(bpbx_synth_s, note_filter.freq_idx[7]),
+    offsetof(bpbx_synth_s, note_filter.gain_idx[7]),
 };

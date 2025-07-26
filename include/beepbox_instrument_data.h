@@ -17,7 +17,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _beepbox_instrument_data_h_
 #define _beepbox_instrument_data_h_
 
-#define BPBX_INST_MAX_VOICES 16
+#define BPBX_SYNTH_MAX_VOICES 16
 
 typedef enum {
     // basic params
@@ -84,7 +84,7 @@ typedef enum {
     BPBX_PARAM_NOTE_FILTER_GAIN7,
 
     BPBX_BASE_PARAM_COUNT
-} bpbx_inst_param_e;
+} bpbx_synth_param_e;
 
 /////////////
 // FM data //

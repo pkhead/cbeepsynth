@@ -30,39 +30,39 @@ typedef struct {
 } wave_voice_s;
 
 typedef struct {
-    bpbx_inst_s base;
+    bpbx_synth_s base;
 
     uint8_t unison_type;
     uint8_t waveform;
 
-    wave_voice_s voices[BPBX_INST_MAX_VOICES];
+    wave_voice_s voices[BPBX_SYNTH_MAX_VOICES];
 } chip_inst_s;
 
 typedef struct {
-    bpbx_inst_s base;
+    bpbx_synth_s base;
 
     uint8_t unison_type;
     uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT];
     uint8_t last_controls[BPBX_HARMONICS_CONTROL_COUNT];
 
-    wave_voice_s voices[BPBX_INST_MAX_VOICES];
+    wave_voice_s voices[BPBX_SYNTH_MAX_VOICES];
 
     float wave[HARMONICS_WAVE_LENGTH + 1];
 } harmonics_inst_s;
 
-void bpbx_inst_init_chip(chip_inst_s *inst);
-bpbx_voice_id chip_note_on(bpbx_inst_s *inst, int key, double velocity);
-void chip_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
-void chip_note_all_off(bpbx_inst_s *inst);
-void chip_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
-void chip_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
+void bpbx_synth_init_chip(chip_inst_s *inst);
+bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity);
+void chip_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
+void chip_note_all_off(bpbx_synth_s *inst);
+void chip_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
+void chip_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count);
 
-void bpbx_inst_init_harmonics(harmonics_inst_s *inst);
-bpbx_voice_id harmonics_note_on(bpbx_inst_s *inst, int key, double velocity);
-void harmonics_note_off(bpbx_inst_s *inst, bpbx_voice_id id);
-void harmonics_note_all_off(bpbx_inst_s *inst);
-void harmonics_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
-void harmonics_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count);
+void bpbx_synth_init_harmonics(harmonics_inst_s *inst);
+bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity);
+void harmonics_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
+void harmonics_note_all_off(bpbx_synth_s *inst);
+void harmonics_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
+void harmonics_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count);
 
 extern const inst_vtable_s inst_chip_vtable;
 extern const inst_vtable_s inst_harmonics_vtable;

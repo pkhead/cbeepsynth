@@ -125,7 +125,7 @@ static int get_filter_target(bpbx_envelope_compute_index_e index) {
 }
 
 void compute_envelopes(
-    const bpbx_inst_s *inst, envelope_computer_s *env_computer,
+    const bpbx_synth_s *inst, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
     (void)tick_time_start;

@@ -98,11 +98,11 @@ static void setup_algorithm(fm_inst_s *inst) {
     }
 }
 
-void bpbx_inst_init_fm(fm_inst_s *inst) {
+void bpbx_synth_init_fm(fm_inst_s *inst) {
     *inst = (fm_inst_s){0};
     inst_init(&inst->base, BPBX_INSTRUMENT_FM);
 
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
@@ -121,7 +121,7 @@ void bpbx_inst_init_fm(fm_inst_s *inst) {
     inst->feedback = 0;
 }
 
-bpbx_voice_id fm_note_on(bpbx_inst_s *inst, int key, double velocity) {
+bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -143,7 +143,7 @@ bpbx_voice_id fm_note_on(bpbx_inst_s *inst, int key, double velocity) {
     return voice_id;
 }
 
-void fm_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
+void fm_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -151,7 +151,7 @@ void fm_note_off(bpbx_inst_s *inst, bpbx_voice_id id) {
     release_voice(inst, GENERIC_LIST(fm->voices), id);
 }
 
-void fm_note_all_off(bpbx_inst_s *inst) {
+void fm_note_all_off(bpbx_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -159,7 +159,7 @@ void fm_note_all_off(bpbx_inst_s *inst) {
     release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
-static void compute_fm_voice(const bpbx_inst_s *const base_inst, inst_base_voice_s *const voice, voice_compute_s *compute_data) {
+static void compute_fm_voice(const bpbx_synth_s *const base_inst, inst_base_voice_s *const voice, voice_compute_s *compute_data) {
     const fm_inst_s *const inst = (fm_inst_s*)base_inst;
     fm_voice_s *const fm_voice = (fm_voice_s*)voice;
 
@@ -256,7 +256,7 @@ typedef struct {
     fm_inst_s *fm;
 } audio_process_fm_userdata_s;
 
-void fm_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+void fm_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
@@ -275,7 +275,7 @@ void fm_tick(bpbx_inst_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     });
 }
 
-void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
+void fm_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
     assert(src_inst);
     assert(src_inst->type == BPBX_INSTRUMENT_FM);
     
@@ -287,7 +287,7 @@ void fm_run(bpbx_inst_s *src_inst, float *samples, size_t frame_count) {
 
     memset(samples, 0, frame_count * sizeof(float));
     
-    for (int i = 0; i < BPBX_INST_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         fm_voice_s *voice = fm->voices + i;
         if (!voice_is_computing(&voice->base)) continue;
 
@@ -445,7 +445,7 @@ static const char *feedback_enum_values[] = {
     "1→2→3→4",
 };
 
-const bpbx_inst_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
+const bpbx_param_info_s fm_param_info[BPBX_FM_PARAM_COUNT] = {
     {
         .type = BPBX_PARAM_UINT8,
         .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
@@ -686,7 +686,7 @@ const inst_vtable_s inst_fm_vtable = {
     .envelope_target_count = FM_MOD_COUNT,
     .envelope_targets = fm_env_targets,
 
-    .inst_init = (inst_init_f)bpbx_inst_init_fm,
+    .inst_init = (inst_init_f)bpbx_synth_init_fm,
     .inst_note_on = fm_note_on,
     .inst_note_off = fm_note_off,
     .inst_note_all_off = fm_note_all_off,

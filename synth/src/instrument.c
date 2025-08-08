@@ -129,7 +129,7 @@ uint8_t get_chord_list(
 
 bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
                             void *voices, size_t sizeof_voice,
-                            int key, double velocity,
+                            int key, double velocity, int32_t length,
                             bool *continuation
 ) {
     if (key < 0) key = 0;
@@ -250,6 +250,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         voice->key = (uint16_t)key;
         voice->current_key = (double)voice->key;
         voice->volume = velocity;
+        voice->note_length = (int) length;
 
         if (inst->callbacks.voice_end)
             inst->callbacks.voice_end(inst, voice_index_to_shadow);
@@ -281,6 +282,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
 
             .key = (uint16_t)key,
             .volume = velocity,
+            .note_length = (int)length
         };
 
         voice->current_key = (double)voice->key;
@@ -568,6 +570,15 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         if (!voice_is_active(voice)) continue;
 
+        // release this note if it has a defined note length, and has
+        // not already been released
+        if (!voice_is_released(voice) &&
+            voice->note_length != BPBX_NOTE_LENGTH_UNKNOWN &&
+            voice->time_ticks == voice->note_length)
+        {
+            bpbx_synth_end_note(inst, (bpbx_voice_id) i);
+        }
+
         // handle release trigger
         if (voice->flags & VOICE_FLAG_RELEASE_TRIGGERED) {
             voice->flags |= VOICE_FLAG_RELEASED;
@@ -588,9 +599,10 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             uint8_t length = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sort_voice_list);
 
             // finally, reapply voice indices
-            // bug?: if the base note is released, then there will be a discontinuity
-            // causing an audible click. but honestly idc, i don't think anyone should
-            // be using arpeggio in such a way that that will occur anyway.
+            // bug?: if the base note is released, then there will be a jump in
+            // the signal causing an audible click. but honestly idc, i don't
+            // think anyone should be using arpeggio in such a way that that
+            // will occur anyway.
             for (uint8_t j = 0; j < length; j++) {
                 sort_voice_list[j]->chord_index = j;
             }

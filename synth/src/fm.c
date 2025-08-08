@@ -121,14 +121,14 @@ void bpbx_synth_init_fm(fm_inst_s *inst) {
     inst->feedback = 0;
 }
 
-bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity) {
+bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
     bool continuation;
     bpbx_voice_id voice_id = trigger_voice(
-        inst, GENERIC_LIST(fm->voices), key, velocity, &continuation);
+        inst, GENERIC_LIST(fm->voices), key, velocity, length, &continuation);
     
     if (!continuation) {
         fm_voice_s *voice = &fm->voices[voice_id];

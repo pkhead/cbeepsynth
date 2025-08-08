@@ -599,7 +599,7 @@ BPBXSYN_API void bpbx_synth_clear_envelopes(bpbx_synth_s *inst);
  * @param length The length of the note, in ticks. BPBX_NOTE_LENGTH_UNKNOWN if unknown.
  * @returns The ID of the newly created voice.
  */
-BPBXSYN_API bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity, int length);
+BPBXSYN_API bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity, int32_t length);
 
 /**
  * @brief Send a note off event to an instrument.

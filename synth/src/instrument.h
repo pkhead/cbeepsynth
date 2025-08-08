@@ -87,7 +87,7 @@ typedef struct {
     const size_t            envelope_target_count;
     const bpbx_envelope_compute_index_e* envelope_targets;
     
-    bpbx_voice_id (*const inst_note_on)(bpbx_synth_s *inst, int key, double velocity);
+    bpbx_voice_id (*const inst_note_on)(bpbx_synth_s *inst, int key, double velocity, int32_t length);
     void          (*const inst_note_off)(bpbx_synth_s *inst, bpbx_voice_id id);
     void          (*const inst_note_choke)(bpbx_synth_s *inst, bpbx_voice_id id);
     void          (*const inst_note_modulate)(bpbx_synth_s *inst, bpbx_voice_id, uint32_t param, double value);
@@ -135,9 +135,11 @@ typedef struct {
     // chronological index of the note within the chord
     uint8_t chord_index;
     
+    float volume;
+    int note_length;
+
     double current_key; // modified by chord type
     double prev_pitch; // used by slide transition
-    float volume;
 
     double prev_vibrato;
     double expression;
@@ -215,7 +217,8 @@ void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type);
 
 bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
                             void *voices, size_t sizeof_voice,
-                            int key, double velocity, bool *continuation);
+                            int key, double velocity, int32_t length,
+                            bool *continuation);
 void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
 // void choke_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
 void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice);

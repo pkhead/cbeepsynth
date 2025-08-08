@@ -51,14 +51,14 @@ typedef struct {
 } harmonics_inst_s;
 
 void bpbx_synth_init_chip(chip_inst_s *inst);
-bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity);
+bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length);
 void chip_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
 void chip_note_all_off(bpbx_synth_s *inst);
 void chip_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
 void chip_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count);
 
 void bpbx_synth_init_harmonics(harmonics_inst_s *inst);
-bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity);
+bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length);
 void harmonics_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
 void harmonics_note_all_off(bpbx_synth_s *inst);
 void harmonics_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);

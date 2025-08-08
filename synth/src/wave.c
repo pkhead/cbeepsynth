@@ -9,10 +9,13 @@
 //  GENERIC  //
 ///////////////
 
-static inline bpbx_voice_id wave_note_on(bpbx_synth_s *inst, wave_voice_s *voice_list, int key, double velocity) {
+static inline bpbx_voice_id wave_note_on(
+    bpbx_synth_s *inst, wave_voice_s *voice_list,
+    int key, double velocity, int32_t length
+) {
     bool continuation;
     bpbx_voice_id voice_index = trigger_voice(
-        inst, GENERIC_LIST(voice_list), key, velocity, &continuation);
+        inst, GENERIC_LIST(voice_list), key, velocity, length, &continuation);
 
     if (!continuation) {
         wave_voice_s *voice = &voice_list[voice_index];
@@ -213,11 +216,11 @@ void bpbx_synth_init_chip(chip_inst_s *inst) {
     inst->unison_type = 0;
 }
 
-bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity) {
+bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
-    return wave_note_on(inst, chip->voices, key, velocity);
+    return wave_note_on(inst, chip->voices, key, velocity, length);
 }
 
 void chip_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
@@ -319,12 +322,12 @@ void bpbx_synth_init_harmonics(harmonics_inst_s *inst) {
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
 }
 
-bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity) {
+bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
 
-    return wave_note_on(inst, harmonics->voices, key, velocity);
+    return wave_note_on(inst, harmonics->voices, key, velocity, length);
 }
 
 void harmonics_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {

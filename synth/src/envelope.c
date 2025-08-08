@@ -130,9 +130,21 @@ void compute_envelopes(
 ) {
     (void)tick_time_start;
 
-    if (env_computer->do_reset) {
+    const bool slide_transition =
+        inst->active_effects[BPBX_SYNTHFX_TRANSITION_TYPE] &&
+        inst->transition_type == BPBX_TRANSITION_TYPE_SLIDE;
+    
+    if (env_computer->flags & ENV_COMPUTER_FLAG_DO_RESET) {
+        env_computer->prev_note_secs_end = env_computer->note_secs_end;
         env_computer->note_secs_end = 0.0;
-        env_computer->do_reset = false;
+        env_computer->flags &= ~ENV_COMPUTER_FLAG_DO_RESET;
+        env_computer->tick = 0;
+
+        if (slide_transition) {
+            env_computer->flags |= ENV_COMPUTER_FLAG_IS_SLIDING;
+            env_computer->slide_ratio_start = 0.0;
+            env_computer->slide_ratio_end = 0.0;
+        }
     }
     
     env_computer->note_secs_start = env_computer->note_secs_end;
@@ -150,19 +162,52 @@ void compute_envelopes(
         env_computer->envelope_ends[i] = 1.0;
     }
 
+    bool sliding = env_computer->flags & ENV_COMPUTER_FLAG_IS_SLIDING;
+    if (sliding) {
+        const double tick_start = env_computer->tick;
+        const double tick_end = tick_start + 1.0;
+
+        if (tick_start >= NOTE_SLIDE_TICKS) {
+            env_computer->flags &= ~ENV_COMPUTER_FLAG_IS_SLIDING;
+            sliding = false;
+        } else {
+            env_computer->slide_ratio_start = tick_start / NOTE_SLIDE_TICKS;
+            env_computer->slide_ratio_end = tick_end / NOTE_SLIDE_TICKS;
+        }
+    }
+
     for (unsigned int i = 0; i < inst->envelope_count; i++) {
         const bpbx_envelope_s *env = &inst->envelopes[i];
         const envelope_curve_preset_s curve = envelope_curve_presets[env->curve_preset];
 
-        const double envelope_start = compute_envelope(
+        double envelope_start = compute_envelope(
             &curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX,
             env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
         );
 
-        const double envelope_end = compute_envelope(
+        double envelope_end = compute_envelope(
             &curve, env_computer->note_secs_end, beats_time_end, NOTE_SIZE_MAX,
             env_computer->mod_x[1], env_computer->mod_y[1], env_computer->mod_wheel[1]
         );
+
+        if (sliding) {
+            const double other_start = compute_envelope(
+                &curve,
+                env_computer->prev_note_secs_end, beats_time_start, NOTE_SIZE_MAX,
+                env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
+            );
+
+            const double other_end = compute_envelope(
+                &curve,
+                env_computer->prev_note_secs_end, beats_time_end, NOTE_SIZE_MAX,
+                env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
+            );
+
+            envelope_start =
+                (envelope_start - other_start) * env_computer->slide_ratio_start + other_start;
+            envelope_end =
+                (envelope_end - other_end) * env_computer->slide_ratio_end + other_end;
+        }
 
         env_computer->envelope_starts[env->index] *= envelope_start;
         env_computer->envelope_ends[env->index] *= envelope_end;
@@ -174,7 +219,8 @@ void compute_envelopes(
                 env_computer->lp_cutoff_decay_volume_compensation = v;
         }
     }
-    //env_computer->tick += 1.0;
+
+    env_computer->tick += 1.0;
 }
 
 

@@ -249,7 +249,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         voice->flags &= ~(VOICE_FLAG_RELEASE_TRIGGERED | VOICE_FLAG_RELEASED);
         voice->key = (uint16_t)key;
         voice->current_key = (double)voice->key;
-        // voice->volume = velocity;
+        voice->volume = velocity;
 
         if (inst->callbacks.voice_end)
             inst->callbacks.voice_end(inst, voice_index_to_shadow);
@@ -258,8 +258,13 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         if (inst->active_effects[BPBX_SYNTHFX_TRANSITION_TYPE])
             switch (inst->transition_type) {
                 case BPBX_TRANSITION_TYPE_INTERRUPT:
+                case BPBX_TRANSITION_TYPE_SLIDE:
                     voice->flags |= VOICE_FLAG_HAS_PREV_NOTE;
-                    voice->env_computer.do_reset = true;
+                    voice->env_computer.flags |= ENV_COMPUTER_FLAG_DO_RESET;
+
+                    if (inst->transition_type == BPBX_TRANSITION_TYPE_SLIDE) {
+                        voice->prev_pitch = (double)shadowed_voice->key;
+                    }
                     break;
 
                 default: break;
@@ -342,21 +347,31 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     // const double part_time_end = (double)(ticks_into_bar + 1) / TICKS_PER_PART;
 
     // update envelope computer modulation
-    update_envelope_modulation(&voice->env_computer, compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
-
+    update_envelope_modulation(&voice->env_computer,
+        compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
     compute_envelopes(inst, &voice->env_computer,
         compute_data->cur_beat, voice->time_secs, samples_per_tick * sample_len
     );
 
-    const double fade_in_secs = secs_fade_in(compute_data->fade_in);
-
     double interval_start = 0.0;
     double interval_end = 0.0;
-
-    // precalculation/volume balancing/etc
     double fade_expr_start = 1.0;
     double fade_expr_end = 1.0;
 
+    // handle slide transition
+    if (voice->env_computer.flags & ENV_COMPUTER_FLAG_IS_SLIDING) {
+        const double cur_pitch = (double)voice->key;
+        double pitch_diff = voice->prev_pitch - cur_pitch;
+
+        const double start = pitch_diff * (1.0 - voice->env_computer.slide_ratio_start);
+        const double end = pitch_diff * (1.0 - voice->env_computer.slide_ratio_end);
+
+        interval_start += start;
+        interval_end += end;
+    }
+
+    // fade in/out
+    const double fade_in_secs = secs_fade_in(compute_data->fade_in);
     const uint8_t released = compute_struct->_released = voice->time_secs >= fade_in_secs && voice_is_releasedt(voice);
     if (released) {
         const double ticks = fabs(ticks_fade_out(compute_data->fade_out));

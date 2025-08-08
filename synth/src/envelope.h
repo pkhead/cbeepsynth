@@ -8,15 +8,24 @@
 #define FADE_OUT_RANGE 11
 #define FADE_OUT_MIN -4
 #define FADE_OUT_MAX 6
+#define NOTE_SLIDE_TICKS 6
+
+enum {
+    ENV_COMPUTER_FLAG_DO_RESET      = (1 << 0),
+    ENV_COMPUTER_FLAG_IS_SLIDING    = (1 << 1),
+};
 
 typedef struct {
-    bool do_reset;
+    uint8_t flags;
 
     double envelope_starts[BPBX_ENV_INDEX_COUNT];
     double envelope_ends[BPBX_ENV_INDEX_COUNT];
     double tick;
     double note_secs_start;
     double note_secs_end;
+    double prev_note_secs_end; // for the slide transition
+
+    double slide_ratio_start, slide_ratio_end;
 
     // lowpassCutoffDecayVolumeCompensation
     // TODO: implement this. Currently it's always 1.0

@@ -128,15 +128,15 @@ enum {
 
 typedef struct {
     uint16_t flags; // VOICE_FLAG_*
+    uint16_t key;
     
     // unique identifier for the chord this note belongs to
     uint8_t chord_id;
     // chronological index of the note within the chord
     uint8_t chord_index;
-
-    uint16_t key;
     
     double current_key; // modified by chord type
+    double prev_pitch; // used by slide transition
     float volume;
 
     double prev_vibrato;

@@ -358,7 +358,10 @@ void bpbx_synth_clear_envelopes(bpbx_synth_s *inst) {
 }
 
 
-bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity) {
+bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity, int length) {
+    // TODO: implement length
+    (void)length;
+    
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 

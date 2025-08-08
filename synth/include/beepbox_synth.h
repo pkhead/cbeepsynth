@@ -60,6 +60,7 @@ extern "C" {
 #define BPBX_FILTER_GAIN_RANGE 15
 #define BPBX_FILTER_FREQ_MAX ((BPBX_FILTER_FREQ_RANGE - 1))
 #define BPBX_FILTER_GAIN_MAX ((BPBX_FILTER_GAIN_RANGE - 1))
+#define BPBX_NOTE_LENGTH_UNKNOWN -1
 
 typedef enum {
     BPBX_INSTRUMENT_CHIP,
@@ -588,12 +589,17 @@ BPBXSYN_API void bpbx_synth_clear_envelopes(bpbx_synth_s *inst);
 /**
  * @brief Send a note on event to an instrument.
  *
+ * @note If the length given is BPBX_NOTE_LENGTH_UNKNOWN, then the note will
+ * play until bpbx_synth_end_note is called for the given voice id. Otherwise,
+ * the note will end automatically based on the given length.
+ *
  * @param inst Pointer to the instrument.
  * @param key The MIDI key of the note.
  * @param velocity The velocity of the note, from 0-1.
+ * @param length The length of the note, in ticks. BPBX_NOTE_LENGTH_UNKNOWN if unknown.
  * @returns The ID of the newly created voice.
  */
-BPBXSYN_API bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity);
+BPBXSYN_API bpbx_voice_id bpbx_synth_begin_note(bpbx_synth_s *inst, int key, double velocity, int length);
 
 /**
  * @brief Send a note off event to an instrument.

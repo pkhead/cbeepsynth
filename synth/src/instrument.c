@@ -9,6 +9,7 @@
 #define VOLUME_LOG_SCALE 0.1428
 #define TICKS_PER_ARPEGGIO 3
 #define GET_VOICE(voice_list, size, idx) ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
+#define CHORD_INDEX_INACTIVE UINT8_MAX
 
 #define ARPEGGIO_PATTERN_COUNT 8
 typedef struct {
@@ -38,8 +39,8 @@ void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type) {
         .fade_out = 0.0,
         .arpeggio_speed = 12,
 
-        .active_chord_id = UINT8_MAX,
-        .last_active_chord_id = UINT8_MAX
+        .active_chord_id = CHORD_INDEX_INACTIVE,
+        .last_active_chord_id = CHORD_INDEX_INACTIVE
     };
 
     for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
@@ -126,8 +127,20 @@ uint8_t get_chord_list(
     return length;
 }
 
-bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, int key, double velocity) {
+bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
+                            void *voices, size_t sizeof_voice,
+                            int key, double velocity,
+                            bool *continuation
+) {
+    if (key < 0) key = 0;
+    if (velocity < 0.0)      velocity = 0.0;
+    else if (velocity > 1.0) velocity = 1.0;
+
+    if (continuation)
+        *continuation = false;
+
     int voice_index = 0;
+    int voice_index_to_shadow = -1;
     uint8_t chord_id;
     uint8_t chord_index;
 
@@ -138,16 +151,32 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voic
         break;
     }
 
-    if (inst->chord_type == BPBX_CHORD_TYPE_SIMULTANEOUS) {
+    if (inst->chord_type == BPBX_CHORD_TYPE_SIMULTANEOUS && inst->transition_type == BPBX_TRANSITION_TYPE_NORMAL) {
+        // no chord tracking needs to be done
         chord_index = 0;
         chord_id = (uint8_t)voice_index;
     } else {
+        bool last_chord_just_released =
+            inst->active_chord_id == CHORD_INDEX_INACTIVE &&
+            inst->last_active_chord_id != CHORD_INDEX_INACTIVE;
+        
+        // chord continuation:
+        // find the first chord index not used by
+        // a released voice. if a release-triggered but not actually
+        // released voice with the same index is found, then reuse that
+        // voice. otherwise, continue on and make a new voice.
+        if (last_chord_just_released &&
+            inst->transition_type != BPBX_TRANSITION_TYPE_NORMAL
+        ) {
+            inst->chord_continuation = true;
+        }
+        
         // if no chord is active, find unused chord index
         // otherwise, chord id will be the active chord id
         // (obviously trading cpu for memory here)
         // hmm... guess i could make a lookup table with the size of BPBX_SYNTH_MAX_VOICES
         // hmm... Maybe i'll do that later i don't really care right now.
-        if (inst->active_chord_id == UINT8_MAX) {
+        if (inst->active_chord_id == CHORD_INDEX_INACTIVE && !inst->chord_continuation) {
             chord_id = 0;
             chord_index = 0;
             while (true) {
@@ -167,7 +196,9 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voic
 
             inst->active_chord_id = chord_id;
         } else {
-            chord_id = inst->active_chord_id;
+            chord_id = inst->chord_continuation ?
+                inst->last_active_chord_id :
+                inst->active_chord_id;
 
             // find max used chord index, and set this
             // voice's chord index to be that plus one
@@ -176,7 +207,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voic
             chord_index = 0;
             for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
-                if (voice_is_active(voice) && !voice_is_released(voice) && voice->chord_id == chord_id) {
+                if (voice_is_active(voice) && !voice_is_releasedt(voice) && voice->chord_id == chord_id) {
                     if (voice->chord_index >= chord_index) {
                         did_find = true;
                         chord_index = voice->chord_index;
@@ -185,49 +216,87 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voic
             }
 
             if (did_find) chord_index++;
+
+            // chord continuation:
+            // find the first chord index not used by
+            // a released voice. if a release-triggered but not actually
+            // released voice with the same index is found, then reuse that
+            // voice. otherwise, continue on and make a new voice.
+            if (inst->chord_continuation) {
+                for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+                    inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
+                    
+                    if ((voice->flags & VOICE_FLAG_RELEASE_TRIGGERED) &&
+                        !(voice->flags & VOICE_FLAG_RELEASED) &&
+                        voice->chord_id == chord_id &&
+                        voice->chord_index == chord_index)
+                    {   
+                        voice_index_to_shadow = i;
+                        break;
+                    }
+                }
+            }
         }
     }
 
+    if (continuation)
+        *continuation = voice_index_to_shadow != -1;
+
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, voice_index);
-    memset(voice, 0, sizeof_voice);
-    *voice = (inst_base_voice_s) {
-        .flags = VOICE_FLAG_ACTIVE | VOICE_FLAG_TRIGGERED,
+    if (voice_index_to_shadow != -1) {
+        inst_base_voice_s *shadowed_voice = GET_VOICE(voices, sizeof_voice, voice_index_to_shadow);
+        memcpy(voice, shadowed_voice, sizeof_voice);
+        voice->flags &= ~(VOICE_FLAG_RELEASE_TRIGGERED | VOICE_FLAG_RELEASED);
+        voice->key = (uint16_t)key;
+        voice->current_key = (double)voice->key;
+        // voice->volume = velocity;
 
-        .chord_id = chord_id,
-        .chord_index = chord_index,
+        if (inst->callbacks.voice_end)
+            inst->callbacks.voice_end(inst, voice_index_to_shadow);
+        shadowed_voice->flags = 0;
+    } else {
+        memset(voice, 0, sizeof_voice);
 
-        .key = key < 0 ? 0 : (uint16_t)key,
-        .volume = velocity,
-    };
-    voice->current_key = (double)voice->key;
+        *voice = (inst_base_voice_s) {
+            .flags = VOICE_FLAG_ACTIVE | VOICE_FLAG_TRIGGERED,
 
-    for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-        dyn_biquad_reset_output(voice->note_filters + i);
+            .chord_id = chord_id,
+            .chord_index = chord_index,
+
+            .key = (uint16_t)key,
+            .volume = velocity,
+        };
+
+        voice->current_key = (double)voice->key;
+
+        for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
+            dyn_biquad_reset_output(voice->note_filters + i);
+        }
+
+        envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
     }
-
-    envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
 
     return (bpbx_voice_id) voice_index;
 }
 
 void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id) {
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
-    if (voice_is_triggered(voice) && voice_is_active(voice) && !voice_is_released(voice)) {
-        voice->flags |= VOICE_FLAG_RELEASED;
+    if (voice_is_triggered(voice) && voice_is_active(voice) && !voice_is_releasedt(voice)) {
+        voice->flags |= VOICE_FLAG_RELEASE_TRIGGERED;
 
         // release chord if this is the last note in it
         bool release_chord = true;
         const uint8_t chord_id = voice->chord_id;
         for (int j = 0; j < BPBX_SYNTH_MAX_VOICES; j++) {
             inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
-            if (voice_is_active(v) && !voice_is_released(v) && v->chord_id == chord_id) {
+            if (voice_is_active(v) && !voice_is_releasedt(v) && v->chord_id == chord_id) {
                 release_chord = false;
                 break;
             }
         }
 
         if (release_chord) {
-            inst->active_chord_id = UINT8_MAX;
+            inst->active_chord_id = CHORD_INDEX_INACTIVE;
         }
     }
 }
@@ -235,7 +304,7 @@ void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_v
 void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice) {
     for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
-        if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_released(voice)) {
+        if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_releasedt(voice)) {
             release_voice(inst, voices, sizeof_voice, i);
         } 
     }
@@ -277,7 +346,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     double fade_expr_start = 1.0;
     double fade_expr_end = 1.0;
 
-    const uint8_t released = compute_struct->_released = voice->time_secs >= fade_in_secs && voice_is_released(voice);
+    const uint8_t released = compute_struct->_released = voice->time_secs >= fade_in_secs && voice_is_releasedt(voice);
     if (released) {
         const double ticks = fabs(ticks_fade_out(compute_data->fade_out));
         fade_expr_start = note_size_to_volume_mult((1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
@@ -462,10 +531,24 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
     inst->vibrato_time_start = inst->vibrato_time_end;
     inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
 
-    // choke every released note in a chord that is still active
+    if (inst->chord_continuation) {
+        inst->active_chord_id = inst->last_active_chord_id;
+        inst->chord_continuation = false;
+    }
+
+    // 1. handle release trigger
+    // 2. choke every released note in a chord that is still active
     for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         if (!voice_is_active(voice)) continue;
+
+        // handle release trigger
+        if (voice->flags & VOICE_FLAG_RELEASE_TRIGGERED) {
+            voice->flags |= VOICE_FLAG_RELEASED;
+            voice->flags &= ~VOICE_FLAG_RELEASE_TRIGGERED;
+        }
+
+        // choke every released note in a chord that is still active
         if (voice_is_released(voice) && voice->chord_id == inst->active_chord_id) {
             if (inst->callbacks.voice_end)
                 inst->callbacks.voice_end(inst, i);
@@ -556,6 +639,8 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
         if (!voice_is_triggered(voice)) continue;
+
+        // FINISH HIM!!!
         if (voice->flags & VOICE_FLAG_IS_ON_LAST_TICK) {
             if (inst->callbacks.voice_end)
                 inst->callbacks.voice_end(inst, i);

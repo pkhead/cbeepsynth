@@ -34,6 +34,11 @@ typedef struct bpbx_synth_s {
     uint8_t active_chord_id;
     uint8_t last_active_chord_id;
 
+    // if a chord contiuation was triggered, relevant for transition types.
+    // at the start of the next tick, active_chord_id will be set to
+    // last_active_chord_Id.
+    bool chord_continuation;
+
     double pitch_shift; // aka coarse detune
     double detune; // aka fine detune
     double arpeggio_speed;
@@ -99,12 +104,16 @@ typedef struct {
 
 enum {
     VOICE_FLAG_ACTIVE               = (1 << 0), // the voice is currently reserved
-    VOICE_FLAG_TRIGGERED            = (1 << 1), // triggered, but not computing until the next tick
+    VOICE_FLAG_TRIGGERED            = (1 << 1), // triggered, but not computing
+                                                // until the next tick.
     VOICE_FLAG_RELEASED             = (1 << 2),
-    VOICE_FLAG_COMPUTING            = (1 << 3), // voice is fully active
-    VOICE_FLAG_IS_ON_LAST_TICK      = (1 << 4), // this voice will be freed on the start of the next tick
-    VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 5), // for vibrato continuity
-    VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 6),
+    VOICE_FLAG_RELEASE_TRIGGERED    = (1 << 3), // released flag will be set on
+                                                // the next tick, and this will
+                                                // be unset.
+    VOICE_FLAG_COMPUTING            = (1 << 4), // voice is fully active
+    VOICE_FLAG_IS_ON_LAST_TICK      = (1 << 5), // this voice will be freed on the start of the next tick
+    VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 6), // for vibrato continuity
+    VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 7),
 };
 
 #define voice_is_active(voice)    ((voice)->flags & VOICE_FLAG_ACTIVE)
@@ -112,8 +121,12 @@ enum {
 #define voice_is_released(voice)  ((voice)->flags & VOICE_FLAG_RELEASED)
 #define voice_is_computing(voice) ((voice)->flags & VOICE_FLAG_COMPUTING)
 
+// ugh, horrible name.
+#define voice_is_releasedt(voice) \
+    ((voice)->flags & (VOICE_FLAG_RELEASED | VOICE_FLAG_RELEASE_TRIGGERED))
+
 typedef struct {
-    uint8_t flags; // VOICE_FLAG_*
+    uint16_t flags; // VOICE_FLAG_*
     
     // unique identifier for the chord this note belongs to
     uint8_t chord_id;
@@ -199,7 +212,9 @@ typedef struct {
 
 void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type);
 
-bpbx_voice_id trigger_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, int key, double velocity);
+bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
+                            void *voices, size_t sizeof_voice,
+                            int key, double velocity, bool *continuation);
 void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
 // void choke_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
 void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice);

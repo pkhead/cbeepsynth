@@ -126,18 +126,23 @@ bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity) {
     assert(inst->type == BPBX_INSTRUMENT_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
-    bpbx_voice_id voice_id = trigger_voice(inst, GENERIC_LIST(fm->voices), key, velocity);
-    fm_voice_s *voice = &fm->voices[voice_id];
+    bool continuation;
+    bpbx_voice_id voice_id = trigger_voice(
+        inst, GENERIC_LIST(fm->voices), key, velocity, &continuation);
+    
+    if (!continuation) {
+        fm_voice_s *voice = &fm->voices[voice_id];
 
-    for (int op = 0; op < FM_OP_COUNT; op++) {
-        voice->op_states[op] = (fm_voice_opstate_s) {
-            .phase = 0.0,
-            .phase_delta = 0.0,
-            .expression = 0.0,
-            .output = 0.0,
-            .prev_pitch_expression = 0.0,
-            .has_prev_pitch_expression = FALSE
-        };
+        for (int op = 0; op < FM_OP_COUNT; op++) {
+            voice->op_states[op] = (fm_voice_opstate_s) {
+                .phase = 0.0,
+                .phase_delta = 0.0,
+                .expression = 0.0,
+                .output = 0.0,
+                .prev_pitch_expression = 0.0,
+                .has_prev_pitch_expression = FALSE
+            };
+        }
     }
 
     return voice_id;

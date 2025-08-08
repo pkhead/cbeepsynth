@@ -10,11 +10,16 @@
 ///////////////
 
 static inline bpbx_voice_id wave_note_on(bpbx_synth_s *inst, wave_voice_s *voice_list, int key, double velocity) {
-    bpbx_voice_id voice_index = trigger_voice(inst, GENERIC_LIST(voice_list), key, velocity);
-    wave_voice_s *voice = &voice_list[voice_index];
-    *voice = (wave_voice_s) {
-        .base = voice->base
-    };
+    bool continuation;
+    bpbx_voice_id voice_index = trigger_voice(
+        inst, GENERIC_LIST(voice_list), key, velocity, &continuation);
+
+    if (!continuation) {
+        wave_voice_s *voice = &voice_list[voice_index];
+        *voice = (wave_voice_s) {
+            .base = voice->base
+        };
+    }
 
     return voice_index;
 }

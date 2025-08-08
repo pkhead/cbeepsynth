@@ -129,6 +129,11 @@ void compute_envelopes(
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
     (void)tick_time_start;
+
+    if (env_computer->do_reset) {
+        env_computer->note_secs_end = 0.0;
+        env_computer->do_reset = false;
+    }
     
     env_computer->note_secs_start = env_computer->note_secs_end;
     env_computer->note_secs_end = env_computer->note_secs_start + secs_per_tick;

@@ -254,6 +254,17 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         if (inst->callbacks.voice_end)
             inst->callbacks.voice_end(inst, voice_index_to_shadow);
         shadowed_voice->flags = 0;
+
+        if (inst->active_effects[BPBX_SYNTHFX_TRANSITION_TYPE])
+            switch (inst->transition_type) {
+                case BPBX_TRANSITION_TYPE_INTERRUPT:
+                    voice->flags |= VOICE_FLAG_HAS_PREV_NOTE;
+                    voice->env_computer.do_reset = true;
+                    break;
+
+                default: break;
+            }
+        
     } else {
         memset(voice, 0, sizeof_voice);
 
@@ -358,7 +369,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
         if (voice->ticks_since_release >= ticks) {
             voice->flags |= VOICE_FLAG_IS_ON_LAST_TICK;
         }
-    } else {
+    } else if (!(voice->flags & VOICE_FLAG_HAS_PREV_NOTE)) {
         // fade in beginning of note
         if (fade_in_secs > 0) {
             fade_expr_start *= min(1.0, voice->time_secs / fade_in_secs);

@@ -2,6 +2,7 @@
 #define _envelope_h_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "../include/beepbox_synth.h"
 
 #define FADE_OUT_RANGE 11
@@ -9,6 +10,8 @@
 #define FADE_OUT_MAX 6
 
 typedef struct {
+    bool do_reset;
+
     double envelope_starts[BPBX_ENV_INDEX_COUNT];
     double envelope_ends[BPBX_ENV_INDEX_COUNT];
     double tick;

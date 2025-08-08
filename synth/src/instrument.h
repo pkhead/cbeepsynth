@@ -114,6 +114,7 @@ enum {
     VOICE_FLAG_IS_ON_LAST_TICK      = (1 << 5), // this voice will be freed on the start of the next tick
     VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 6), // for vibrato continuity
     VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 7),
+    VOICE_FLAG_HAS_PREV_NOTE        = (1 << 8),
 };
 
 #define voice_is_active(voice)    ((voice)->flags & VOICE_FLAG_ACTIVE)

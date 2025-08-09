@@ -85,9 +85,10 @@ typedef enum {
 
 typedef enum {
     BPBX_STATUS_OK,
+    BPBX_STATUS_FAIL,
+    BPBX_STATUS_MEMERR,
     BPBX_STATUS_WARNING,
-    BPBX_STATUS_ERROR
-} bpbx_song_load_status_e;
+} bpbx_status_e;
 
 // for loading song data of a specific mod, since there may be 
 // variant prefix conflicts. For now, there are none, so
@@ -100,23 +101,24 @@ typedef enum {
 
 typedef int64_t (*bpbx_reader_f)(size_t size, void *out, void *userdata);
 
-BPBX_API bool bpbx_song_init(bpbx_song_s *song,
+BPBX_API uint8_t bpbx_song_init(bpbx_song_s *song,
     uint8_t pitch_channel_count, uint8_t drum_channel_count, uint8_t mod_channel_count,
     uint16_t length, uint16_t pattern_count);
 
-BPBX_API bool bpbx_song_init_default(bpbx_song_s *song);
+BPBX_API uint8_t bpbx_song_init_default(bpbx_song_s *song);
 BPBX_API uint8_t bpbx_song_load_base64(bpbx_song_s *song, bpbx_song_data_variant_e variant, bpbx_reader_f reader, void *userdata);
 BPBX_API void bpbx_song_free(bpbx_song_s *song);
 
 BPBX_API uint16_t bpbx_song_channel_count(const bpbx_song_s *song);
-BPBX_API bool bpbx_song_set_length(bpbx_song_s *song, uint16_t new_length, bpbx_resize_mode_e resize_mode);
-BPBX_API bool bpbx_song_set_pitch_channel_count(bpbx_song_s *song, uint8_t new_count);
-BPBX_API bool bpbx_song_set_pattern_count(bpbx_song_s *song, uint16_t new_count);
+BPBX_API uint8_t bpbx_song_set_length(bpbx_song_s *song, uint16_t new_length, bpbx_resize_mode_e resize_mode);
+BPBX_API uint8_t bpbx_song_set_channel_count(bpbx_song_s *song,
+    uint8_t pitch_channel_count, uint8_t drum_channel_count, uint8_t mod_channel_count);
+BPBX_API uint8_t bpbx_song_set_pattern_count(bpbx_song_s *song, uint16_t new_count);
 
-BPBX_API bool bpbx_pitch_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
-BPBX_API bool bpbx_noise_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
-BPBX_API bool bpbx_mod_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
-BPBX_API void bpbx_channel_free(bpbx_channel_s *channel);
+// BPBX_API uint8_t bpbx_pitch_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
+// BPBX_API uint8_t bpbx_noise_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
+// BPBX_API uint8_t bpbx_mod_channel_init(bpbx_channel_s *channel, const bpbx_song_s *song);
+// BPBX_API void bpbx_channel_free(bpbx_channel_s *channel);
 
 #ifdef __cplusplus
 }

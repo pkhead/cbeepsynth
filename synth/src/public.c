@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "util.h"
+#include "alloc.h"
 #include "inst/instrument.h"
 #include "envelope.h"
 #include "filtering.h"
@@ -39,30 +40,6 @@ void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *major = BPBXSYN_VERSION_MAJOR;
     *minor = BPBXSYN_VERSION_MINOR;
     *revision = BPBXSYN_VERSION_REVISION;
-}
-
-static void* default_alloc(size_t size, void *userdata) {
-    (void)userdata;
-    return malloc(size);
-}
-
-static void default_free(void *ptr, void *userdata) {
-    (void)userdata;
-    free(ptr);
-}
-
-static bpbxsyn_malloc_f alloc_new = default_alloc;
-static bpbxsyn_mfree_f alloc_free = default_free;
-static void *alloc_userdata = NULL;
-
-
-void bpbxsyn_set_allocator(bpbxsyn_malloc_f alloc, bpbxsyn_mfree_f free, void *userdata) {
-    assert(alloc);
-    assert(free);
-
-    alloc_new = alloc;
-    alloc_free = free;
-    alloc_userdata = userdata;
 }
 
 
@@ -132,7 +109,7 @@ bpbxsyn_synth_s* bpbxsyn_synth_new(bpbxsyn_synth_type_e type) {
     assert(vtable->param_count > 0 && vtable->param_addresses);
     assert(vtable->envelope_target_count && vtable->envelope_targets);
 
-    bpbxsyn_synth_s *inst = alloc_new(vtable->struct_size, alloc_userdata);
+    bpbxsyn_synth_s *inst = bpbxsyn_malloc(vtable->struct_size);
     if (inst)
         vtable->inst_init(inst);
     return inst;
@@ -148,7 +125,7 @@ void bpbxsyn_synth_destroy(bpbxsyn_synth_s *inst) {
             vtable->inst_destroy(inst);
         }
 
-        alloc_free(inst, alloc_userdata);
+        bpbxsyn_free(inst);
     }
 }
 

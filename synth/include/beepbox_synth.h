@@ -340,9 +340,15 @@ BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
  * @brief Set custom allocators.
  *
  * Use this function if you want cbeepsynth to use a custom allocator instead of
- * the one in the C standard library. Note that these allocator functions will
- * only be called in bpbxsyn_synth_new and bpbxsyn_synth_destroy, so they don't
- * need to be thread-safe.
+ * the one in the C standard library.
+ *
+ * There are a couple of functions where allocation/freeing may occur:
+ *   - bpbxsyn_synth_new
+ *   - bpbxsyn_effect_new
+ *   - bpbxsyn_synth_destroy
+ *   - bpbxsyn_effect_destroy
+ *   - bpbxsyn_synth_set_sample_rate
+ *   - bpbxsyn_effect_set_sample_rate
  *
  * @param alloc The function to allocate a new block of memory.
  * @param free The function to free an allocated block of memory.

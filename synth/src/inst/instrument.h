@@ -7,10 +7,8 @@
 #include "../include/beepbox_synth.h"
 #include "../envelope.h"
 #include "../filtering.h"
+#include "../audio.h"
 
-#define NOTE_SIZE_MAX 3
-#define PARTS_PER_BEAT 24
-#define TICKS_PER_PART 2
 #define UNISON_MAX_VOICES 2
 #define EXPRESSION_REFERENCE_PITCH 16 // A low "E" as a MIDI pitch.
 #define PITCH_DAMPING 48
@@ -227,7 +225,6 @@ double inst_calc_arp_speed(double arp_speed_setting);
 
 #define GENERIC_LIST(list) (list), sizeof(*(list))
 
-double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);
 double get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar);

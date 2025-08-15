@@ -49,13 +49,6 @@ void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
     }
 }
 
-double calc_samples_per_tick(double bpm, double sample_rate) {
-    const double beats_per_sec = bpm / 60.0;
-    const double parts_per_sec = PARTS_PER_BEAT * beats_per_sec;
-    const double ticks_per_sec = TICKS_PER_PART * parts_per_sec;
-    return sample_rate / ticks_per_sec;
-}
-
 // double calc_pitch_expression(double pitch) {
 //     return pow(2.0, -(pitch - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
 // }

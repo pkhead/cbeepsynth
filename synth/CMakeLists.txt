@@ -14,6 +14,8 @@ set(SOURCES
     src/filtering.c
     src/fft.c
     src/log.c
+    src/alloc.c
+    src/audio.c
 )
 
 set(TARGET_PROPERTIES

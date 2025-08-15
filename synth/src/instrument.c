@@ -610,12 +610,13 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
     }
 
     switch (inst->chord_type) {
-        // these make the instrument monophonic per chord
         case BPBX_CHORD_TYPE_ARPEGGIO:
             for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
 
+                // only the first voice of the chord shall be computing, as
+                // arpeggio is monophonic
                 if (voice->chord_index == 0) {
                     voice->flags |= VOICE_FLAG_COMPUTING;
                     inst_base_voice_s *sorted_voices[BPBX_SYNTH_MAX_VOICES];
@@ -661,7 +662,18 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             break;
 
         case BPBX_CHORD_TYPE_STRUM:
-            // TO-DO: strum chord type
+            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+                inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
+                if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
+
+                if (!voice_is_computing(voice)) {
+                    if (voice->time_ticks++ >= voice->chord_index * 2) {
+                        logmsgf(BPBX_LOG_DEBUG, "started voice %i at tick %i", voice->chord_index, voice->time_ticks);
+                        voice->flags |= VOICE_FLAG_COMPUTING;
+                        voice->time_ticks = 0;
+                    }
+                }
+            }
             break;
 
         case BPBX_CHORD_TYPE_SIMULTANEOUS:
@@ -687,26 +699,28 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             continue;
         }
 
-        voice_compute_s compute_data = {
-            .constants = {
-                .inst = inst,
+        if (voice_is_computing(voice)) {
+            voice_compute_s compute_data = {
+                .constants = {
+                    .inst = inst,
 
-                .samples_per_tick = samples_per_tick,
-                .sample_rate = sample_rate,
-                .fade_in = fade_in,
-                .fade_out = fade_out,
-                .cur_beat = beat,
-                .vibrato_params = &vibrato,
+                    .samples_per_tick = samples_per_tick,
+                    .sample_rate = sample_rate,
+                    .fade_in = fade_in,
+                    .fade_out = fade_out,
+                    .cur_beat = beat,
+                    .vibrato_params = &vibrato,
 
-                .mod_x = mod_x,
-                .mod_y = mod_y,
-                .mod_w = mod_w
-            }
-        };
+                    .mod_x = mod_x,
+                    .mod_y = mod_y,
+                    .mod_w = mod_w
+                }
+            };
 
-        compute_voice_pre(voice, &compute_data);
-        params->compute_voice(inst, voice, &compute_data);
-        compute_voice_post(voice, &compute_data);
+            compute_voice_pre(voice, &compute_data);
+            params->compute_voice(inst, voice, &compute_data);
+            compute_voice_post(voice, &compute_data);
+        }
     }
 
     inst->last_note_filter = inst->note_filter;

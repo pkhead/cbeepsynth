@@ -1,19 +1,19 @@
-#ifndef _bpbx_log_h_
-#define _bpbx_log_h_
+#ifndef _bpbxsyn_log_h_
+#define _bpbxsyn_log_h_
 
 #include <stdarg.h>
 #include <stdio.h>
 #include "../include/beepbox_synth.h"
 
-static bpbx_log_f s_log_function = NULL;
+static bpbxsyn_log_f s_log_function = NULL;
 static void *s_log_userdata = NULL;
 
-void bpbx_set_log_func(bpbx_log_f log_func, void *userdata) {
+void bpbxsyn_set_log_func(bpbxsyn_log_f log_func, void *userdata) {
     s_log_function = log_func;
     s_log_userdata = userdata;
 }
 
-void logmsgf(bpbx_log_severity_e severity, const char *msg, ...) {
+void logmsgf(bpbxsyn_log_severity_e severity, const char *msg, ...) {
     if (s_log_function == NULL) return;
 
     char msg_buf[256];

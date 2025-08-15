@@ -33,17 +33,17 @@ typedef struct {
 
 #define HARMONICS_WAVE_LENGTH 2048
 
-extern noise_wavetable_s noise_wavetables[BPBX_NOISE_COUNT];
+extern noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
 
 // raw chip wavetables
-extern wavetable_desc_s raw_chip_wavetables[BPBX_CHIP_WAVE_COUNT];
+extern wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 
 // chip wavetables integrated for the purposes of anti-aliasing
-extern wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
+extern wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 
 void init_wavetables(void);
 
 // size is assumed to be HARMONICS_WAVE_LENGTH + 1
-void generate_harmonics(uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *out);
+void generate_harmonics(uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *out);
 
 #endif

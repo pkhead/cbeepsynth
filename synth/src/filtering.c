@@ -11,7 +11,7 @@ static double get_filter_freq_max(void) {
 
     if (cache_needs_init) {
         cache_needs_init = FALSE;
-        cache = FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBX_FILTER_FREQ_RANGE - 1 - BPBX_FILTER_FREQ_REFERENCE_SETTING)); // ~19khz
+        cache = FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBXSYN_FILTER_FREQ_RANGE - 1 - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING)); // ~19khz
     }
 
     return cache;
@@ -20,12 +20,12 @@ static double get_filter_freq_max(void) {
 #define FILTER_FREQ_MAX_HZ (get_filter_freq_max())
 
 double get_hz_from_setting_value(double value) {
-    return FILTER_FREQ_REFERENCE_HZ * pow(2.0, (value - BPBX_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP);
+    return FILTER_FREQ_REFERENCE_HZ * pow(2.0, (value - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP);
 }
 
 static double filter_get_linear_gain(const filter_group_s *group, int index, double peak_mult) {
-    const double power = (group->gain_idx[index] - BPBX_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
-    const double neutral = (group->type[index] == BPBX_FILTER_TYPE_NOTCH) ? 0.0 : -0.5;
+    const double power = (group->gain_idx[index] - BPBXSYN_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
+    const double neutral = (group->type[index] == BPBXSYN_FILTER_TYPE_NOTCH) ? 0.0 : -0.5;
     const double interpolated_power = neutral + (power - neutral) * peak_mult;
     return pow(2.0, interpolated_power);
 }
@@ -40,19 +40,19 @@ filter_coefs_s filter_to_coefficients(
     filter_coefs_s filter = {0};
 
     switch (group->type[index]) {
-        case BPBX_FILTER_TYPE_LP:
+        case BPBXSYN_FILTER_TYPE_LP:
             filter_lp2bw(&filter, corner_radians_per_sample, linear_gain);
             break;
 
-        case BPBX_FILTER_TYPE_HP:
+        case BPBXSYN_FILTER_TYPE_HP:
             filter_hp2bw(&filter, corner_radians_per_sample, linear_gain);
             break;
 
-        case BPBX_FILTER_TYPE_NOTCH:
+        case BPBXSYN_FILTER_TYPE_NOTCH:
             filter_peak2(&filter, corner_radians_per_sample, linear_gain, 1.0);
             break;
         
-        case BPBX_FILTER_TYPE_OFF:
+        case BPBXSYN_FILTER_TYPE_OFF:
             filter.a[0] = 1.0;
             filter.a[1] = 0.0;
             filter.a[2] = 0.0;
@@ -75,11 +75,11 @@ double filter_get_volume_compensation_mult(const filter_group_s *group, int inde
     const double gain = group->gain_idx[index];
     const uint8_t type = group->type[index];
 
-    const double octave = (freq - BPBX_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP;
-    const double gain_pow = (gain - BPBX_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
+    const double octave = (freq - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP;
+    const double gain_pow = (gain - BPBXSYN_FILTER_GAIN_CENTER) * FILTER_GAIN_STEP;
 
     switch (type) {
-        case BPBX_FILTER_TYPE_LP: {
+        case BPBXSYN_FILTER_TYPE_LP: {
             const double freq_relative_to_8khz = pow(2.0, octave) * FILTER_FREQ_REFERENCE_HZ / 8000.0;
 
             // Reverse the frequency warping from importing legacy simplified filters to imitate how the legacy filter cutoff setting affected volume.
@@ -90,14 +90,14 @@ double filter_get_volume_compensation_mult(const filter_group_s *group, int inde
                 0.2 * max(0.0, gain_pow + 1.0) + min(0.0, max(-3.0, 0.595 * warped_freq + 0.35 * min(0.0, gain_pow + 1.0))));
         }
             
-        case BPBX_FILTER_TYPE_HP: {
+        case BPBXSYN_FILTER_TYPE_HP: {
             return pow(
                 0.5,
                 0.125 * max(0.0, gain_pow + 1.0) +
                     min(0.0, 0.3 * (-octave - log2(FILTER_FREQ_REFERENCE_HZ / 125.0)) + 0.2 * min(0.0, gain_pow + 1.0)));
         }
             
-        case BPBX_FILTER_TYPE_NOTCH: {
+        case BPBXSYN_FILTER_TYPE_NOTCH: {
             const double distance_from_center = octave + log2(FILTER_FREQ_REFERENCE_HZ / 2000.0);
             const double freq_loudness = pow(1.0 / (1.0 + pow(distance_from_center / 3.0, 2.0)), 2.0);
             return pow(
@@ -228,7 +228,7 @@ double apply_filters(double sample, double input1, double input2, dyn_biquad_s f
     return sample;
 }
 
-bpbx_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
+bpbxsyn_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
     const double *a = coefs.a;
     const double *b = coefs.b;
     const double real_z1 = real;
@@ -261,12 +261,12 @@ bpbx_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double 
     // ...then how come in the original code the denominator was stored separately?
 
     double final_denom = real_denom * real_denom + imag_denom * imag_denom;
-    return (bpbx_complex_s) {
+    return (bpbxsyn_complex_s) {
         .real = (real_num * real_denom + imag_num * imag_denom) / final_denom,
         .imag = (imag_num * real_denom - real_num * imag_denom) / final_denom
     };
 }
 
-bpbx_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
+bpbxsyn_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
     return filter_analyze_complex(coefs, cos(radians_per_sample), sin(radians_per_sample));
 }

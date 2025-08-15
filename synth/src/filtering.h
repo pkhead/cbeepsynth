@@ -73,7 +73,7 @@ double get_hz_from_setting_value(double value);
 // input2: sample before input1 (x[-2])
 double apply_filters(double input0, double input1, double input2, dyn_biquad_s filters[FILTER_GROUP_COUNT]);
 
-bpbx_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag);
-bpbx_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample);
+bpbxsyn_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag);
+bpbxsyn_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample);
 
 #endif

@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "instrument.h"
-#include "util.h"
+#include "../util.h"
 
 #define VOLUME_LOG_SCALE 0.1428
 #define TICKS_PER_ARPEGGIO 3
@@ -28,8 +28,8 @@ static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
     8.0 // dummy value in edge case for interpolation
 };
 
-void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type) {
-    *inst = (bpbx_synth_s) {
+void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
+    *inst = (bpbxsyn_synth_s) {
         .type = type,
         .sample_rate = 0.0,
 
@@ -43,8 +43,8 @@ void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type) {
         .last_active_chord_id = CHORD_INDEX_INACTIVE
     };
 
-    for (int i = 0; i < BPBX_FILTER_GROUP_COUNT; i++) {
-        inst->note_filter.gain_idx[i] = BPBX_FILTER_GAIN_CENTER;
+    for (int i = 0; i < BPBXSYN_FILTER_GROUP_COUNT; i++) {
+        inst->note_filter.gain_idx[i] = BPBXSYN_FILTER_GAIN_CENTER;
         inst->note_filter.freq_idx[i] = 20;
     }
 }
@@ -88,7 +88,7 @@ static vibrato_type_def_s vibrato_types[2] = {
     }
 };
 
-double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
+double get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar) {
     assert(0 <= type && type <= 1);
 
     double effect = 0.0;
@@ -102,13 +102,13 @@ double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar) {
 
 // get list of voices in a chord, sorted by ascending chord index
 uint8_t get_chord_list(
-    inst_base_voice_s voices[BPBX_SYNTH_MAX_VOICES], size_t sizeof_voice,
-    uint8_t chord_id, inst_base_voice_s *out_list[BPBX_SYNTH_MAX_VOICES]
+    inst_base_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES], size_t sizeof_voice,
+    uint8_t chord_id, inst_base_voice_s *out_list[BPBXSYN_SYNTH_MAX_VOICES]
 ) {
     uint8_t length = 0;
 
     // first, add voices of the same chord id to the list
-    for (int j = 0; j < BPBX_SYNTH_MAX_VOICES; ++j) {
+    for (int j = 0; j < BPBXSYN_SYNTH_MAX_VOICES; ++j) {
         inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
         if (v->chord_id == chord_id && voice_is_active(v)) {
             out_list[length++] = v;
@@ -127,7 +127,7 @@ uint8_t get_chord_list(
     return length;
 }
 
-bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
+bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
                             void *voices, size_t sizeof_voice,
                             int key, double velocity, int32_t length,
                             bool *continuation
@@ -145,13 +145,13 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
     uint8_t chord_index;
 
     // find free voice index
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
         if (voice_is_triggered( GET_VOICE(voices, sizeof_voice, i) )) continue;
         voice_index = i;
         break;
     }
 
-    if (inst->chord_type == BPBX_CHORD_TYPE_SIMULTANEOUS && inst->transition_type == BPBX_TRANSITION_TYPE_NORMAL) {
+    if (inst->chord_type == BPBXSYN_CHORD_TYPE_SIMULTANEOUS && inst->transition_type == BPBXSYN_TRANSITION_TYPE_NORMAL) {
         // no chord tracking needs to be done
         chord_index = 0;
         chord_id = (uint8_t)voice_index;
@@ -166,7 +166,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         // released voice with the same index is found, then reuse that
         // voice. otherwise, continue on and make a new voice.
         if (last_chord_just_released &&
-            inst->transition_type != BPBX_TRANSITION_TYPE_NORMAL
+            inst->transition_type != BPBXSYN_TRANSITION_TYPE_NORMAL
         ) {
             inst->chord_continuation = true;
         }
@@ -174,7 +174,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         // if no chord is active, find unused chord index
         // otherwise, chord id will be the active chord id
         // (obviously trading cpu for memory here)
-        // hmm... guess i could make a lookup table with the size of BPBX_SYNTH_MAX_VOICES
+        // hmm... guess i could make a lookup table with the size of BPBXSYN_SYNTH_MAX_VOICES
         // hmm... Maybe i'll do that later i don't really care right now.
         if (inst->active_chord_id == CHORD_INDEX_INACTIVE && !inst->chord_continuation) {
             chord_id = 0;
@@ -182,7 +182,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
             while (true) {
                 bool need_rescan = false;
 
-                for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+                for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
                     if (!voice_is_active(voice)) continue;
                     if (voice->chord_id == chord_id) {
@@ -205,7 +205,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
             // (it should already be contiguous)
             bool did_find = false;
             chord_index = 0;
-            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
                 if (voice_is_active(voice) && !voice_is_releasedt(voice) && voice->chord_id == chord_id) {
                     if (voice->chord_index >= chord_index) {
@@ -223,7 +223,7 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
             // released voice with the same index is found, then reuse that
             // voice. otherwise, continue on and make a new voice.
             if (inst->chord_continuation) {
-                for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+                for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
                     
                     if ((voice->flags & VOICE_FLAG_RELEASE_TRIGGERED) &&
@@ -256,14 +256,14 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
             inst->callbacks.voice_end(inst, voice_index_to_shadow);
         shadowed_voice->flags = 0;
 
-        if (inst->active_effects[BPBX_SYNTHFX_TRANSITION_TYPE])
+        if (inst->active_effects[BPBXSYN_SYNTHFX_TRANSITION_TYPE])
             switch (inst->transition_type) {
-                case BPBX_TRANSITION_TYPE_INTERRUPT:
-                case BPBX_TRANSITION_TYPE_SLIDE:
+                case BPBXSYN_TRANSITION_TYPE_INTERRUPT:
+                case BPBXSYN_TRANSITION_TYPE_SLIDE:
                     voice->flags |= VOICE_FLAG_HAS_PREV_NOTE;
                     voice->env_computer.flags |= ENV_COMPUTER_FLAG_DO_RESET;
 
-                    if (inst->transition_type == BPBX_TRANSITION_TYPE_SLIDE) {
+                    if (inst->transition_type == BPBXSYN_TRANSITION_TYPE_SLIDE) {
                         voice->prev_pitch = (double)shadowed_voice->key;
                     }
                     break;
@@ -294,10 +294,10 @@ bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
         envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
     }
 
-    return (bpbx_voice_id) voice_index;
+    return (bpbxsyn_voice_id) voice_index;
 }
 
-void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id) {
+void release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpbxsyn_voice_id id) {
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
     if (voice_is_triggered(voice) && voice_is_active(voice) && !voice_is_releasedt(voice)) {
         voice->flags |= VOICE_FLAG_RELEASE_TRIGGERED;
@@ -305,7 +305,7 @@ void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_v
         // release chord if this is the last note in it
         bool release_chord = true;
         const uint8_t chord_id = voice->chord_id;
-        for (int j = 0; j < BPBX_SYNTH_MAX_VOICES; j++) {
+        for (int j = 0; j < BPBXSYN_SYNTH_MAX_VOICES; j++) {
             inst_base_voice_s *v = GET_VOICE(voices, sizeof_voice, j);
             if (voice_is_active(v) && !voice_is_releasedt(v) && v->chord_id == chord_id) {
                 release_chord = false;
@@ -319,8 +319,8 @@ void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_v
     }
 }
 
-void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice) {
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
+void release_all_voices(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_releasedt(voice)) {
             release_voice(inst, voices, sizeof_voice, i);
@@ -330,7 +330,7 @@ void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice) {
 
 static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *compute_struct) {
     const voice_compute_constants_s *const compute_data = &compute_struct->constants;
-    const bpbx_synth_s *const inst = compute_data->inst;
+    const bpbxsyn_synth_s *const inst = compute_data->inst;
 
     const double sample_len = compute_struct->varying.sample_len
         = 1.f / compute_data->sample_rate;
@@ -395,26 +395,26 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     }
 
     // pitch shift
-    if (inst->active_effects[BPBX_SYNTHFX_PITCH_SHIFT]) {
-        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_PITCH_SHIFT];
-        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_PITCH_SHIFT];
+    if (inst->active_effects[BPBXSYN_SYNTHFX_PITCH_SHIFT]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_PITCH_SHIFT];
+        const double env_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_PITCH_SHIFT];
 
         interval_start += inst->pitch_shift * env_start;
         interval_end += inst->pitch_shift * env_end;
     }
 
     // detune
-    if (inst->active_effects[BPBX_SYNTHFX_DETUNE]) {
-        const double env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_DETUNE];
-        const double env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_DETUNE];
+    if (inst->active_effects[BPBXSYN_SYNTHFX_DETUNE]) {
+        const double env_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_DETUNE];
+        const double env_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_DETUNE];
 
         interval_start += inst->detune * env_start / 100.0;
         interval_end += inst->detune * env_end / 100.0;
     }
 
     // vibrato
-    if (inst->active_effects[BPBX_SYNTHFX_VIBRATO]) {
-        const bpbx_vibrato_params_s vibrato_params = *compute_data->vibrato_params;
+    if (inst->active_effects[BPBXSYN_SYNTHFX_VIBRATO]) {
+        const bpbxsyn_vibrato_params_s vibrato_params = *compute_data->vibrato_params;
 
         int delay_ticks = vibrato_params.delay * 2;
 
@@ -431,7 +431,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
             vibrato_start = voice->prev_vibrato;
         } else {
             double lfo_start = get_lfo_amplitude(vibrato_params.type, vibrato_time_start);
-            const double vibrato_depth_envelope_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+            const double vibrato_depth_envelope_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_VIBRATO_DEPTH];
             vibrato_start = vibrato_params.depth * lfo_start * vibrato_depth_envelope_start;
 
             if (delay_ticks > 0.0) {
@@ -441,7 +441,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
         }
 
         double lfo_end = get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
-        const double vibrato_depth_envelope_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_VIBRATO_DEPTH];
+        const double vibrato_depth_envelope_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_VIBRATO_DEPTH];
         double vibrato_end = vibrato_params.depth * lfo_end * vibrato_depth_envelope_end;
         if (delay_ticks > 0.0) {
             const int ticks_until_vibrato_end = delay_ticks - voice->time2_ticks;
@@ -457,13 +457,13 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
 
     // note filter
     double note_filter_expression = voice->env_computer.lp_cutoff_decay_volume_compensation;
-    voice->filters_enabled = inst->active_effects[BPBX_SYNTHFX_NOTE_FILTER];
+    voice->filters_enabled = inst->active_effects[BPBXSYN_SYNTHFX_NOTE_FILTER];
     if (voice->filters_enabled) {
         // get modulation for all freqs
         const double note_all_freqs_envelope_start =
-            voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+            voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
         const double note_all_freqs_envelope_end=
-            voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
+            voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_NOTE_FILTER_ALL_FREQS];
         
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
             const filter_group_s *filter_group_start = &inst->last_note_filter;
@@ -474,20 +474,20 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
                 filter_group_start = filter_group_end;
             }
 
-            if (filter_group_start->type[i] == BPBX_FILTER_TYPE_OFF) {
+            if (filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_OFF) {
                 voice->note_filters[i].enabled = FALSE;
             } else {
                 // get freq modulation
                 const double note_freq_envelope_start =
-                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+                    voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
                 const double note_freq_envelope_end =
-                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
+                    voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ0 + i];
 
                 // get gain modulation
                 const double note_peak_envelope_start =
-                    voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                    voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
                 const double note_peak_envelope_end =
-                    voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
+                    voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN0 + i];
                 
                 voice->note_filters[i].enabled = TRUE;
 
@@ -505,7 +505,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
                 
                 dyn_biquad_load(&voice->note_filters[i],
                     start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
-                    filter_group_start->type[i] == BPBX_FILTER_TYPE_LP);
+                    filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_LP);
 
                 note_filter_expression *= filter_get_volume_compensation_mult(filter_group_start, i);
             }
@@ -516,9 +516,9 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
         note_filter_expression = 3.0;
 
     const double expr_start = note_filter_expression * fade_expr_start *
-        voice->env_computer.envelope_starts[BPBX_ENV_INDEX_NOTE_VOLUME];
+        voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_NOTE_VOLUME];
     const double expr_end = note_filter_expression * fade_expr_end *
-        voice->env_computer.envelope_ends[BPBX_ENV_INDEX_NOTE_VOLUME];
+        voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_NOTE_VOLUME];
 
     compute_struct->varying.expr_start = expr_start;
     compute_struct->varying.expr_end = expr_end;
@@ -533,7 +533,7 @@ static void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *
     }
 }
 
-void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params)
+void inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, const audio_compute_s *params)
 {
     const double sample_rate = inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
@@ -548,13 +548,13 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
     const double mod_w = run_ctx->mod_wheel;
 
     // if chord type is disabled, set chord type to simultaneous
-    if (!inst->active_effects[BPBX_SYNTHFX_CHORD_TYPE]) {
-        inst->chord_type = BPBX_CHORD_TYPE_SIMULTANEOUS;
+    if (!inst->active_effects[BPBXSYN_SYNTHFX_CHORD_TYPE]) {
+        inst->chord_type = BPBXSYN_CHORD_TYPE_SIMULTANEOUS;
     }
 
     // update vibrato lfo
-    bpbx_vibrato_params_s vibrato = inst->vibrato;
-    bpbx_vibrato_preset_params(inst->vibrato_preset, &vibrato);
+    bpbxsyn_vibrato_params_s vibrato = inst->vibrato;
+    bpbxsyn_vibrato_preset_params(inst->vibrato_preset, &vibrato);
 
     inst->vibrato_time_start = inst->vibrato_time_end;
     inst->vibrato_time_end += samples_per_tick * sample_len * vibrato.speed;
@@ -566,17 +566,17 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
 
     // 1. handle release trigger
     // 2. choke every released note in a chord that is still active
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         if (!voice_is_active(voice)) continue;
 
         // release this note if it has a defined note length, and has
         // not already been released
         if (!voice_is_released(voice) &&
-            voice->note_length != BPBX_NOTE_LENGTH_UNKNOWN &&
+            voice->note_length != BPBXSYN_NOTE_LENGTH_UNKNOWN &&
             voice->time_ticks == voice->note_length)
         {
-            bpbx_synth_end_note(inst, (bpbx_voice_id) i);
+            bpbxsyn_synth_end_note(inst, (bpbxsyn_voice_id) i);
         }
 
         // handle release trigger
@@ -595,7 +595,7 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             // readjust chord indices, so that the earliest voice
             // has chord index 0, and that the indices are contiguous
             // it will use insertion sort for this.
-            inst_base_voice_s *sort_voice_list[BPBX_SYNTH_MAX_VOICES];
+            inst_base_voice_s *sort_voice_list[BPBXSYN_SYNTH_MAX_VOICES];
             uint8_t length = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sort_voice_list);
 
             // finally, reapply voice indices
@@ -610,8 +610,8 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
     }
 
     switch (inst->chord_type) {
-        case BPBX_CHORD_TYPE_ARPEGGIO:
-            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+        case BPBXSYN_CHORD_TYPE_ARPEGGIO:
+            for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
 
@@ -619,7 +619,7 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
                 // arpeggio is monophonic
                 if (voice->chord_index == 0) {
                     voice->flags |= VOICE_FLAG_COMPUTING;
-                    inst_base_voice_s *sorted_voices[BPBX_SYNTH_MAX_VOICES];
+                    inst_base_voice_s *sorted_voices[BPBXSYN_SYNTH_MAX_VOICES];
                     uint8_t pitch_count = get_chord_list(params->voice_list, params->sizeof_voice, voice->chord_id, sorted_voices);
 
                     if (pitch_count == 1) {
@@ -649,9 +649,9 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             }
             break;
         
-        case BPBX_CHORD_TYPE_CUSTOM_INTERVAL:
+        case BPBXSYN_CHORD_TYPE_CUSTOM_INTERVAL:
             // TODO: custom interval chord type
-            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+            for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
                 
@@ -661,8 +661,8 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             }
             break;
 
-        case BPBX_CHORD_TYPE_STRUM:
-            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+        case BPBXSYN_CHORD_TYPE_STRUM:
+            for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
 
@@ -675,8 +675,8 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             }
             break;
 
-        case BPBX_CHORD_TYPE_SIMULTANEOUS:
-            for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; ++i) {
+        case BPBXSYN_CHORD_TYPE_SIMULTANEOUS:
+            for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
                 inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
                 voice->flags |= VOICE_FLAG_COMPUTING;
@@ -684,7 +684,7 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
             break;
     }
 
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
         if (!voice_is_triggered(voice)) continue;
@@ -784,7 +784,7 @@ static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
 #define FILTER_MAX_FREQ 33
 #define FILTER_MAX_GAIN 14
 
-const unison_desc_s unison_info[BPBX_UNISON_COUNT] = {
+const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT] = {
     // none
     { .voices = 1, .spread = 0.0, .offset = 0.0, .expression = 1.4, .sign = 1.0 },
     // shimmer
@@ -807,14 +807,14 @@ const unison_desc_s unison_info[BPBX_UNISON_COUNT] = {
     { .voices = 2, .spread = 0.25, .offset = 0.05, .expression = 0.9, .sign = -0.8 },
 };
 
-bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
+bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
     {
         .id = "inVolume",
         .name = "Volume",
         .group = "General",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = -25.0,
         .max_value = 25.0,
         .default_value = 0.0
@@ -824,7 +824,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Fade In",
         .group = "General",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0.0,
         .max_value = 9.0,
         .default_value = 0.0
@@ -834,7 +834,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Fade Out",
         .group = "General",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = FADE_OUT_MIN,
         .max_value = FADE_OUT_MAX,
         .default_value = 0.0
@@ -846,7 +846,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Modulation X",
         .group = "Modulation",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0.0,
         .max_value = 1.0,
         .default_value = 0.0
@@ -856,7 +856,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Modulation Y",
         .group = "Modulation",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0.0,
         .max_value = 1.0,
         .default_value = 0.0
@@ -867,9 +867,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inTrnsTg",
         .name = "Transition Type Toggle",
         .group = "Effects/Transition Type",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -879,9 +879,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inTrnsTy",
         .name = "Transition Type",
         .group = "Effects/Transition Type",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .default_value = 0,
@@ -893,9 +893,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inChdTog",
         .name = "Chord Type Toggle",
         .group = "Effects/Chord Type",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -905,9 +905,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inChdTyp",
         .name = "Chord Type",
         .group = "Effects/Chord Type",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .default_value = 0,
@@ -918,7 +918,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Arpeggio Speed",
         .group = "Effects/Chord Type",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = ARPEGGIO_SPEED_SETTING_COUNT - 1,
         .default_value = 12, // 1.0x speed,
@@ -930,7 +930,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Fast Two-Note Arpeggio",
         .group = "Effects/Chord Type",
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -942,7 +942,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Strum Speed",
         .group = "Effects/Chord Type",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = 10,
         .default_value = 1.0
@@ -953,9 +953,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inPtSfTg",
         .name = "Pitch Shift Toggle",
         .group = "Effects/Pitch Shift",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -966,7 +966,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Pitch Shift (st)",
         .group = "Effects/Pitch Shift",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = -12,
         .max_value = 12,
         .default_value = 0,
@@ -977,9 +977,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inCntsTg",
         .name = "Detune Toggle",
         .group = "Effects/Detune",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -990,7 +990,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Detune (c)",
         .group = "Effects/Detune",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = -200,
         .max_value = 200,
         .default_value = 0,
@@ -1001,9 +1001,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inVibTog",
         .name = "Vibrato Toggle",
         .group = "Effects/Vibrato",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -1013,9 +1013,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inVibPrs",
         .name = "Vibrato Preset",
         .group = "Effects/Vibrato",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 5,
         .default_value = 0,
@@ -1027,7 +1027,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .group = "Effects/Vibrato",
 
         // in beepbox code, this was quantized to increments of 0.04
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = 2,
         .default_value = 0,
@@ -1038,7 +1038,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Vibrato Speed",
         .group = "Effects/Vibrato",
 
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = 3.0,
         .default_value = 1.0,
@@ -1048,7 +1048,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Vibrato Delay",
         .group = "Effects/Vibrato",
 
-        .type = BPBX_PARAM_INT,
+        .type = BPBXSYN_PARAM_INT,
         .min_value = 0,
         .max_value = 50,
         .default_value = 0,
@@ -1057,9 +1057,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inVibTyp",
         .name = "Vibrato Type",
         .group = "Effects/Vibrato",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
@@ -1072,9 +1072,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp@",
         .name = "Note Filter # Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1084,7 +1084,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter # Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1093,7 +1093,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter # Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1115,9 +1115,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inNFlTog",
         .name = "Note Filter Toggle",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
         .enum_values = bool_enum_values,
@@ -1126,9 +1126,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp01",
         .name = "Note Filter 1 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1138,7 +1138,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 1 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1147,7 +1147,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 1 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1155,9 +1155,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp02",
         .name = "Note Filter 2 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1167,7 +1167,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 2 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1176,7 +1176,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 2 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1184,9 +1184,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp03",
         .name = "Note Filter 3 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1196,7 +1196,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 3 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1205,7 +1205,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 3 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1213,9 +1213,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp04",
         .name = "Note Filter 4 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1225,7 +1225,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 4 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1234,7 +1234,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 4 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1242,9 +1242,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp05",
         .name = "Note Filter 5 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1254,7 +1254,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 5 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1263,7 +1263,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 5 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1271,9 +1271,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp06",
         .name = "Note Filter 6 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1283,7 +1283,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 6 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1292,7 +1292,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 6 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1300,9 +1300,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp07",
         .name = "Note Filter 7 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1312,7 +1312,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 7 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1321,7 +1321,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 7 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1329,9 +1329,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .id = "inFlTp08",
         .name = "Note Filter 8 Type",
         .group = "Effects/Note Filter",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1341,7 +1341,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 8 Freq.",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1350,7 +1350,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "Note Filter 8 Gain",
         .group = "Effects/Note Filter",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1362,9 +1362,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     local template = [[{
         .name = "EQ # Type",
         .group = "EQ",
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-        .type = BPBX_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = filt_type_enum,
@@ -1373,7 +1373,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "EQ # Freq.",
         .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_FREQ,
     },
@@ -1381,7 +1381,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
         .name = "EQ # Gain",
         .group = "EQ",
         
-        .type = BPBX_PARAM_DOUBLE,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .min_value = 0,
         .max_value = FILTER_MAX_GAIN,
     },
@@ -1402,9 +1402,9 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     // {
     //     .name = "EQ 1 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1413,7 +1413,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 1 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1421,16 +1421,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 1 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 2 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1439,7 +1439,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 2 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1447,16 +1447,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 2 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 3 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1465,7 +1465,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 3 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1473,16 +1473,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 3 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 4 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1491,7 +1491,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 4 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1499,16 +1499,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 4 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 5 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1517,7 +1517,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 5 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1525,16 +1525,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 5 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 6 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1543,7 +1543,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 6 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1551,16 +1551,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 6 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 7 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1569,7 +1569,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 7 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1577,16 +1577,16 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 7 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
     // {
     //     .name = "EQ 8 Type",
     //     .group = "EQ",
-    //     .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    //     .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         
-    //     .type = BPBX_PARAM_UINT8,
+    //     .type = BPBXSYN_PARAM_UINT8,
     //     .min_value = 0,
     //     .max_value = 3,
     //     .enum_values = filt_type_enum,
@@ -1595,7 +1595,7 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 8 Freq.",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_FREQ,
     // },
@@ -1603,73 +1603,73 @@ bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT] = {
     //     .name = "EQ 8 Gain",
     //     .group = "EQ",
         
-    //     .type = BPBX_PARAM_DOUBLE,
+    //     .type = BPBXSYN_PARAM_DOUBLE,
     //     .min_value = 0,
     //     .max_value = FILTER_MAX_GAIN,
     // },
 };
 
-size_t base_param_offsets[BPBX_BASE_PARAM_COUNT] = {
+size_t base_param_offsets[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
-    offsetof(bpbx_synth_s, volume),
-    offsetof(bpbx_synth_s, fade_in),
-    offsetof(bpbx_synth_s, fade_out),
+    offsetof(bpbxsyn_synth_s, volume),
+    offsetof(bpbxsyn_synth_s, fade_in),
+    offsetof(bpbxsyn_synth_s, fade_out),
 
     // modulation
-    offsetof(bpbx_synth_s, mod_x),
-    offsetof(bpbx_synth_s, mod_y),
+    offsetof(bpbxsyn_synth_s, mod_x),
+    offsetof(bpbxsyn_synth_s, mod_y),
 
     // transition type
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_TRANSITION_TYPE]),
-    offsetof(bpbx_synth_s, transition_type),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_TRANSITION_TYPE]),
+    offsetof(bpbxsyn_synth_s, transition_type),
 
     // chord type
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_CHORD_TYPE]),
-    offsetof(bpbx_synth_s, chord_type),
-    offsetof(bpbx_synth_s, arpeggio_speed),
-    offsetof(bpbx_synth_s, fast_two_note_arpeggio),
-    offsetof(bpbx_synth_s, strum_speed),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_CHORD_TYPE]),
+    offsetof(bpbxsyn_synth_s, chord_type),
+    offsetof(bpbxsyn_synth_s, arpeggio_speed),
+    offsetof(bpbxsyn_synth_s, fast_two_note_arpeggio),
+    offsetof(bpbxsyn_synth_s, strum_speed),
 
     // pitch shift
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_PITCH_SHIFT]),
-    offsetof(bpbx_synth_s, pitch_shift),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_PITCH_SHIFT]),
+    offsetof(bpbxsyn_synth_s, pitch_shift),
 
     // detune
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_DETUNE]),
-    offsetof(bpbx_synth_s, detune),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_DETUNE]),
+    offsetof(bpbxsyn_synth_s, detune),
 
     // vibrato
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_VIBRATO]),
-    offsetof(bpbx_synth_s, vibrato_preset),
-    offsetof(bpbx_synth_s, vibrato.depth),
-    offsetof(bpbx_synth_s, vibrato.speed),
-    offsetof(bpbx_synth_s, vibrato.delay),
-    offsetof(bpbx_synth_s, vibrato.type),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_VIBRATO]),
+    offsetof(bpbxsyn_synth_s, vibrato_preset),
+    offsetof(bpbxsyn_synth_s, vibrato.depth),
+    offsetof(bpbxsyn_synth_s, vibrato.speed),
+    offsetof(bpbxsyn_synth_s, vibrato.delay),
+    offsetof(bpbxsyn_synth_s, vibrato.type),
 
     // note filter params
-    offsetof(bpbx_synth_s, active_effects[BPBX_SYNTHFX_NOTE_FILTER]),
-    offsetof(bpbx_synth_s, note_filter.type    [0]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[0]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[0]),
-    offsetof(bpbx_synth_s, note_filter.type    [1]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[1]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[1]),
-    offsetof(bpbx_synth_s, note_filter.type    [2]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[2]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[2]),
-    offsetof(bpbx_synth_s, note_filter.type    [3]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[3]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[3]),
-    offsetof(bpbx_synth_s, note_filter.type    [4]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[4]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[4]),
-    offsetof(bpbx_synth_s, note_filter.type    [5]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[5]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[5]),
-    offsetof(bpbx_synth_s, note_filter.type    [6]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[6]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[6]),
-    offsetof(bpbx_synth_s, note_filter.type    [7]),
-    offsetof(bpbx_synth_s, note_filter.freq_idx[7]),
-    offsetof(bpbx_synth_s, note_filter.gain_idx[7]),
+    offsetof(bpbxsyn_synth_s, active_effects[BPBXSYN_SYNTHFX_NOTE_FILTER]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [0]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[0]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[0]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [1]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[1]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[1]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [2]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[2]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[2]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [3]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[3]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[3]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [4]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[4]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[4]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [5]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[5]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[5]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [6]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[6]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[6]),
+    offsetof(bpbxsyn_synth_s, note_filter.type    [7]),
+    offsetof(bpbxsyn_synth_s, note_filter.freq_idx[7]),
+    offsetof(bpbxsyn_synth_s, note_filter.gain_idx[7]),
 };

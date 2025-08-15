@@ -2,7 +2,7 @@
 
 #include <assert.h>
 #include "util.h"
-#include "instrument.h"
+#include "inst/instrument.h"
 
 double secs_fade_in(double setting) {
     return 0.0125 * (0.95 * setting + 0.05 * setting * setting);
@@ -63,7 +63,7 @@ static double compute_envelope(const envelope_curve_preset_s *curve, double time
 }
 
 void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w) {
-    for (int i = 0; i < BPBX_ENV_INDEX_COUNT; i++) {
+    for (int i = 0; i < BPBXSYN_ENV_INDEX_COUNT; i++) {
         env_computer->envelope_starts[i] = 1.0;
         env_computer->envelope_ends[i] = 1.0;
     }
@@ -89,50 +89,50 @@ void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x,
     env_computer->mod_wheel[1] = mod_w;
 }
 
-// static int is_filter_target(bpbx_envelope_compute_index_e index) {
+// static int is_filter_target(bpbxsyn_envelope_compute_index_e index) {
 //     return
-//         (index >= BPBX_ENV_INDEX_NOTE_FILTER_FREQ0 &&
-//         index <= BPBX_ENV_INDEX_NOTE_FILTER_FREQ7) ||
-//         (index >= BPBX_ENV_INDEX_NOTE_FILTER_GAIN0 &&
-//         index <= BPBX_ENV_INDEX_NOTE_FILTER_GAIN7) ||
-//         index == BPBX_ENV_INDEX_NOTE_FILTER_ALL_FREQS;
+//         (index >= BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ0 &&
+//         index <= BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ7) ||
+//         (index >= BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN0 &&
+//         index <= BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN7) ||
+//         index == BPBXSYN_ENV_INDEX_NOTE_FILTER_ALL_FREQS;
 // }
 
-static int get_filter_target(bpbx_envelope_compute_index_e index) {
+static int get_filter_target(bpbxsyn_envelope_compute_index_e index) {
     // i'd rather make a huge switch statement than write the bounds checking
     // because i can multicursor
     switch (index) {
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ0: return 0;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ1: return 1;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ2: return 2;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ3: return 3;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ4: return 4;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ5: return 5;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ6: return 6;
-        case BPBX_ENV_INDEX_NOTE_FILTER_FREQ7: return 7;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ0: return 0;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ1: return 1;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ2: return 2;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ3: return 3;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ4: return 4;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ5: return 5;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ6: return 6;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ7: return 7;
 
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN0: return 0;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN1: return 1;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN2: return 2;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN3: return 3;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN4: return 4;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN5: return 5;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN6: return 6;
-        case BPBX_ENV_INDEX_NOTE_FILTER_GAIN7: return 7;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN0: return 0;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN1: return 1;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN2: return 2;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN3: return 3;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN4: return 4;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN5: return 5;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN6: return 6;
+        case BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN7: return 7;
 
         default: return -1;
     }
 }
 
 void compute_envelopes(
-    const bpbx_synth_s *inst, envelope_computer_s *env_computer,
+    const bpbxsyn_synth_s *inst, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
     (void)tick_time_start;
 
     const bool slide_transition =
-        inst->active_effects[BPBX_SYNTHFX_TRANSITION_TYPE] &&
-        inst->transition_type == BPBX_TRANSITION_TYPE_SLIDE;
+        inst->active_effects[BPBXSYN_SYNTHFX_TRANSITION_TYPE] &&
+        inst->transition_type == BPBXSYN_TRANSITION_TYPE_SLIDE;
     
     if (env_computer->flags & ENV_COMPUTER_FLAG_DO_RESET) {
         env_computer->prev_note_secs_end = env_computer->note_secs_end;
@@ -157,7 +157,7 @@ void compute_envelopes(
     const double beats_time_start = beat_start;
     const double beats_time_end = beat_start + beats_per_tick;
 
-    for (int i = 0; i < BPBX_ENV_INDEX_COUNT; i++) {
+    for (int i = 0; i < BPBXSYN_ENV_INDEX_COUNT; i++) {
         env_computer->envelope_starts[i] = 1.0;
         env_computer->envelope_ends[i] = 1.0;
     }
@@ -177,7 +177,7 @@ void compute_envelopes(
     }
 
     for (unsigned int i = 0; i < inst->envelope_count; i++) {
-        const bpbx_envelope_s *env = &inst->envelopes[i];
+        const bpbxsyn_envelope_s *env = &inst->envelopes[i];
         const envelope_curve_preset_s curve = envelope_curve_presets[env->curve_preset];
 
         double envelope_start = compute_envelope(
@@ -213,7 +213,7 @@ void compute_envelopes(
         env_computer->envelope_ends[env->index] *= envelope_end;
 
         int filter_target = get_filter_target(env->index);
-        if (filter_target != -1 && inst->note_filter.type[filter_target] == BPBX_FILTER_TYPE_LP) {
+        if (filter_target != -1 && inst->note_filter.type[filter_target] == BPBXSYN_FILTER_TYPE_LP) {
             double v = get_lp_cutoff_decay_volume_compensation(&curve);
             if (v > env_computer->lp_cutoff_decay_volume_compensation)
                 env_computer->lp_cutoff_decay_volume_compensation = v;
@@ -230,7 +230,7 @@ void compute_envelopes(
 //  DATA  //
 ////////////
 
-const envelope_curve_preset_s envelope_curve_presets[BPBX_ENVELOPE_CURVE_PRESET_COUNT] = {
+const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT] = {
     {
         .name = "none",
         .curve_type = ENV_CURVE_NONE,

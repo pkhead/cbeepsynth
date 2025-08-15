@@ -2,19 +2,19 @@
 
 #include <assert.h>
 #include <string.h>
-#include "util.h"
-#include "wavetables.h"
+#include "../util.h"
+#include "../wavetables.h"
 
 ///////////////
 //  GENERIC  //
 ///////////////
 
-static inline bpbx_voice_id wave_note_on(
-    bpbx_synth_s *inst, wave_voice_s *voice_list,
+static inline bpbxsyn_voice_id wave_note_on(
+    bpbxsyn_synth_s *inst, wave_voice_s *voice_list,
     int key, double velocity, int32_t length
 ) {
     bool continuation;
-    bpbx_voice_id voice_index = trigger_voice(
+    bpbxsyn_voice_id voice_index = trigger_voice(
         inst, GENERIC_LIST(voice_list), key, velocity, length, &continuation);
 
     if (!continuation) {
@@ -27,12 +27,12 @@ static inline bpbx_voice_id wave_note_on(
     return voice_index;
 }
 
-static inline void wave_note_off(bpbx_synth_s *inst, wave_voice_s *voice_list, bpbx_voice_id id) {
+static inline void wave_note_off(bpbxsyn_synth_s *inst, wave_voice_s *voice_list, bpbxsyn_voice_id id) {
     release_voice(inst, GENERIC_LIST(voice_list), id);
 }
 
 static void compute_wave_voice(
-    const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data,
+    const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data,
     const double base_expression
 ) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
@@ -68,8 +68,8 @@ static void compute_wave_voice(
     const double expr_start = varying->expr_start * settings_expression_mult * pitch_expression_start;
     const double expr_end = varying->expr_end * settings_expression_mult * pitch_expression_end;
     
-    const double unison_env_start = voice->env_computer.envelope_starts[BPBX_ENV_INDEX_UNISON];
-    const double unison_env_end = voice->env_computer.envelope_ends[BPBX_ENV_INDEX_UNISON];
+    const double unison_env_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_UNISON];
+    const double unison_env_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_UNISON];
 
     const double freq_end_ratio = pow(2.0, (interval_end - interval_start) * 1.0 / 12.0);
     const double base_phase_delta_scale = pow(freq_end_ratio, 1.0 / rounded_samples_per_tick);
@@ -105,7 +105,7 @@ static void wave_audio_render_callback(
 
     memset(output_buffer, 0, frames_to_compute * sizeof(float));
 
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         wave_voice_s *voice = voice_list + i;
         if (!voice_is_computing(&voice->base)) continue;
         float *out = output_buffer;
@@ -204,11 +204,11 @@ static void wave_audio_render_callback(
 
 #define CHIP_VOICE_BASE_EXPRESSION 0.03375
 
-void bpbx_synth_init_chip(chip_inst_s *inst) {
+void bpbxsyn_synth_init_chip(chip_inst_s *inst) {
     *inst = (chip_inst_s){0};
-    inst_init(&inst->base, BPBX_INSTRUMENT_CHIP);
+    inst_init(&inst->base, BPBXSYN_SYNTH_CHIP);
 
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
@@ -216,28 +216,28 @@ void bpbx_synth_init_chip(chip_inst_s *inst) {
     inst->unison_type = 0;
 }
 
-bpbx_voice_id chip_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length) {
+bpbxsyn_voice_id chip_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_CHIP);
+    assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     return wave_note_on(inst, chip->voices, key, velocity, length);
 }
 
-void chip_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
+void chip_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_CHIP);
+    assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     wave_note_off(inst, chip->voices, id);
 }
 
-void chip_note_all_off(bpbx_synth_s *inst) {
+void chip_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_CHIP);
+    assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     release_all_voices(inst, GENERIC_LIST(chip->voices));
 }
 
-static void compute_chip_voice(const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_chip_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
 
     wavetable_desc_s wavetable = chip_wavetables[inst->waveform];
@@ -246,9 +246,9 @@ static void compute_chip_voice(const bpbx_synth_s *const base_inst, inst_base_vo
     compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
 }
 
-void chip_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+void chip_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
-    assert(src_inst->type == BPBX_INSTRUMENT_CHIP);
+    assert(src_inst->type == BPBXSYN_SYNTH_CHIP);
 
     chip_inst_s *const chip = (chip_inst_s*)src_inst;
 
@@ -260,7 +260,7 @@ void chip_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     });
 }
 
-void chip_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
+void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     chip_inst_s *const chip = (chip_inst_s*) src_inst;
     const bool aliases = FALSE;
 
@@ -306,52 +306,52 @@ void chip_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
 
 #define HARMONICS_VOICE_BASE_EXPRESSION 0.025
 
-void bpbx_synth_init_harmonics(harmonics_inst_s *inst) {
+void bpbxsyn_synth_init_harmonics(harmonics_inst_s *inst) {
     *inst = (harmonics_inst_s){0};
-    inst_init(&inst->base, BPBX_INSTRUMENT_HARMONICS);
+    inst_init(&inst->base, BPBXSYN_SYNTH_HARMONICS);
 
-    for (int i = 0; i < BPBX_SYNTH_MAX_VOICES; i++) {
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
-    inst->unison_type = BPBX_UNISON_NONE;
-    inst->controls[0] = BPBX_HARMONICS_CONTROL_MAX;
+    inst->unison_type = BPBXSYN_UNISON_NONE;
+    inst->controls[0] = BPBXSYN_HARMONICS_CONTROL_MAX;
 
     generate_harmonics(inst->controls, 64, inst->wave);
 
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
 }
 
-bpbx_voice_id harmonics_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length) {
+bpbxsyn_voice_id harmonics_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
+    assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
 
     return wave_note_on(inst, harmonics->voices, key, velocity, length);
 }
 
-void harmonics_note_off(bpbx_synth_s *inst, bpbx_voice_id id) {
+void harmonics_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
+    assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
     wave_note_off(inst, harmonics->voices, id);
 }
 
-void harmonics_note_all_off(bpbx_synth_s *inst) {
+void harmonics_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
-    assert(inst->type == BPBX_INSTRUMENT_HARMONICS);
+    assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
 
     release_all_voices(inst, harmonics->voices, sizeof(*harmonics->voices));
 }
 
-static void compute_harmonics_voice(const bpbx_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_harmonics_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
     compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
 }
 
-void harmonics_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
+void harmonics_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
-    assert(src_inst->type == BPBX_INSTRUMENT_HARMONICS);
+    assert(src_inst->type == BPBXSYN_SYNTH_HARMONICS);
 
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
 
@@ -363,7 +363,7 @@ void harmonics_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx) {
     });
 }
 
-void harmonics_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
+void harmonics_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
     const bool aliases = FALSE;
 
@@ -392,53 +392,53 @@ void harmonics_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count) {
 //  DATA  //
 ////////////
 
-static const char *waveform_enum_values[BPBX_CHIP_WAVE_COUNT] = {
+static const char *waveform_enum_values[BPBXSYN_CHIP_WAVE_COUNT] = {
     "rounded", "triangle", "square", "1/4 pulse", "1/8 pulse", "sawtooth",
     "double saw", "double pulse", "spiky", "sine", "flute", "harp",
     "sharp clarinet", "soft clarinet", "alto sax", "bassoon",
     "trumpet", "electric guitar", "organ", "pan flute", "glitch"
 };
 
-static const char *unison_enum_values[BPBX_UNISON_COUNT] = {
+static const char *unison_enum_values[BPBXSYN_UNISON_COUNT] = {
     "none", "shimmer", "hum", "honky tonk", "dissonant",
     "fifth", "octave", "bowed", "piano", "warbled"
 };
 
-static const bpbx_param_info_s chip_param_info[BPBX_CHIP_PARAM_COUNT] = {
+static const bpbxsyn_param_info_s chip_param_info[BPBXSYN_CHIP_PARAM_COUNT] = {
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "wvWavfrm",
         .name = "Wave",
         .group = "Chip",
         .min_value = 0,
-        .max_value = BPBX_CHIP_WAVE_COUNT - 1,
-        .default_value = BPBX_CHIP_WAVE_SQUARE,
+        .max_value = BPBXSYN_CHIP_WAVE_COUNT - 1,
+        .default_value = BPBXSYN_CHIP_WAVE_SQUARE,
 
         .enum_values = waveform_enum_values
     },
 
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "wvUnison",
         .name = "Unison",
         .group = "Chip",
         .min_value = 0,
-        .max_value = BPBX_UNISON_COUNT - 1,
-        .default_value = BPBX_UNISON_NONE,
+        .max_value = BPBXSYN_UNISON_COUNT - 1,
+        .default_value = BPBXSYN_UNISON_NONE,
 
         .enum_values = unison_enum_values
     },
 };
 
-static const bpbx_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
-    BPBX_ENV_INDEX_UNISON
+static const bpbxsyn_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
+    BPBXSYN_ENV_INDEX_UNISON
 };
 
-static const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT] = {
+static const size_t chip_param_addresses[BPBXSYN_CHIP_PARAM_COUNT] = {
     offsetof(chip_inst_s, waveform),
     offsetof(chip_inst_s, unison_type)
 };
@@ -456,14 +456,14 @@ static const size_t chip_param_addresses[BPBX_CHIP_PARAM_COUNT] = {
 import subprocess
 
 template = """{
-    .type = BPBX_PARAM_UINT8,
-    .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+    .type = BPBXSYN_PARAM_UINT8,
+    .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
     .id = "hmHarm@",
     .name = "Harmonics #x",
     .group = "Harmonics",
     .min_value = 0,
-    .max_value = BPBX_HARMONICS_CONTROL_MAX,
+    .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
     .default_value = 0.0,
 },
 """
@@ -475,334 +475,334 @@ for i in range(28):
 with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
     proc.stdin.write(bytes(out, "utf-8"))
 */
-const bpbx_param_info_s harmonics_param_info[] = {
+const bpbxsyn_param_info_s harmonics_param_info[] = {
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmUnison",
         .name = "Unison",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_UNISON_COUNT - 1,
-        .default_value = BPBX_UNISON_NONE,
+        .max_value = BPBXSYN_UNISON_COUNT - 1,
+        .default_value = BPBXSYN_UNISON_NONE,
 
         .enum_values = unison_enum_values
     },
     
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm01",
         .name = "Harmonics 1x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm02",
         .name = "Harmonics 2x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm03",
         .name = "Harmonics 3x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm04",
         .name = "Harmonics 4x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm05",
         .name = "Harmonics 5x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm06",
         .name = "Harmonics 6x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm07",
         .name = "Harmonics 7x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm08",
         .name = "Harmonics 8x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm09",
         .name = "Harmonics 9x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm10",
         .name = "Harmonics 10x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm11",
         .name = "Harmonics 11x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm12",
         .name = "Harmonics 12x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm13",
         .name = "Harmonics 13x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm14",
         .name = "Harmonics 14x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm15",
         .name = "Harmonics 15x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm16",
         .name = "Harmonics 16x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm17",
         .name = "Harmonics 17x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm18",
         .name = "Harmonics 18x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm19",
         .name = "Harmonics 19x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm20",
         .name = "Harmonics 20x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm21",
         .name = "Harmonics 21x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm22",
         .name = "Harmonics 22x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm23",
         .name = "Harmonics 23x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm24",
         .name = "Harmonics 24x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm25",
         .name = "Harmonics 25x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm26",
         .name = "Harmonics 26x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm27",
         .name = "Harmonics 27x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBX_PARAM_UINT8,
-        .flags = BPBX_PARAM_FLAG_NO_AUTOMATION,
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "hmHarm28",
         .name = "Harmonics 28x",
         .group = "Harmonics",
         .min_value = 0,
-        .max_value = BPBX_HARMONICS_CONTROL_MAX,
+        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
 
 };
 
-const bpbx_envelope_compute_index_e harmonics_env_targets[] = {
-    BPBX_ENV_INDEX_UNISON
+const bpbxsyn_envelope_compute_index_e harmonics_env_targets[] = {
+    BPBXSYN_ENV_INDEX_UNISON
 };
 
 /*
@@ -858,14 +858,14 @@ const size_t harmonics_param_addresses[] = {
 const inst_vtable_s inst_chip_vtable = {
     .struct_size = sizeof(chip_inst_s),
 
-    .param_count = BPBX_CHIP_PARAM_COUNT,
+    .param_count = BPBXSYN_CHIP_PARAM_COUNT,
     .param_info = chip_param_info,
     .param_addresses = chip_param_addresses,
 
     .envelope_target_count = CHIP_MOD_COUNT,
     .envelope_targets = chip_env_targets,
 
-    .inst_init = (inst_init_f)bpbx_synth_init_chip,
+    .inst_init = (inst_init_f)bpbxsyn_synth_init_chip,
     .inst_note_on = chip_note_on,
     .inst_note_off = chip_note_off,
     .inst_note_all_off = chip_note_all_off,
@@ -877,14 +877,14 @@ const inst_vtable_s inst_chip_vtable = {
 const inst_vtable_s inst_harmonics_vtable = {
     .struct_size = sizeof(harmonics_inst_s),
 
-    .param_count = BPBX_HARMONICS_PARAM_COUNT,
+    .param_count = BPBXSYN_HARMONICS_PARAM_COUNT,
     .param_info = harmonics_param_info,
     .param_addresses = harmonics_param_addresses,
 
     .envelope_target_count = HARMONICS_MOD_COUNT,
     .envelope_targets = harmonics_env_targets,
 
-    .inst_init = (inst_init_f)bpbx_synth_init_harmonics,
+    .inst_init = (inst_init_f)bpbxsyn_synth_init_harmonics,
     .inst_note_on = harmonics_note_on,
     .inst_note_off = harmonics_note_off,
     .inst_note_all_off = harmonics_note_all_off,

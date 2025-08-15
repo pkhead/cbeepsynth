@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <math.h>
 #include "../include/beepbox_synth.h"
-#include "envelope.h"
-#include "filtering.h"
+#include "../envelope.h"
+#include "../filtering.h"
 
 #define NOTE_SIZE_MAX 3
 #define PARTS_PER_BEAT 24
@@ -16,8 +16,8 @@
 #define PITCH_DAMPING 48
 #define ARPEGGIO_SPEED_SETTING_COUNT 51
 
-typedef struct bpbx_synth_s {
-    bpbx_synth_type_e type;
+typedef struct bpbxsyn_synth_s {
+    bpbxsyn_synth_type_e type;
     double sample_rate;
 
     double volume;
@@ -45,7 +45,7 @@ typedef struct bpbx_synth_s {
     double strum_speed;
 
     uint8_t vibrato_preset;
-    bpbx_vibrato_params_s vibrato;
+    bpbxsyn_vibrato_params_s vibrato;
 
     // current state of note filter 
     filter_group_s note_filter;
@@ -56,7 +56,7 @@ typedef struct bpbx_synth_s {
 
     // envelopes
     uint8_t envelope_count;
-    bpbx_envelope_s envelopes[BPBX_MAX_ENVELOPE_COUNT];
+    bpbxsyn_envelope_s envelopes[BPBXSYN_MAX_ENVELOPE_COUNT];
 
     // this is in seconds
     double vibrato_time_start;
@@ -67,12 +67,12 @@ typedef struct bpbx_synth_s {
     double mod_y;
     double mod_wheel; // last stored state of modulation wheel
 
-    bpbx_synth_callbacks_s callbacks;
+    bpbxsyn_synth_callbacks_s callbacks;
     void *userdata;
-} bpbx_synth_s;
+} bpbxsyn_synth_s;
 
-typedef void (*inst_init_f)(bpbx_synth_s *inst);
-typedef void (*inst_destroy_f)(bpbx_synth_s *inst);
+typedef void (*inst_init_f)(bpbxsyn_synth_s *inst);
+typedef void (*inst_destroy_f)(bpbxsyn_synth_s *inst);
 
 // (showing this to someone who isn't too familiar with C code)
 // this is a really elegant solution i swear!!
@@ -81,20 +81,20 @@ typedef struct {
     const inst_init_f       inst_init;
     const inst_destroy_f    inst_destroy;
     const uint32_t          param_count;
-    const bpbx_param_info_s* param_info;
+    const bpbxsyn_param_info_s* param_info;
     const size_t*           param_addresses;
 
     const size_t            envelope_target_count;
-    const bpbx_envelope_compute_index_e* envelope_targets;
+    const bpbxsyn_envelope_compute_index_e* envelope_targets;
     
-    bpbx_voice_id (*const inst_note_on)(bpbx_synth_s *inst, int key, double velocity, int32_t length);
-    void          (*const inst_note_off)(bpbx_synth_s *inst, bpbx_voice_id id);
-    void          (*const inst_note_choke)(bpbx_synth_s *inst, bpbx_voice_id id);
-    void          (*const inst_note_modulate)(bpbx_synth_s *inst, bpbx_voice_id, uint32_t param, double value);
-    void          (*const inst_note_all_off)(bpbx_synth_s *inst);
+    bpbxsyn_voice_id (*const inst_note_on)(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length);
+    void          (*const inst_note_off)(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
+    void          (*const inst_note_choke)(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
+    void          (*const inst_note_modulate)(bpbxsyn_synth_s *inst, bpbxsyn_voice_id, uint32_t param, double value);
+    void          (*const inst_note_all_off)(bpbxsyn_synth_s *inst);
 
-    void (*const inst_tick)(bpbx_synth_s *inst, const bpbx_tick_ctx_s *tick_ctx);
-    void (*const inst_run)(bpbx_synth_s *inst, float *samples, size_t frame_count);
+    void (*const inst_tick)(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *tick_ctx);
+    void (*const inst_run)(bpbxsyn_synth_s *inst, float *samples, size_t frame_count);
 } inst_vtable_s;
 // (for c, at least)
 // was using a switch statement cus i was lazy and thought "eh maybe it won't be that bad"
@@ -166,7 +166,7 @@ typedef struct {
 } inst_base_voice_s;
 
 typedef struct {
-    const bpbx_synth_s *inst;
+    const bpbxsyn_synth_s *inst;
 
     double fade_in;
     double fade_out;
@@ -174,7 +174,7 @@ typedef struct {
     double sample_rate;
     double cur_beat;
     double mod_x, mod_y, mod_w;
-    bpbx_vibrato_params_s *vibrato_params;
+    bpbxsyn_vibrato_params_s *vibrato_params;
 } voice_compute_constants_s;
 
 typedef struct {
@@ -200,7 +200,7 @@ typedef struct {
     void *voice_list;
     size_t sizeof_voice;
 
-    void (*compute_voice)(const bpbx_synth_s *const inst, inst_base_voice_s *const voice, voice_compute_s *compute_data);
+    void (*compute_voice)(const bpbxsyn_synth_s *const inst, inst_base_voice_s *const voice, voice_compute_s *compute_data);
 
     void *userdata;
 } audio_compute_s;
@@ -213,16 +213,16 @@ typedef struct {
     double sign;
 } unison_desc_s;
 
-void inst_init(bpbx_synth_s *inst, bpbx_synth_type_e type);
+void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type);
 
-bpbx_voice_id trigger_voice(bpbx_synth_s *inst,
+bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
                             void *voices, size_t sizeof_voice,
                             int key, double velocity, int32_t length,
                             bool *continuation);
-void release_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
-// void choke_voice(bpbx_synth_s *inst, void *voices, size_t sizeof_voice, bpbx_voice_id id);
-void release_all_voices(bpbx_synth_s *inst, void *voices, size_t sizeof_voice);
-void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_compute_s *params);
+void release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpbxsyn_voice_id id);
+// void choke_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpbxsyn_voice_id id);
+void release_all_voices(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice);
+void inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, const audio_compute_s *params);
 double inst_calc_arp_speed(double arp_speed_setting);
 
 #define GENERIC_LIST(list) (list), sizeof(*(list))
@@ -230,12 +230,12 @@ double inst_calc_arp_speed(double arp_speed_setting);
 double calc_samples_per_tick(double bpm, double sample_rate);
 double note_size_to_volume_mult(double size);
 double inst_volume_to_mult(double inst_volume);
-double get_lfo_amplitude(bpbx_vibrato_type_e type, double secs_into_bar);
+double get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar);
 // double calc_pitch_expression(double pitch);
 #define calc_pitch_expression(pitch) (pow(2.0, -((pitch) - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING))
 
-extern bpbx_param_info_s base_param_info[BPBX_BASE_PARAM_COUNT];
-extern size_t base_param_offsets[BPBX_BASE_PARAM_COUNT];
-extern const unison_desc_s unison_info[BPBX_UNISON_COUNT];
+extern bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT];
+extern size_t base_param_offsets[BPBXSYN_BASE_PARAM_COUNT];
+extern const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT];
 
 #endif

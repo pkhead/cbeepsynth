@@ -64,6 +64,6 @@ static inline double key_to_hz_d(double key) {
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((format(printf, 2, 3)))
 #endif
-void logmsgf(bpbx_log_severity_e severity, const char *msg, ...);
+void logmsgf(bpbxsyn_log_severity_e severity, const char *msg, ...);
 
 #endif

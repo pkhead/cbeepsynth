@@ -4,10 +4,10 @@ project(bpbxsynth VERSION 0.2.0)
 set(SOURCES
     src/public.c
 
-    src/instrument.c
-    src/fm_algo.c
-    src/fm.c
-    src/wave.c
+    src/inst/instrument.c
+    src/inst/fm_algo.c
+    src/inst/fm.c
+    src/inst/wave.c
     
     src/wavetables.c
     src/envelope.c

@@ -16,27 +16,27 @@ static void harmonics_perform_integral(float *wave, size_t length) {
     }
 }
 
-void generate_harmonics(uint8_t controls[BPBX_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *wave) {
+void generate_harmonics(uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *wave) {
     memset(wave, 0, HARMONICS_WAVE_LENGTH * sizeof(float));
 
-    const float *retro_wave = noise_wavetables[BPBX_NOISE_RETRO].samples;
+    const float *retro_wave = noise_wavetables[BPBXSYN_NOISE_RETRO].samples;
 
     const double overall_slope = -0.25;
     double combined_control_point_amp = 1;
 
     for (int harmonic_index = 0; harmonic_index < harmonics_rendered; harmonic_index++) {
         const int harmonic_freq = harmonic_index + 1;
-        double control_value = harmonic_index < BPBX_HARMONICS_CONTROL_COUNT ?
+        double control_value = harmonic_index < BPBXSYN_HARMONICS_CONTROL_COUNT ?
             (double)controls[harmonic_index] : 
-            (double)controls[BPBX_HARMONICS_CONTROL_COUNT - 1];
+            (double)controls[BPBXSYN_HARMONICS_CONTROL_COUNT - 1];
 
-        if (harmonic_index >= BPBX_HARMONICS_CONTROL_COUNT) {
-            control_value *= 1.0 - (double)(harmonic_index - BPBX_HARMONICS_CONTROL_COUNT) / (harmonics_rendered - BPBX_HARMONICS_CONTROL_COUNT);
+        if (harmonic_index >= BPBXSYN_HARMONICS_CONTROL_COUNT) {
+            control_value *= 1.0 - (double)(harmonic_index - BPBXSYN_HARMONICS_CONTROL_COUNT) / (harmonics_rendered - BPBXSYN_HARMONICS_CONTROL_COUNT);
         }
 
-        const double normalized_value = control_value / BPBX_HARMONICS_CONTROL_MAX;
-        double amplitude = pow(2.0, control_value - BPBX_HARMONICS_CONTROL_MAX + 1) * sqrt(normalized_value);
-        if (harmonic_index < BPBX_HARMONICS_CONTROL_COUNT) {
+        const double normalized_value = control_value / BPBXSYN_HARMONICS_CONTROL_MAX;
+        double amplitude = pow(2.0, control_value - BPBXSYN_HARMONICS_CONTROL_MAX + 1) * sqrt(normalized_value);
+        if (harmonic_index < BPBXSYN_HARMONICS_CONTROL_COUNT) {
             combined_control_point_amp += amplitude;
         }
         amplitude *= pow((double)harmonic_freq, overall_slope);
@@ -64,9 +64,9 @@ float sine_wave_f[SINE_WAVE_LENGTH + 1];
 double sine_wave_d[SINE_WAVE_LENGTH + 1];
 static int need_init_wavetables = 1;
 
-wavetable_desc_s raw_chip_wavetables[BPBX_CHIP_WAVE_COUNT];
-wavetable_desc_s chip_wavetables[BPBX_CHIP_WAVE_COUNT];
-noise_wavetable_s noise_wavetables[BPBX_NOISE_COUNT];
+wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
 
 #define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
 
@@ -149,107 +149,107 @@ void init_wavetables() {
 
     // set up chip wavetables
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_ROUNDED,
+        BPBXSYN_CHIP_WAVE_ROUNDED,
         0.94,
         0.0, 0.2, 0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.2, 0.0, -0.2, -0.4, -0.5, -0.6, -0.7, -0.8, -0.85, -0.9, -0.95, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -0.95, -0.9, -0.85, -0.8, -0.7, -0.6, -0.5, -0.4, -0.2
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_TRIANGLE,
+        BPBXSYN_CHIP_WAVE_TRIANGLE,
         1.0,
         1.0 / 15.0, 3.0 / 15.0, 5.0 / 15.0, 7.0 / 15.0, 9.0 / 15.0, 11.0 / 15.0, 13.0 / 15.0, 15.0 / 15.0, 15.0 / 15.0, 13.0 / 15.0, 11.0 / 15.0, 9.0 / 15.0, 7.0 / 15.0, 5.0 / 15.0, 3.0 / 15.0, 1.0 / 15.0, -1.0 / 15.0, -3.0 / 15.0, -5.0 / 15.0, -7.0 / 15.0, -9.0 / 15.0, -11.0 / 15.0, -13.0 / 15.0, -15.0 / 15.0, -15.0 / 15.0, -13.0 / 15.0, -11.0 / 15.0, -9.0 / 15.0, -7.0 / 15.0, -5.0 / 15.0, -3.0 / 15.0, -1.0 / 15.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_SQUARE,
+        BPBXSYN_CHIP_WAVE_SQUARE,
         0.5,
         1.0, -1.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_PULSE4,
+        BPBXSYN_CHIP_WAVE_PULSE4,
         0.5,
         1.0, -1.0, -1.0, -1.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_PULSE8,
+        BPBXSYN_CHIP_WAVE_PULSE8,
         0.5,
         1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_SAWTOOTH,
+        BPBXSYN_CHIP_WAVE_SAWTOOTH,
         0.65,
         1.0 / 31.0, 3.0 / 31.0, 5.0 / 31.0, 7.0 / 31.0, 9.0 / 31.0, 11.0 / 31.0, 13.0 / 31.0, 15.0 / 31.0, 17.0 / 31.0, 19.0 / 31.0, 21.0 / 31.0, 23.0 / 31.0, 25.0 / 31.0, 27.0 / 31.0, 29.0 / 31.0, 31.0 / 31.0, -31.0 / 31.0, -29.0 / 31.0, -27.0 / 31.0, -25.0 / 31.0, -23.0 / 31.0, -21.0 / 31.0, -19.0 / 31.0, -17.0 / 31.0, -15.0 / 31.0, -13.0 / 31.0, -11.0 / 31.0, -9.0 / 31.0, -7.0 / 31.0, -5.0 / 31.0, -3.0 / 31.0, -1.0 / 31.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_DOUBLE_SAW,
+        BPBXSYN_CHIP_WAVE_DOUBLE_SAW,
         0.5,
         0.0, -0.2, -0.4, -0.6, -0.8, -1.0, 1.0, -0.8, -0.6, -0.4, -0.2, 1.0, 0.8, 0.6, 0.4, 0.2
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_DOUBLE_PULSE,
+        BPBXSYN_CHIP_WAVE_DOUBLE_PULSE,
         0.4,
         1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_SPIKY,
+        BPBXSYN_CHIP_WAVE_SPIKY,
         0.4,
         1.0, -1.0, 1.0, -1.0, 1.0, 0.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_SINE,
+        BPBXSYN_CHIP_WAVE_SINE,
         0.88,
         8.0, 9.0, 11.0, 12.0, 13.0, 14.0, 15.0, 15.0, 15.0, 15.0, 14.0, 14.0, 13.0, 11.0, 10.0, 9.0, 7.0, 6.0, 4.0, 3.0, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 4.0, 5.0, 6.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_FLUTE,
+        BPBXSYN_CHIP_WAVE_FLUTE,
         0.8,
         3.0, 4.0, 6.0, 8.0, 10.0, 11.0, 13.0, 14.0, 15.0, 15.0, 14.0, 13.0, 11.0, 8.0, 5.0, 3.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_HARP,
+        BPBXSYN_CHIP_WAVE_HARP,
         0.8,
         0.0, 3.0, 3.0, 3.0, 4.0, 5.0, 5.0, 6.0, 7.0, 8.0, 9.0, 11.0, 11.0, 13.0, 13.0, 15.0, 15.0, 14.0, 12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 7.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0, 0.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_SHARP_CLARINET,
+        BPBXSYN_CHIP_WAVE_SHARP_CLARINET,
         0.38,
         0.0, 0.0, 0.0, 1.0, 1.0, 8.0, 8.0, 9.0, 9.0, 9.0, 8.0, 8.0, 8.0, 8.0, 8.0, 9.0, 9.0, 7.0, 9.0, 9.0, 10.0, 4.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_SOFT_CLARINET,
+        BPBXSYN_CHIP_WAVE_SOFT_CLARINET,
         0.45,
         0.0, 1.0, 5.0, 8.0, 9.0, 9.0, 9.0, 9.0, 9.0, 9.0, 9.0, 11.0, 11.0, 12.0, 13.0, 12.0, 10.0, 9.0, 7.0, 6.0, 4.0, 3.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_ALTO_SAX,
+        BPBXSYN_CHIP_WAVE_ALTO_SAX,
         0.3,
         5.0, 5.0, 6.0, 4.0, 3.0, 6.0, 8.0, 7.0, 2.0, 1.0, 5.0, 6.0, 5.0, 4.0, 5.0, 7.0, 9.0, 11.0, 13.0, 14.0, 14.0, 14.0, 14.0, 13.0, 10.0, 8.0, 7.0, 7.0, 4.0, 3.0, 4.0, 2.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_BASSOON,
+        BPBXSYN_CHIP_WAVE_BASSOON,
         0.35,
         9.0, 9.0, 7.0, 6.0, 5.0, 4.0, 4.0, 4.0, 4.0, 5.0, 7.0, 8.0, 9.0, 10.0, 11.0, 13.0, 13.0, 11.0, 10.0, 9.0, 7.0, 6.0, 4.0, 2.0, 1.0, 1.0, 1.0, 2.0, 2.0, 5.0, 11.0, 14.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_TRUMPET,
+        BPBXSYN_CHIP_WAVE_TRUMPET,
         0.22,
         10.0, 11.0, 8.0, 6.0, 5.0, 5.0, 5.0, 6.0, 7.0, 7.0, 7.0, 7.0, 6.0, 6.0, 7.0, 7.0, 7.0, 7.0, 7.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 7.0, 8.0, 9.0, 11.0, 14.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_ELECTRIC_GUITAR,
+        BPBXSYN_CHIP_WAVE_ELECTRIC_GUITAR,
         0.2,
         11.0, 12.0, 12.0, 10.0, 6.0, 6.0, 8.0, 0.0, 2.0, 4.0, 8.0, 10.0, 9.0, 10.0, 1.0, 7.0, 11.0, 3.0, 6.0, 6.0, 8.0, 13.0, 14.0, 2.0, 0.0, 12.0, 8.0, 4.0, 13.0, 11.0, 10.0, 13.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_ORGAN,
+        BPBXSYN_CHIP_WAVE_ORGAN,
         0.2,
         11.0, 10.0, 12.0, 11.0, 14.0, 7.0, 5.0, 5.0, 12.0, 10.0, 10.0, 9.0, 12.0, 6.0, 4.0, 5.0, 13.0, 12.0, 12.0, 10.0, 12.0, 5.0, 2.0, 2.0, 8.0, 6.0, 6.0, 5.0, 8.0, 3.0, 2.0, 1.0
     );
     INIT_WAVETABLE_N(
-        BPBX_CHIP_WAVE_PAN_FLUTE,
+        BPBXSYN_CHIP_WAVE_PAN_FLUTE,
         0.35,
         1.0, 4.0, 7.0, 6.0, 7.0, 9.0, 7.0, 7.0, 11.0, 12.0, 13.0, 15.0, 13.0, 11.0, 11.0, 12.0, 13.0, 10.0, 7.0, 5.0, 3.0, 6.0, 10.0, 7.0, 3.0, 3.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0
     );
     INIT_WAVETABLE(
-        BPBX_CHIP_WAVE_GLITCH,
+        BPBXSYN_CHIP_WAVE_GLITCH,
         0.5,
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0
     );
@@ -258,13 +258,13 @@ void init_wavetables() {
 
     // there is an extra 0 at the end of each wavetable.
     // This is just for interpolation purposes.
-    for (int i = 0; i < BPBX_NOISE_COUNT; i++) {
+    for (int i = 0; i < BPBXSYN_NOISE_COUNT; i++) {
         noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
     }
 
     // The "retro" drum uses a "Linear Feedback Shift Register" similar to the NES noise channel.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_RETRO];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_RETRO];
         wavetable->expression = 0.25;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -284,7 +284,7 @@ void init_wavetables() {
 
     // White noise is just random values for each sample.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_WHITE];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_WHITE];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 8.0;
@@ -298,7 +298,7 @@ void init_wavetables() {
 
     // The "clang" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_CLANG];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_CLANG];
         wavetable->expression = 0.4;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -318,7 +318,7 @@ void init_wavetables() {
 
     // The "buzz" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_BUZZ];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_BUZZ];
         wavetable->expression = 0.3;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -339,7 +339,7 @@ void init_wavetables() {
     // TODO: hollow drums
     // "hollow" drums, designed in frequency space and then converted via FFT:
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_HOLLOW];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_HOLLOW];
         wavetable->expression = 1.5;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1.0;
@@ -351,7 +351,7 @@ void init_wavetables() {
     // "Shine" drums from modbox!
     // (it's the same as buzz but louder)
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_SHINE];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_SHINE];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -373,7 +373,7 @@ void init_wavetables() {
     // TODO: deep drums
     // "Deep" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_DEEP];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_DEEP];
         wavetable->expression = 1.5;
         wavetable->base_pitch = 120;
         wavetable->pitch_filter_mult = 1024.0;
@@ -384,7 +384,7 @@ void init_wavetables() {
 
     // "Cutter" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_CUTTER];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_CUTTER];
         wavetable->expression = 0.005;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;
@@ -404,7 +404,7 @@ void init_wavetables() {
 
     // "Metallic" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBX_NOISE_METALLIC];
+        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_METALLIC];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;

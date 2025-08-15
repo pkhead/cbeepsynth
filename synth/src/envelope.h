@@ -18,8 +18,8 @@ enum {
 typedef struct {
     uint8_t flags;
 
-    double envelope_starts[BPBX_ENV_INDEX_COUNT];
-    double envelope_ends[BPBX_ENV_INDEX_COUNT];
+    double envelope_starts[BPBXSYN_ENV_INDEX_COUNT];
+    double envelope_ends[BPBXSYN_ENV_INDEX_COUNT];
     double tick;
     double note_secs_start;
     double note_secs_end;
@@ -68,10 +68,10 @@ void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, dou
 void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w);
 
 void compute_envelopes(
-    const bpbx_synth_s *instrument, envelope_computer_s *env_computer,
+    const bpbxsyn_synth_s *instrument, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 );
 
-extern const envelope_curve_preset_s envelope_curve_presets[BPBX_ENVELOPE_CURVE_PRESET_COUNT];
+extern const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT];
 
 #endif

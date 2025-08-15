@@ -3,11 +3,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../include/beepbox_synth.h"
-#include "../include/beepbox_instrument_data.h"
-#include "wavetables.h"
-#include "envelope.h"
-#include "filtering.h"
+#include "../../include/beepbox_synth.h"
+#include "../../include/beepbox_instrument_data.h"
+#include "../wavetables.h"
 #include "instrument.h"
 
 #define FM_OP_COUNT 4
@@ -35,7 +33,7 @@ typedef struct {
 } fm_voice_s;
 
 typedef struct {
-    bpbx_synth_s base;
+    bpbxsyn_synth_s base;
 
     uint8_t algorithm;
     uint8_t freq_ratios[FM_OP_COUNT];
@@ -45,7 +43,7 @@ typedef struct {
     double feedback;
 
     int carrier_count;
-    fm_voice_s voices[BPBX_SYNTH_MAX_VOICES];
+    fm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
 } fm_inst_s;
 
 static inline double fm_calc_op(const double phase_mix) {
@@ -55,12 +53,12 @@ static inline double fm_calc_op(const double phase_mix) {
     return sample + (sine_wave_d[index+1] - sample) * (phase_mix - phase_int);
 }
 
-void bpbx_synth_init_fm(fm_inst_s *inst);
-bpbx_voice_id fm_note_on(bpbx_synth_s *inst, int key, double velocity, int32_t length);
-void fm_note_off(bpbx_synth_s *inst, bpbx_voice_id id);
-void fm_note_all_off(bpbx_synth_s *inst);
-void fm_tick(bpbx_synth_s *src_inst, const bpbx_tick_ctx_s *tick_ctx);
-void fm_run(bpbx_synth_s *src_inst, float *samples, size_t frame_count);
+void bpbxsyn_synth_init_fm(fm_inst_s *inst);
+bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length);
+void fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
+void fm_note_all_off(bpbxsyn_synth_s *inst);
+void fm_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx);
+void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count);
 
 extern const inst_vtable_s inst_fm_vtable;
 

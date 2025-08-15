@@ -667,8 +667,7 @@ void inst_tick(bpbx_synth_s *inst, const bpbx_tick_ctx_s *run_ctx, const audio_c
                 if (!voice_is_active(voice) || !voice_is_triggered(voice)) continue;
 
                 if (!voice_is_computing(voice)) {
-                    if (voice->time_ticks++ >= voice->chord_index * 2) {
-                        logmsgf(BPBX_LOG_DEBUG, "started voice %i at tick %i", voice->chord_index, voice->time_ticks);
+                    if (voice->time_ticks++ >= voice->chord_index * TICKS_PER_PART) {
                         voice->flags |= VOICE_FLAG_COMPUTING;
                         voice->time_ticks = 0;
                     }

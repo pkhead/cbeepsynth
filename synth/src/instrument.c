@@ -340,7 +340,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
         = ceil(samples_per_tick);
 
     voice->time_ticks = voice->time2_ticks;
-    voice->time2_ticks = voice->time_ticks + 1.0;
+    voice->time2_ticks = voice->time_ticks + 1;
     voice->time_secs = voice->time2_secs;
     voice->time2_secs = voice->time_secs + samples_per_tick / compute_data->sample_rate;
 

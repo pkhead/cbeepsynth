@@ -152,8 +152,8 @@ typedef struct {
 
     // how long the voice has been active in ticks
     // time2_secs is ticks to the end of the current run.
-    double time_ticks;
-    double time2_ticks;
+    int time_ticks;
+    int time2_ticks;
 
     double secs_since_release;
     double ticks_since_release;

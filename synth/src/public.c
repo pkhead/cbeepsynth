@@ -15,6 +15,7 @@
 
 #include "inst/wave.h"
 #include "inst/fm.h"
+#include "fx/panning.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -33,6 +34,23 @@ static const inst_vtable_s *inst_vtables[] = {
     NULL,
     // BPBXSYN_SYNTH_SUPERSAW
     NULL
+};
+
+static const effect_vtable_s *effect_vtables[] = {
+    // BPBXSYN_EFFECT_EQ,
+    NULL,
+    // BPBXSYN_EFFECT_PANNING,
+    &effect_panning_vtable,
+    // BPBXSYN_EFFECT_DISTORTION,
+    NULL,
+    // BPBXSYN_EFFECT_BITCRUSHER,
+    NULL,
+    // BPBXSYN_EFFECT_CHORUS,
+    NULL,
+    // BPBXSYN_EFFECT_ECHO,
+    NULL,
+    // BPBXSYN_EFFECT_REVERB,
+    NULL,
 };
 
 
@@ -105,9 +123,9 @@ bpbxsyn_synth_s* bpbxsyn_synth_new(bpbxsyn_synth_type_e type) {
     assert(vtable->inst_note_all_off);
     assert(vtable->inst_tick);
     assert(vtable->inst_run);
-    assert(vtable->param_count > 0 && vtable->param_info);
-    assert(vtable->param_count > 0 && vtable->param_addresses);
-    assert(vtable->envelope_target_count && vtable->envelope_targets);
+    assert(vtable->param_count == 0 || vtable->param_info);
+    assert(vtable->param_count == 0 || vtable->param_addresses);
+    assert(vtable->envelope_target_count == 0 || vtable->envelope_targets);
 
     bpbxsyn_synth_s *inst = bpbxsyn_malloc(vtable->struct_size);
     if (inst)
@@ -170,7 +188,7 @@ void bpbxsyn_synth_begin_transport(bpbxsyn_synth_s *inst, double beat, double bp
     inst->arp_time = beat * inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
-static int param_helper(const bpbxsyn_synth_s *inst, uint32_t index, void **addr, bpbxsyn_param_info_s *info) {
+static int synth_param_helper(const bpbxsyn_synth_s *inst, uint32_t index, void **addr, bpbxsyn_param_info_s *info) {
     if (index < BPBXSYN_BASE_PARAM_COUNT) {
         *info = base_param_info[index];
         *addr = (void*)(((uint8_t*)inst) + base_param_offsets[index]);
@@ -188,44 +206,33 @@ static int param_helper(const bpbxsyn_synth_s *inst, uint32_t index, void **addr
     return 0;
 }
 
-
-int bpbxsyn_synth_set_param_int(bpbxsyn_synth_s* inst, uint32_t index, int value) {
-    void *addr;
-    bpbxsyn_param_info_s info;
-
-    if (param_helper(inst, index, &addr, &info))
-        return 1;
-
+static inline int set_param_int(void *addr, bpbxsyn_param_info_s info,
+                                         int value) {
     int val_clamped = value;
     if (info.min_value != info.max_value) {
-        val_clamped = (int)clampd((double)value, info.min_value, info.max_value);
+        val_clamped =
+            (int)clampd((double)value, info.min_value, info.max_value);
     }
-    
+
     switch (info.type) {
         case BPBXSYN_PARAM_UINT8:
-            *((uint8_t*)addr) = clampi(val_clamped, 0, UINT8_MAX);
+            *((uint8_t *)addr) = clampi(val_clamped, 0, UINT8_MAX);
             break;
 
         case BPBXSYN_PARAM_INT:
-            *((int*)addr) = clampi(val_clamped, INT_MIN, INT_MAX);
+            *((int *)addr) = clampi(val_clamped, INT_MIN, INT_MAX);
             break;
 
         case BPBXSYN_PARAM_DOUBLE:
-            *((double*)addr) = (double)val_clamped;
+            *((double *)addr) = (double)val_clamped;
             break;
     }
 
     return 0;
 }
 
-
-int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s* inst, uint32_t index, double value) {
-    void *addr;
-    bpbxsyn_param_info_s info;
-
-    if (param_helper(inst, index, &addr, &info))
-        return 1;
-
+static inline int set_param_double(void *addr, bpbxsyn_param_info_s info,
+                                      double value) {
     double val_clamped = value;
     if (info.min_value != info.max_value) {
         val_clamped = clampd(value, info.min_value, info.max_value);
@@ -233,8 +240,12 @@ int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s* inst, uint32_t index, double
     
     switch (info.type) {
         case BPBXSYN_PARAM_UINT8:
+            *((uint8_t *)addr) = (uint8_t)clampd(val_clamped, 0, UINT8_MAX);
+            break;
+
         case BPBXSYN_PARAM_INT:
-            return 1;
+            *((int *)addr) = (int)clampd(val_clamped, INT_MIN, INT_MAX);
+            break;
 
         case BPBXSYN_PARAM_DOUBLE:
             *((double*)addr) = val_clamped;
@@ -244,14 +255,7 @@ int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s* inst, uint32_t index, double
     return 0;
 }
 
-
-int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s* inst, uint32_t index, int *value) {
-    void *addr;
-    bpbxsyn_param_info_s info;
-
-    if (param_helper(inst, index, &addr, &info))
-        return 1;
-
+static inline int get_param_int(void *addr, bpbxsyn_param_info_s info, int *value) {
     switch (info.type) {
         case BPBXSYN_PARAM_UINT8:
             *value = (int) *((uint8_t*)addr);
@@ -268,14 +272,7 @@ int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s* inst, uint32_t index, int
     return 0;
 }
 
-
-int bpbxsyn_synth_get_param_double(const bpbxsyn_synth_s* inst, uint32_t index, double *value) {
-    void *addr;
-    bpbxsyn_param_info_s info;
-
-    if (param_helper(inst, index, &addr, &info))
-        return 1;
-
+static inline int get_param_double(void *addr, bpbxsyn_param_info_s info, double *value) {
     switch (info.type) {
         case BPBXSYN_PARAM_UINT8:
             *value = (double) *((uint8_t*)addr);
@@ -291,6 +288,31 @@ int bpbxsyn_synth_get_param_double(const bpbxsyn_synth_s* inst, uint32_t index, 
     }
 
     return 0;
+}
+
+#define PARAM_HELPER(helper, func, inst, index, value) \
+    void *addr; \
+    bpbxsyn_param_info_s info; \
+    if (helper(inst, index, &addr, &info)) \
+        return 1; \
+    return func(addr, info, value);
+
+int bpbxsyn_synth_set_param_int(bpbxsyn_synth_s* inst, uint32_t index, int value) {
+    PARAM_HELPER(synth_param_helper, set_param_int, inst, index, value);
+}
+
+int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s* inst, uint32_t index, double value) {
+    PARAM_HELPER(synth_param_helper, set_param_double, inst, index, value);
+}
+
+
+int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s* inst, uint32_t index, int *value) {
+    PARAM_HELPER(synth_param_helper, get_param_int, inst, index, value);
+}
+
+
+int bpbxsyn_synth_get_param_double(const bpbxsyn_synth_s* inst, uint32_t index, double *value) {
+    PARAM_HELPER(synth_param_helper, get_param_double, inst, index, value);
 }
 
 
@@ -361,6 +383,9 @@ void bpbxsyn_synth_end_all_notes(bpbxsyn_synth_s *inst) {
     vtable->inst_note_all_off(inst);
 }
 
+void bpbxsyn_synth_stop(bpbxsyn_synth_s *inst) {
+    (void)inst;
+}
 
 void bpbxsyn_synth_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];
@@ -457,6 +482,171 @@ const bpbxsyn_envelope_compute_index_e* bpbxsyn_synth_envelope_targets(bpbxsyn_s
 
     *size = vtable->envelope_target_count;
     return vtable->envelope_targets;
+}
+
+unsigned int
+bpbxsyn_effect_param_count(bpbxsyn_effect_type_e type) {
+    const effect_vtable_s *vtable = effect_vtables[type];
+    assert(vtable);
+
+    return vtable->param_count;
+}
+
+const bpbxsyn_param_info_s *
+bpbxsyn_effect_param_info(bpbxsyn_effect_type_e type, unsigned int index) {
+    assert(effect_vtables[type]);
+    assert(memcmp(effect_vtables[type]->param_info[index].id, "\0\0\0\0\0\0\0\0", 8));
+    assert(index < effect_vtables[type]->param_count);
+
+    return &effect_vtables[type]->param_info[index];
+}
+
+bpbxsyn_effect_s *
+bpbxsyn_effect_new(bpbxsyn_effect_type_e effect_type) {
+    const effect_vtable_s *vtable = effect_vtables[effect_type];
+    assert(vtable);
+    if (vtable == NULL) return NULL;
+
+    // throw assertion error if any required fields don't exist
+    assert(vtable->struct_size > 0);
+    assert(vtable->effect_init);
+    assert(vtable->effect_tick);
+    assert(vtable->effect_run);
+    assert(vtable->param_count == 0 || vtable->param_info);
+    assert(vtable->param_count == 0 || vtable->param_addresses);
+
+    bpbxsyn_effect_s *inst = bpbxsyn_malloc(vtable->struct_size);
+    if (inst)
+        vtable->effect_init(inst);
+    return inst;
+}
+
+void bpbxsyn_effect_destroy(bpbxsyn_effect_s *effect) {
+    if (!effect) return;
+
+    const effect_vtable_s *vtable = effect_vtables[effect->type];
+    assert(vtable);
+    if (vtable->effect_destroy)
+        vtable->effect_destroy(effect);
+
+    bpbxsyn_free(effect);
+}
+
+bpbxsyn_effect_type_e
+bpbxsyn_effect_type(const bpbxsyn_effect_s *effect) {
+    return effect->type;
+}
+
+void *bpbxsyn_effect_get_userdata(bpbxsyn_effect_s *effect) {
+    return effect->userdata;
+}
+
+void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
+                                             void *userdata) {
+    effect->userdata = userdata;
+}
+
+void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
+                                                double sample_rate) {
+    const effect_vtable_s *vtable = effect_vtables[effect->type];
+    assert(vtable);
+
+    double old_sr = effect->sample_rate;
+    effect->sample_rate = sample_rate;
+    if (vtable->effect_sample_rate_changed)
+        vtable->effect_sample_rate_changed(effect, old_sr, sample_rate);
+}
+
+// void bpbxsyn_effect_begin_transport(bpbxsyn_effect_s *effect,
+//                                                 double beat, double bpm);
+
+static int effect_param_helper(const bpbxsyn_effect_s *inst, uint32_t index,
+                                void **addr, bpbxsyn_param_info_s *info) {
+    const effect_vtable_s *vtable = effect_vtables[inst->type];
+    assert(vtable);
+
+    if (index >= vtable->param_count) return 1;
+    *info = vtable->param_info[index];
+    *addr = (void*)(((uint8_t*)inst) + vtable->param_addresses[index]);
+    return 0;
+}
+
+int bpbxsyn_effect_set_param_int(bpbxsyn_effect_s *inst,
+                                             uint32_t param, int value) {
+    PARAM_HELPER(effect_param_helper, set_param_int, inst, param, value);
+}
+
+int bpbxsyn_effect_set_param_double(bpbxsyn_effect_s *inst,
+                                                uint32_t param, double value) {
+    PARAM_HELPER(effect_param_helper, set_param_double, inst, param, value);
+}
+
+int bpbxsyn_effect_get_param_int(const bpbxsyn_effect_s *inst,
+                                             uint32_t param, int *value) {
+    PARAM_HELPER(effect_param_helper, get_param_int, inst, param, value);
+}
+
+/**
+ * @brief Get the value of an effect instance's parameter as a floating-point
+ * value.
+ *
+ * Gets the value of an effect instance's parameter as a double-
+ * floating point value.
+ *
+ * @param      effect Pointer to the effect instance.
+ * @param      param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
+ * parameter.
+ * @param[out] value  The output value.
+ * @return 0 on success, and 1 on failure.
+ */
+int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *inst,
+                                                uint32_t param, double *value) {
+    PARAM_HELPER(effect_param_helper, get_param_double, inst, param, value);
+}
+
+void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst) {
+    (void)inst;
+}
+
+/**
+ * @brief Tick an effect instance.
+ *
+ * While computing audio, BeepBox effects need to be ticked at a rate dependent
+ * on the tempo of the song. Values will be calculated on each tick and
+ * interpolated along the individual frames of an audio render.
+ *
+ * To get the tick rate, use the bpbxsyn_calc_samples_per_tick function.
+ *
+ * @param inst     Pointer to the instrument.
+ * @param tick_ctx Pointer to a bpbxsyn_tick_ctx structure.
+ */
+void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
+                                     const bpbxsyn_tick_ctx_s *tick_ctx) {
+    const effect_vtable_s *vtable = effect_vtables[effect->type];
+    assert(vtable);
+
+    vtable->effect_tick(effect, tick_ctx);
+}
+// mono output
+
+/**
+ * @brief Run an effect instance.
+ *
+ * This takes in a stereo input and performs audio processing into a given
+ * stereo output. Each of the two channels of the input and output are
+ * independent buffers.
+ *
+ * @param effect      Pointer to the effect instance.
+ * @param input       Pointer to the stereo input buffer.
+ * @param output      Pointer to the stereo output buffer.
+ * @param frame_count The number of frames in both the input and output buffer.
+ */
+void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **input,
+                                    float **output, size_t frame_count) {
+    const effect_vtable_s *vtable = effect_vtables[effect->type];
+    assert(vtable);
+
+    vtable->effect_run(effect, input, output, frame_count);
 }
 
 

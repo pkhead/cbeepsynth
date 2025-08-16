@@ -8,6 +8,8 @@ set(SOURCES
     src/inst/fm_algo.c
     src/inst/fm.c
     src/inst/wave.c
+
+    src/fx/panning.c
     
     src/wavetables.c
     src/envelope.c

@@ -648,6 +648,13 @@ BPBXSYN_API void bpbxsyn_synth_end_note(bpbxsyn_synth_s *inst,
 BPBXSYN_API void bpbxsyn_synth_end_all_notes(bpbxsyn_synth_s *inst);
 
 /**
+ * @brief Choke all active notes.
+ *
+ * @param inst Pointer to the instrument.
+ */
+BPBXSYN_API void bpbxsyn_synth_stop(bpbxsyn_synth_s *inst);
+
+/**
  * @brief Tick an instrument.
  *
  * While computing audio, BeepBox instruments need to be ticked at a rate
@@ -751,18 +758,18 @@ BPBXSYN_API void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
 BPBXSYN_API void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
                                                 double sample_rate);
 
-/**
- * @brief Signal to an effect instance that transport playback has started.
- *
- * This function should be called whenever transport begins. Or in other words,
- * whenever the song's track has started being played.
- *
- * @param effect Pointer to the effect instance.
- * @param beat   The beat that the transport started on.
- * @param bpm    The tempo of the transport, in beats per minute.
- */
-BPBXSYN_API void bpbxsyn_effect_begin_transport(bpbxsyn_effect_s *effect,
-                                                double beat, double bpm);
+// /**
+//  * @brief Signal to an effect instance that transport playback has started.
+//  *
+//  * This function should be called whenever transport begins. Or in other words,
+//  * whenever the song's track has started being played.
+//  *
+//  * @param effect Pointer to the effect instance.
+//  * @param beat   The beat that the transport started on.
+//  * @param bpm    The tempo of the transport, in beats per minute.
+//  */
+// BPBXSYN_API void bpbxsyn_effect_begin_transport(bpbxsyn_effect_s *effect,
+//                                                 double beat, double bpm);
 
 /**
  * @brief Set an effect instance's parameter to an integer value.
@@ -826,6 +833,17 @@ BPBXSYN_API int bpbxsyn_effect_get_param_int(const bpbxsyn_effect_s *inst,
  */
 BPBXSYN_API int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *effect,
                                                 uint32_t param, double *value);
+
+/**
+ * @brief Clear any feedback/delay systems.
+ *
+ * Clears any feedback or delay systems the effect is using. It has the
+ * effect of removing any potential tail that the effect might produce at
+ * the moment of the call.
+ * 
+ * @param inst Pointer to the instrument.
+ */
+BPBXSYN_API void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst);
 
 /**
  * @brief Tick an effect instance.

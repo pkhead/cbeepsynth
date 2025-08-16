@@ -1,0 +1,34 @@
+#ifndef _effect_h_
+#define _effect_h_
+
+#include "../../include/beepbox_synth.h"
+#include <stddef.h>
+
+typedef struct bpbxsyn_effect_s {
+    bpbxsyn_effect_type_e type;
+    double sample_rate;
+
+    void *userdata;
+} bpbxsyn_effect_s;
+
+typedef void (*effect_init_f)(bpbxsyn_effect_s *inst);
+typedef void (*effect_destroy_f)(bpbxsyn_effect_s *inst);
+
+typedef struct {
+    const size_t                struct_size;
+    const effect_init_f         effect_init;
+    const effect_destroy_f      effect_destroy;
+    const uint32_t              param_count;
+    const bpbxsyn_param_info_s  *param_info;
+    const size_t                *param_addresses;
+
+    void (*const effect_stop)(bpbxsyn_effect_s *inst);
+    void (*const effect_sample_rate_changed)(bpbxsyn_effect_s *inst,
+                                             double old, double new);
+    void (*const effect_tick)(bpbxsyn_effect_s *inst,
+                              const bpbxsyn_tick_ctx_s *tick_ctx);
+    void (*const effect_run)(bpbxsyn_effect_s *inst, float **input,
+                             float **output, size_t frame_count);
+} effect_vtable_s;
+
+#endif

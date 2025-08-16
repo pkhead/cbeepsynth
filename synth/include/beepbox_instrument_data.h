@@ -139,4 +139,14 @@ typedef enum {
         (BPBXSYN_HARMONICS_CONTROL_COUNT - 1)
 } bpbxsyn_harmonics_param_e;
 
+/////////////////////////
+// Panning effect data //
+/////////////////////////
+#define BPBXSYN_PANNING_PARAM_COUNT 2
+
+typedef enum {
+    BPBXSYN_PANNING_PARAM_PAN,
+    BPBXSYN_PANNING_PARAM_PAN_DELAY,
+} bpbxsyn_panning_param_e;
+
 #endif

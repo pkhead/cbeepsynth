@@ -54,12 +54,13 @@ void panning_sample_rate_changed(bpbxsyn_effect_s *p_inst,
         fitting_power_of_two(ceil(new_sr * PAN_DELAY_SECS_MAX));
     inst->delay_line = bpbxsyn_malloc(inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
+
+    if (!inst->delay_line)
+        logmsgf(BPBXSYN_LOG_ERROR, "Could not allocate panning delay line");
 }
 
 void panning_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
-    (void)inst;
-    (void)ctx;
 
     double rounded_samples_per_tick =
         ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
@@ -100,10 +101,13 @@ void panning_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
 }
 
 void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                 size_t frame_count) {
+                 size_t frame_count)
+{
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
 
     assert(inst->delay_line);
+    if (!inst->delay_line)
+        return;
 
     double volume[2];
     double volume_delta[2];
@@ -165,7 +169,7 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
 
 
 
-const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
+static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
     {
         .group = "",
         .name = "Pan",
@@ -190,7 +194,7 @@ const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
     },
 };
 
-const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
+static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(panning_effect_s, pan[1]),
     offsetof(panning_effect_s, pan_delay[1]),
 };

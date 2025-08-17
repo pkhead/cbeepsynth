@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
-#include "instrument.h"
+#include "synth.h"
 #include "../util.h"
 
 #define VOLUME_LOG_SCALE 0.1428

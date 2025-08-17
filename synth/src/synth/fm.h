@@ -6,7 +6,7 @@
 #include "../../include/beepbox_synth.h"
 #include "../../include/beepbox_instrument_data.h"
 #include "../wavetables.h"
-#include "instrument.h"
+#include "synth.h"
 
 #define FM_OP_COUNT 4
 #define FM_MOD_COUNT 9

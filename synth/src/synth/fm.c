@@ -6,7 +6,7 @@
 
 #include "fm.h"
 #include "fm_algo.h"
-#include "instrument.h"
+#include "synth.h"
 #include "../util.h"
 #include "../wavetables.h"
 #include "../envelope.h"

@@ -9,12 +9,12 @@
 
 #include "util.h"
 #include "alloc.h"
-#include "inst/instrument.h"
+#include "synth/synth.h"
 #include "envelope.h"
 #include "filtering.h"
 
-#include "inst/wave.h"
-#include "inst/fm.h"
+#include "synth/wave.h"
+#include "synth/fm.h"
 #include "fx/panning.h"
 
 static const inst_vtable_s *inst_vtables[] = {

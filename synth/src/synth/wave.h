@@ -13,7 +13,7 @@
 #include <stddef.h>
 #include "../../include/beepbox_synth.h"
 #include "../wavetables.h"
-#include "instrument.h"
+#include "synth.h"
 
 #define CHIP_MOD_COUNT 1
 #define HARMONICS_MOD_COUNT 1

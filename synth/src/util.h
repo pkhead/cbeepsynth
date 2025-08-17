@@ -60,6 +60,8 @@ static inline double key_to_hz_d(double key) {
     return pow(2.0, (key - 69) / 12.0) * 440.0;
 }
 
+int fitting_power_of_two(int x);
+
 // defined in log.c
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((format(printf, 2, 3)))

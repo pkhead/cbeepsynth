@@ -18,6 +18,7 @@ set(SOURCES
     src/log.c
     src/alloc.c
     src/audio.c
+    src/util.c
 )
 
 set(TARGET_PROPERTIES

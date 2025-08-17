@@ -18,7 +18,7 @@ typedef struct {
     double gain_idx[FILTER_GROUP_COUNT]; // 0 - 14
 } filter_group_s;
 
-// filter coefficients for 2nd-order IIR filters
+// filter coefficients
 // a[0] is always unused, but assumed to be 1.0
 // since the rest of the parameters are normalized according to it
 typedef struct {
@@ -58,6 +58,8 @@ void filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
 void filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double linear_gain);
 // peak 2nd-order
 void filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, double linear_gain, double bw_scale);
+// high-shelf 1st order
+void filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sample, double shelf_linear_gain);
 
 void dyn_biquad_reset_output(dyn_biquad_s *self);
 // loadCoefficientsWithGradient

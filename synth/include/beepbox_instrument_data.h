@@ -152,4 +152,18 @@ typedef enum {
     BPBXSYN_PANNING_PARAM_PAN_DELAY,
 } bpbxsyn_panning_param_e;
 
+//////////////////////
+// Echo effect data //
+//////////////////////
+#define BPBXSYN_ECHO_PARAM_COUNT 2
+#define BPBXSYN_ECHO_DELAY_RANGE 24
+#define BPBXSYN_ECHO_SUSTAIN_RANGE 8
+#define BPBXSYN_ECHO_DELAY_MAX ((BPBXSYN_ECHO_DELAY_RANGE - 1))
+#define BPBXSYN_ECHO_SUSTAIN_MAX ((BPBXSYN_ECHO_SUSTAIN_RANGE - 1))
+
+typedef enum {
+    BPBXSYN_ECHO_PARAM_SUSTAIN,
+    BPBXSYN_ECHO_PARAM_DELAY
+} bpbxsyn_echo_param_e;
+
 #endif

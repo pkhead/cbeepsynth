@@ -10,6 +10,7 @@ set(SOURCES
     src/synth/wave.c
 
     src/fx/panning.c
+    src/fx/echo.c
     
     src/wavetables.c
     src/envelope.c

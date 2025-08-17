@@ -160,6 +160,20 @@ void filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
     // coefs->order = 2;
 }
 
+// high-shelf 1st order
+void filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sample, double shelf_linear_gain) {
+    const double vtan = tan(corner_radians_per_sample * 0.5);
+    const double sqrt_gain = sqrt(shelf_linear_gain);
+    const double g = (vtan * sqrt_gain - 1) / (vtan * sqrt_gain + 1.0);
+    const double a0 = 1.0;
+
+    coefs->a[0] = 1.0;
+    coefs->a[1] = g / a0;
+    coefs->b[0] = (1.0 + g + shelf_linear_gain * (1.0 - g)) / (2.0 * a0);
+    coefs->b[1] = (1.0 + g - shelf_linear_gain * (1.0 - g)) / (2.0 * a0);
+    // coefs->order = 1;
+}
+
 void dyn_biquad_reset_output(dyn_biquad_s *self) {
     self->output1 = 0.0;
     self->output2 = 0.0;

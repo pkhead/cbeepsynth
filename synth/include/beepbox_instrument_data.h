@@ -143,6 +143,9 @@ typedef enum {
 // Panning effect data //
 /////////////////////////
 #define BPBXSYN_PANNING_PARAM_COUNT 2
+#define BPBXSYN_PAN_VALUE_CENTER 50
+#define BPBXSYN_PAN_VALUE_MAX ((BPBXSYN_PAN_VALUE_CENTER * 2))
+#define BPBXSYN_PAN_DELAY_MAX 20
 
 typedef enum {
     BPBXSYN_PANNING_PARAM_PAN,

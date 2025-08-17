@@ -4,10 +4,6 @@
 #include "../../include/beepbox_synth.h"
 #include "effect.h"
 
-#define PAN_VALUE_CENTER 50
-#define PAN_VALUE_MAX ((PAN_VALUE_CENTER * 2))
-#define PAN_DELAY_MAX 20
-
 typedef struct {
     bpbxsyn_effect_s base;
 
@@ -32,7 +28,7 @@ void panning_destroy(bpbxsyn_effect_s *inst);
 void panning_sample_rate_changed(bpbxsyn_effect_s *inst,
                                  double old_sr, double new_sr);
 void panning_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void panning_run(bpbxsyn_effect_s *inst, float **input, float **output,
+void panning_run(bpbxsyn_effect_s *inst, float **buffer,
                  size_t frame_count);
 
 extern const effect_vtable_s effect_panning_vtable;

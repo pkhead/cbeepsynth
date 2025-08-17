@@ -864,17 +864,16 @@ BPBXSYN_API void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
 /**
  * @brief Run an effect instance.
  *
- * This takes in a stereo input and performs audio processing into a given
- * stereo output. Each of the two channels of the input and output are
- * independent buffers.
+ * This takes in a stereo audio buffer containing the input, and performs audio
+ * processing in-place. Each of the two audio channels are independent buffers.
  *
  * @param effect      Pointer to the effect instance.
- * @param input       Pointer to the stereo input buffer.
- * @param output      Pointer to the stereo output buffer.
+ * @param buffer      Pointer to two audio buffers, for the left and right
+                      channels respectively.
  * @param frame_count The number of frames in both the input and output buffer.
  */
-BPBXSYN_API void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **input,
-                                    float **output, size_t frame_count);
+BPBXSYN_API void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **buffer,
+                                    size_t frame_count);
 
 /**
  * @brief Get the name of an envelope.

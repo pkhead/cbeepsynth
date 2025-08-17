@@ -27,8 +27,8 @@ typedef struct {
                                              double old, double new);
     void (*const effect_tick)(bpbxsyn_effect_s *inst,
                               const bpbxsyn_tick_ctx_s *tick_ctx);
-    void (*const effect_run)(bpbxsyn_effect_s *inst, float **input,
-                             float **output, size_t frame_count);
+    void (*const effect_run)(bpbxsyn_effect_s *inst, float **buffer,
+                             size_t frame_count);
 } effect_vtable_s;
 
 #endif

@@ -18,6 +18,8 @@ typedef struct {
     const size_t                struct_size;
     const effect_init_f         effect_init;
     const effect_destroy_f      effect_destroy;
+    const uint8_t               input_channel_count;
+    const uint8_t               output_channel_count;
     const uint32_t              param_count;
     const bpbxsyn_param_info_s  *param_info;
     const size_t                *param_addresses;

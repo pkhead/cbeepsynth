@@ -693,6 +693,19 @@ BPBXSYN_API void bpbxsyn_synth_run(bpbxsyn_synth_s *inst, float *output,
 BPBXSYN_API unsigned int bpbxsyn_effect_param_count(bpbxsyn_effect_type_e type);
 
 /**
+ * @brief Get channel count info for a given effect type.
+ *
+ * Obtains the number channels that an effect type receives and outputs,
+ * respectively. 1 is mono, and 2 is stereo.
+ *
+ * @param      type The BPBXSYN_EFFECT_* enum that identifies the effect type.
+ * @param[out] inputs The number of input channels for the given type.
+ * @param[out] outputs The number of output channels for the given type.
+ */
+BPBXSYN_API void bpbxsyn_effect_channel_info(bpbxsyn_effect_type_e type,
+                                             int *inputs, int *outputs);
+
+/**
  * @brief Obtain information for a specific parameter of an effect type.
  *
  * @param type  The BPBXSYN_EFFECT_* enum that identifies the instrument type.

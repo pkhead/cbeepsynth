@@ -512,6 +512,8 @@ bpbxsyn_effect_new(bpbxsyn_effect_type_e effect_type) {
     assert(vtable->effect_init);
     assert(vtable->effect_tick);
     assert(vtable->effect_run);
+    assert(vtable->input_channel_count != 0);
+    assert(vtable->output_channel_count != 0);
     assert(vtable->param_count == 0 || vtable->param_info);
     assert(vtable->param_count == 0 || vtable->param_addresses);
 
@@ -541,9 +543,18 @@ void *bpbxsyn_effect_get_userdata(bpbxsyn_effect_s *effect) {
     return effect->userdata;
 }
 
-void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
-                                             void *userdata) {
+void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect, void *userdata) {
     effect->userdata = userdata;
+}
+
+void bpbxsyn_effect_channel_info(bpbxsyn_effect_type_e type, int *input,
+                                 int *output)
+{
+    const effect_vtable_s *vtable = effect_vtables[type];
+    assert(vtable);
+
+    *input = vtable->input_channel_count;
+    *output = vtable->output_channel_count;
 }
 
 void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
@@ -627,26 +638,14 @@ void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
 
     vtable->effect_tick(effect, tick_ctx);
 }
-// mono output
 
-/**
- * @brief Run an effect instance.
- *
- * This takes in a stereo input and performs audio processing into a given
- * stereo output. Each of the two channels of the input and output are
- * independent buffers.
- *
- * @param effect      Pointer to the effect instance.
- * @param input       Pointer to the stereo input buffer.
- * @param output      Pointer to the stereo output buffer.
- * @param frame_count The number of frames in both the input and output buffer.
- */
-void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **input,
-                                    float **output, size_t frame_count) {
+void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **buffer,
+                        size_t frame_count)
+{
     const effect_vtable_s *vtable = effect_vtables[effect->type];
     assert(vtable);
 
-    vtable->effect_run(effect, input, output, frame_count);
+    vtable->effect_run(effect, buffer, frame_count);
 }
 
 

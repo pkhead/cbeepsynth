@@ -136,9 +136,7 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
     float *right = buffer[1];
     
     for (size_t frame = 0; frame < frame_count; ++frame) {
-        // oh. audio before panning processing is in mono.
-        // so the delay line is mono. dangit. uhhhh
-        double sample = (double)((left[frame] + right[frame]) / 2.f);
+        double sample = (double)left[frame];
 
         assert(delay_pos < inst->delay_line_size);
         delay_line[delay_pos] = sample;
@@ -212,6 +210,9 @@ const effect_vtable_s effect_panning_vtable = {
     .struct_size = sizeof(panning_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_panning,
     .effect_destroy = panning_destroy,
+
+    .input_channel_count = 1,
+    .output_channel_count = 2,
 
     .param_count = BPBXSYN_PANNING_PARAM_COUNT,
     .param_info = param_info,

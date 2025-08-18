@@ -4,9 +4,9 @@
 #include <math.h>
 #include "../include/beepbox_synth.h"
 
-#define PI 3.14159265359
-#define PI2 (2.0 * 3.14159265359)
-#define PI2f (float)(2.f * 3.14159265359f)
+#define PI 3.14159265358979323846
+#define PI2 (2.0 * PI)
+#define PI2f (float)(2.f * 3.14159265358979323846f)
 
 // I didn't know C99+ had a bool type I guess?
 #define FALSE 0

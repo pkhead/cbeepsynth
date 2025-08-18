@@ -78,6 +78,8 @@ typedef enum {
     BPBXSYN_SYNTH_SPECTRUM,
     BPBXSYN_SYNTH_PICKED_STRING,
     BPBXSYN_SYNTH_SUPERSAW,
+
+    BPBXSYN_SYNTH_COUNT,
 } bpbxsyn_synth_type_e;
 
 typedef enum {
@@ -164,6 +166,8 @@ typedef enum {
     BPBXSYN_EFFECT_CHORUS,
     BPBXSYN_EFFECT_ECHO,
     BPBXSYN_EFFECT_REVERB,
+
+    BPBXSYN_EFFECT_COUNT,
 } bpbxsyn_effect_type_e;
 
 typedef enum {

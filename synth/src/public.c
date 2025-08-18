@@ -16,6 +16,7 @@
 #include "synth/wave.h"
 #include "synth/fm.h"
 #include "fx/panning.h"
+#include "fx/distortion.h"
 #include "fx/echo.h"
 #include "fx/volume.h"
 
@@ -42,7 +43,7 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_PANNING,
     &effect_panning_vtable,
     // BPBXSYN_EFFECT_DISTORTION,
-    NULL,
+    &effect_distortion_vtable,
     // BPBXSYN_EFFECT_BITCRUSHER,
     NULL,
     // BPBXSYN_EFFECT_CHORUS,

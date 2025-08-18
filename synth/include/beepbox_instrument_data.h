@@ -162,6 +162,17 @@ typedef enum {
     BPBXSYN_PANNING_PARAM_PAN_DELAY,
 } bpbxsyn_panning_param_e;
 
+////////////////////////////
+// Distortion effect data //
+////////////////////////////
+#define BPBXSYN_DISTORTION_PARAM_COUNT 1
+#define BPBXSYN_DISTORTION_RANGE 8
+#define BPBXSYN_DISTORTION_MAX (BPBXSYN_DISTORTION_RANGE - 1)
+
+typedef enum {
+    BPBXSYN_DISTORTION_PARAM_POWER
+} bpbxsyn_distortion_param_e;
+
 //////////////////////
 // Echo effect data //
 //////////////////////

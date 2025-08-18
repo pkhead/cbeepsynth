@@ -9,6 +9,7 @@ set(SOURCES
     src/synth/fm.c
     src/synth/wave.c
 
+    src/fx/volume.c
     src/fx/panning.c
     src/fx/echo.c
     

@@ -17,6 +17,7 @@
 #include "synth/fm.h"
 #include "fx/panning.h"
 #include "fx/echo.h"
+#include "fx/volume.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -38,8 +39,6 @@ static const inst_vtable_s *inst_vtables[] = {
 };
 
 static const effect_vtable_s *effect_vtables[] = {
-    // BPBXSYN_EFFECT_EQ,
-    NULL,
     // BPBXSYN_EFFECT_PANNING,
     &effect_panning_vtable,
     // BPBXSYN_EFFECT_DISTORTION,
@@ -52,6 +51,10 @@ static const effect_vtable_s *effect_vtables[] = {
     &effect_echo_vtable,
     // BPBXSYN_EFFECT_REVERB,
     NULL,
+    // BPBXSYN_EFFECT_EQ,
+    NULL,
+    // BPBXSYN_EFFECT_VOLUME,
+    &effect_volume_vtable
 };
 
 

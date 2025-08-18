@@ -17,9 +17,7 @@
 typedef struct bpbxsyn_synth_s {
     bpbxsyn_synth_type_e type;
     double sample_rate;
-
-    double volume;
-    double panning;
+    
     double fade_in; // double in range of 0-9
     double fade_out;
 
@@ -226,7 +224,6 @@ double inst_calc_arp_speed(double arp_speed_setting);
 #define GENERIC_LIST(list) (list), sizeof(*(list))
 
 double note_size_to_volume_mult(double size);
-double inst_volume_to_mult(double inst_volume);
 double get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar);
 // double calc_pitch_expression(double pitch);
 #define calc_pitch_expression(pitch) (pow(2.0, -((pitch) - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING))

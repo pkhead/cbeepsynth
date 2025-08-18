@@ -306,7 +306,7 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
 
 static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
     {
-        .group = "",
+        .group = "Effects/Echo",
         .name = "Echo",
         .id = "echoSus\0",
         .type = BPBXSYN_PARAM_DOUBLE,
@@ -316,7 +316,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
         .default_value = ECHO_SUSTAIN_DEFAULT,
     },
     {
-        .group = "",
+        .group = "Effects/Echo",
         .name = "Echo Delay",
         .id = "echoDly\0",
         .type = BPBXSYN_PARAM_DOUBLE,

@@ -26,7 +26,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 typedef enum {
     // basic params
-    BPBXSYN_PARAM_VOLUME,
     BPBXSYN_PARAM_FADE_IN,
     BPBXSYN_PARAM_FADE_OUT,
 
@@ -138,6 +137,17 @@ typedef enum {
         BPBXSYN_HARMONICS_PARAM_CONTROL_FIRST +
         (BPBXSYN_HARMONICS_CONTROL_COUNT - 1)
 } bpbxsyn_harmonics_param_e;
+
+////////////////////////
+// Volume effect data //
+////////////////////////
+#define BPBXSYN_VOLUME_PARAM_COUNT 1
+#define BPBXSYN_INSTRUMENT_VOLUME_MIN -25.0
+#define BPBXSYN_INSTRUMENT_VOLUME_MAX 25.0
+
+typedef enum {
+    BPBXSYN_VOLUME_PARAM_VOLUME
+} bpbxsyn_volume_param_e;
 
 /////////////////////////
 // Panning effect data //

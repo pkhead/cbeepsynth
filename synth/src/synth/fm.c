@@ -288,7 +288,6 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     setup_algorithm(fm);
 
     fm_algo_f algo_func = fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
-    double inst_volume = inst_volume_to_mult(src_inst->volume);
 
     memset(samples, 0, frame_count * sizeof(float));
     
@@ -314,7 +313,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
             double x0 = algo_func(voice, voice->feedback_mult) *
-                voice->base.expression * voice->base.volume * inst_volume;
+                voice->base.expression * voice->base.volume;
             
             float sample;
             if (voice->base.filters_enabled) {

@@ -97,8 +97,8 @@ static void compute_wave_voice(
 }
 
 static void wave_audio_render_callback(
-    float *output_buffer, size_t frames_to_compute, double inst_volume,
-    bool aliases, unison_desc_s unison, const float *wave, size_t wave_length, wave_voice_s *voice_list
+    float *output_buffer, size_t frames_to_compute, bool aliases,
+    unison_desc_s unison, const float *wave, size_t wave_length, wave_voice_s *voice_list
 ) {
     assert(UNISON_MAX_VOICES == 2);
     assert(unison.voices <= UNISON_MAX_VOICES);
@@ -158,7 +158,7 @@ static void wave_audio_render_callback(
 
             double x0_sum = x0[0] + x0[1] * unison.sign;
 
-            x0_sum *= inst_volume * voice->base.expression * voice->base.volume;
+            x0_sum *= voice->base.expression * voice->base.volume;
 
             float final_sample;
             if (voice->base.filters_enabled) {
@@ -274,7 +274,7 @@ void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     unison_desc_s unison = unison_info[chip->unison_type];
 
     wave_audio_render_callback(
-        samples, frame_count, inst_volume_to_mult(src_inst->volume),
+        samples, frame_count,
         aliases, unison, wavetable.samples, wavetable.length - 1, chip->voices);
 }
 
@@ -376,7 +376,7 @@ void harmonics_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count
     }
 
     wave_audio_render_callback(
-        samples, frame_count, inst_volume_to_mult(src_inst->volume),
+        samples, frame_count,
         aliases, unison, harmonics->wave, HARMONICS_WAVE_LENGTH, harmonics->voices);
 }
 

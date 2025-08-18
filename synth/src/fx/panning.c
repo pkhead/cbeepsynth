@@ -171,7 +171,7 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
 
 static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
     {
-        .group = "",
+        .group = "General",
         .name = "Pan",
         .id = "panning\0",
         .type = BPBXSYN_PARAM_DOUBLE,
@@ -181,8 +181,8 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
         .default_value = BPBXSYN_PAN_VALUE_CENTER,
     },
     {
-        .group = "",
-        .name = "Pan",
+        .group = "General",
+        .name = "Pan Delay",
         .id = "panDelay",
         .type = BPBXSYN_PARAM_DOUBLE,
         

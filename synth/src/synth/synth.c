@@ -6,7 +6,6 @@
 #include "synth.h"
 #include "../util.h"
 
-#define VOLUME_LOG_SCALE 0.1428
 #define TICKS_PER_ARPEGGIO 3
 #define GET_VOICE(voice_list, size, idx) ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
 #define CHORD_INDEX_INACTIVE UINT8_MAX
@@ -33,8 +32,6 @@ void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
         .type = type,
         .sample_rate = 0.0,
 
-        .volume = 0.0,
-        .panning = 50.0,
         .fade_in = 0.0,
         .fade_out = 0.0,
         .arpeggio_speed = 12,
@@ -55,11 +52,6 @@ void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
 
 double note_size_to_volume_mult(double size) {
     return pow(max(0.0, size) / NOTE_SIZE_MAX, 1.5);
-}
-
-double inst_volume_to_mult(double inst_volume) {
-    if (inst_volume <= -25.0) return 0.0;
-    return pow(2.0, VOLUME_LOG_SCALE * inst_volume);
 }
 
 const double vibrato_normal_periods_secs[1] = {0.14};
@@ -802,16 +794,6 @@ const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT] = {
 
 bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
-    {
-        .id = "inVolume",
-        .name = "Volume",
-        .group = "General",
-
-        .type = BPBXSYN_PARAM_DOUBLE,
-        .min_value = -25.0,
-        .max_value = 25.0,
-        .default_value = 0.0
-    },
     {
         .id = "inFadeIn",
         .name = "Fade In",
@@ -1604,7 +1586,6 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
 
 size_t base_param_offsets[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
-    offsetof(bpbxsyn_synth_s, volume),
     offsetof(bpbxsyn_synth_s, fade_in),
     offsetof(bpbxsyn_synth_s, fade_out),
 

@@ -78,8 +78,9 @@ void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
         bpbxsyn_free(inst->delay_lines[i][0]);
         bpbxsyn_free(inst->delay_lines[i][1]);
 
-        inst->delay_lines[i][0] = bpbxsyn_malloc((size_t)delay_line_capacity);
-        inst->delay_lines[i][1] = bpbxsyn_malloc((size_t)delay_line_capacity);
+        size_t alloc_size = (size_t)delay_line_capacity * sizeof(float);
+        inst->delay_lines[i][0] = bpbxsyn_malloc(alloc_size);
+        inst->delay_lines[i][1] = bpbxsyn_malloc(alloc_size);
         inst->delay_line_dirty = true;
 
         if (!inst->delay_lines[i][0])
@@ -264,6 +265,7 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
         const double tap_l = (tap_start_l + (tap_end_l - tap_start_l) * delay_offset_ratio) * mult;
         const double tap_r = (tap_start_r + (tap_end_r - tap_start_r) * delay_offset_ratio) * mult;
         
+        // TODO: I  don't think the shelf filter is working?
         shelf_sample[0] = shelf_b0 * tap_l + shelf_b1 * shelf_prev_input[0] - shelf_a1 * shelf_sample[0];
         shelf_sample[1] = shelf_b0 * tap_r + shelf_b1 * shelf_prev_input[1] - shelf_a1 * shelf_sample[1];
         shelf_prev_input[0] = tap_l;

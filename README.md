@@ -16,15 +16,10 @@ This project is structured such that the synth library can be used independently
     - Spectrum
     - Picked string
     - Supersaw
-- Note effects:
-    - Transition type
-    - Chord type
 - Audio effects:
     - Distortion
     - Bitcrusher
-    - Panning
     - Chorus
-    - Echo
     - Reverb
     - Compressor/Limiter (in one)
 

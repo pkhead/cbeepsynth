@@ -11,6 +11,8 @@
 
 #define ECHO_SHELF_HZ 4000.0 // The cutoff freq of the shelf filter that is used
                              // to decay echoes.
+#define ECHO_SHELF_GAIN (pow(2.0, -0.5))
+
 #define ECHO_DELAY_STEP_TICKS 4
 
 /*
@@ -36,9 +38,6 @@ void bpbxsyn_effect_init_echo(echo_effect_s *inst) {
         .sustain[1] = ECHO_SUSTAIN_DEFAULT,
         .delay[0] = ECHO_DELAY_DEFAULT,
         .delay[1] = ECHO_DELAY_DEFAULT,
-
-        .shelf_hz = ECHO_SHELF_HZ,
-        .shelf_gain = pow(2.0, -0.5)
     };
 }
 
@@ -52,6 +51,11 @@ void echo_stop(bpbxsyn_effect_s *p_inst) {
         if (inst->delay_lines[i][1])
             memset(inst->delay_lines[i][1], 0, inst->delay_line_size * sizeof(float));
     }
+
+    inst->echo_shelf_sample[0] = 0.0;
+    inst->echo_shelf_sample[1] = 0.0;
+    inst->echo_shelf_prev_input[0] = 0.0;
+    inst->echo_shelf_prev_input[1] = 0.0;
 }
 
 void echo_destroy(bpbxsyn_effect_s *p_inst) {
@@ -199,8 +203,8 @@ void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->delay_offset_ratio_delta = 1.0 / rounded_samples_per_tick;
 
     filter_coefs_s coefs;
-    const double shelfRadians = PI2 * inst->shelf_hz / inst->base.sample_rate;
-    filter_hshelf1(&coefs, shelfRadians, inst->shelf_gain);
+    const double shelf_radins = PI2 * ECHO_SHELF_HZ / inst->base.sample_rate;
+    filter_hshelf1(&coefs, shelf_radins, ECHO_SHELF_GAIN);
 
     inst->echo_shelf_a1 = coefs.a[1];
     inst->echo_shelf_b0 = coefs.b[0];
@@ -265,9 +269,13 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
         const double tap_l = (tap_start_l + (tap_end_l - tap_start_l) * delay_offset_ratio) * mult;
         const double tap_r = (tap_start_r + (tap_end_r - tap_start_r) * delay_offset_ratio) * mult;
         
-        // TODO: I  don't think the shelf filter is working?
-        shelf_sample[0] = shelf_b0 * tap_l + shelf_b1 * shelf_prev_input[0] - shelf_a1 * shelf_sample[0];
-        shelf_sample[1] = shelf_b0 * tap_r + shelf_b1 * shelf_prev_input[1] - shelf_a1 * shelf_sample[1];
+        shelf_sample[0] =
+            shelf_b0 * tap_l + shelf_b1 * shelf_prev_input[0]
+                - shelf_a1 * shelf_sample[0];
+        shelf_sample[1] =
+            shelf_b0 * tap_r + shelf_b1 * shelf_prev_input[1]
+                - shelf_a1 * shelf_sample[1];
+        
         shelf_prev_input[0] = tap_l;
         shelf_prev_input[1] = tap_r;
         sample_l += shelf_sample[0];

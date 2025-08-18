@@ -10,9 +10,6 @@
 typedef struct echo_effect {
     bpbxsyn_effect_s base;
 
-    double shelf_hz;
-    double shelf_gain;
-
     // for old and new value
     double sustain[2];
     double delay[2];

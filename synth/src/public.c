@@ -19,6 +19,7 @@
 #include "fx/distortion.h"
 #include "fx/echo.h"
 #include "fx/volume.h"
+#include "fx/bitcrusher.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -45,7 +46,7 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_DISTORTION,
     &effect_distortion_vtable,
     // BPBXSYN_EFFECT_BITCRUSHER,
-    NULL,
+    &effect_bitcrusher_vtable,
     // BPBXSYN_EFFECT_CHORUS,
     NULL,
     // BPBXSYN_EFFECT_ECHO,

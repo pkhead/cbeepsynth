@@ -173,6 +173,20 @@ typedef enum {
     BPBXSYN_DISTORTION_PARAM_POWER
 } bpbxsyn_distortion_param_e;
 
+////////////////////////////
+// Bitcrusher effect data //
+////////////////////////////
+#define BPBXSYN_BITCRUSHER_PARAM_COUNT 2
+#define BPBXSYN_BITCRUSHER_FREQ_RANGE 14
+#define BPBXSYN_BITCRUSHER_QUANTIZATION_RANGE 8
+#define BPBXSYN_BITCRUSHER_FREQ_MAX (BPBXSYN_BITCRUSHER_FREQ_RANGE - 1)
+#define BPBXSYN_BITCRUSHER_QUANTIZATION_MAX (BPBXSYN_BITCRUSHER_QUANTIZATION_RANGE - 1)
+
+typedef enum {
+    BPBXSYN_BITCRUSHER_PARAM_BIT_QUANTIZATION,
+    BPBXSYN_BITCRUSHER_PARAM_FREQ_QUANTIZATION,
+} bpbxsyn_bitcrusher_param_e;
+
 //////////////////////
 // Echo effect data //
 //////////////////////

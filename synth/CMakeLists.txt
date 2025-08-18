@@ -12,6 +12,7 @@ set(SOURCES
     src/fx/volume.c
     src/fx/panning.c
     src/fx/distortion.c
+    src/fx/bitcrusher.c
     src/fx/echo.c
     
     src/wavetables.c

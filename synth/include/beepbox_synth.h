@@ -290,8 +290,21 @@ typedef struct {
     double beat;
 
     /**
+     * The MIDI pitch, in octave 0, of the current key of the song. That is, for
+     * the key of C, the base pitch is C0 (12). If you do not have this
+     * information, C will suffice.
+     * 
+     * If this is zero, it will be treated as if it were 12.
+     *
+     * @note This is only used for the bitcrusher effect.
+     */
+    int base_pitch;
+
+    /**
      * This is basically essentially the "note size" parameter in BeepBox.
      * It is a value from 0 to 1. The resting value is 1.
+     *
+     * @note This is only relevant when passed to a synth.
      **/
     double mod_wheel;
 } bpbxsyn_tick_ctx_s;

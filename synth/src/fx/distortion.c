@@ -2,7 +2,6 @@
 
 #include <assert.h>
 #include <math.h>
-#include <stdint.h>
 
 #include "../util.h"
 #include "../audio.h"

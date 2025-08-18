@@ -617,7 +617,11 @@ int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *inst,
 }
 
 void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst) {
-    (void)inst;
+    const effect_vtable_s *vtable = effect_vtables[inst->type];
+    assert(vtable);
+
+    if (vtable->effect_stop)
+        vtable->effect_stop(inst);
 }
 
 /**

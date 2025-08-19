@@ -1,10 +1,14 @@
+#include "wavetables.h"
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
+
 #include "util.h"
-#include "wavetables.h"
 #include "fft.h"
 #include "context.h"
+#include "alloc.h"
 
 // performIntegralOld
 static void harmonics_perform_integral(float *wave, size_t length) {
@@ -66,22 +70,28 @@ void generate_harmonics(const wavetables_s *tables,
 
 #define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
 
-#define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...) \
-    {                                                       \
-        static float arr[] = {__VA_ARGS__, 0};              \
-        static float arr2[ARRLEN(arr)];                     \
-        TRANSFORM(arr, ARRLEN(arr));                        \
-        perform_integral(arr, arr2, ARRLEN(arr));           \
-        wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {   \
-            .expression = EXPR,                             \
-            .samples = arr,                                 \
-            .length = ARRLEN(arr)                           \
-        };                                                  \
-        wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {       \
-            .expression = EXPR,                             \
-            .samples = arr2,                                \
-            .length = ARRLEN(arr2)                          \
-        };                                                  \
+#define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...)                 \
+    {                                                                       \
+        const static float arrdata[] = {__VA_ARGS__, 0};                    \
+        float *raw = bpbxsyn_malloc(ctx, sizeof(arrdata));                  \
+        assert(raw);                                                        \
+        if (!raw) return false;                                             \
+        memcpy(raw, arrdata, sizeof(arrdata));                              \
+        TRANSFORM(raw, ARRLEN(arrdata));                                    \
+        float *use = bpbxsyn_malloc(ctx, sizeof(arrdata));                  \
+        assert(use);                                                        \
+        if (!use) return false;                                             \
+        perform_integral(raw, use, ARRLEN(arrdata));                        \
+        wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {       \
+            .expression = EXPR,                                             \
+            .samples = raw,                                                 \
+            .length = ARRLEN(arrdata)                                       \
+        };                                                                  \
+        wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {           \
+            .expression = EXPR,                                             \
+            .samples = use,                                                 \
+            .length = ARRLEN(arrdata)                                       \
+        };                                                                  \
     }
 
 #define INIT_WAVETABLE(INDEX, EXPR, ...) \
@@ -133,7 +143,9 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-void init_wavetables(wavetables_s *wavetables) {
+bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
+    wavetables_s *const wavetables = &ctx->wavetables;
+
     // init sine wavetable
     for (int i = 0; i < SINE_WAVE_LENGTH + 1; i++) {
         wavetables->sine_wave[i] = sin((double)i / SINE_WAVE_LENGTH * PI2);
@@ -422,4 +434,6 @@ void init_wavetables(wavetables_s *wavetables) {
             drum_buffer = new_buffer;
         }
     }
+
+    return true;
 }

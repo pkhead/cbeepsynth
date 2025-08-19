@@ -15,7 +15,7 @@
 // chip wave tables
 typedef struct {
     double expression;
-    const float *samples;
+    float *samples;
     size_t length;
 } wavetable_desc_s;
 
@@ -45,7 +45,7 @@ typedef struct wavetables {
     wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 } wavetables_s;
 
-void init_wavetables(wavetables_s *wavetables);
+bool init_wavetables_for_context(bpbxsyn_context_s *ctx);
 
 // size is assumed to be HARMONICS_WAVE_LENGTH + 1
 void generate_harmonics(const wavetables_s *wavetables,

@@ -95,14 +95,23 @@ bpbxsyn_context_s* bpbxsyn_context_new(
         };
     }
 
-    init_wavetables(&ctx->wavetables);
+    if (!init_wavetables_for_context(ctx)) {
+        bpbxsyn_context_destroy(ctx);
+        return NULL;
+    }
 
     return ctx;
 }
 
 void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx) {
     if (!ctx) return;
-    ctx->alloc.free(ctx, ctx->alloc.userdata);
+
+    for (int i = 0; i < BPBXSYN_CHIP_WAVE_COUNT; ++i) {
+        bpbxsyn_free(ctx, ctx->wavetables.raw_chip_wavetables[i].samples);
+        bpbxsyn_free(ctx, ctx->wavetables.chip_wavetables[i].samples);
+    }
+
+    bpbxsyn_free(ctx, ctx);
 }
 
 void bpbxsyn_set_log_func(bpbxsyn_context_s *ctx, bpbxsyn_log_f log_func,

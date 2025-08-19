@@ -113,8 +113,8 @@ void bitcrusher_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
         buffer[frame] = (double)sample;
     }
 
-    // if (Math.abs(prev_input) < epsilon) prev_input = 0.0;
-    // if (Math.abs(current_output) < epsilon) current_output = 0.0;
+    if (fabs(prev_input) < FLUSH_ZERO_EPSILON) prev_input = 0.0;
+    if (fabs(current_output) < FLUSH_ZERO_EPSILON) current_output = 0.0;
 
     inst->prev_input = prev_input;
     inst->current_output = current_output;

@@ -178,7 +178,7 @@ static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst, inst_base_v
     double total_carrier_expr = 0.0;
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
-        fm_freq_data_s *freq_data = &frequency_data[inst->freq_ratios[op]];
+        const fm_freq_data_s *freq_data = &frequency_data[inst->freq_ratios[op]];
 
         int associated_carrier_idx = algo_associated_carriers[inst->algorithm][op] - 1;
         const double freq_mult = freq_data->mult;
@@ -350,6 +350,8 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
 
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
+
+        sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         
         // convert from operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {

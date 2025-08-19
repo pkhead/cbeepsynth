@@ -1,9 +1,10 @@
 #include "filtering.h"
-#include "util.h"
 #include "../include/beepbox_synth.h"
 
 #include <math.h>
 #include <assert.h>
+#include "util.h"
+#include "audio.h"
 
 // ~19khz
 #define FILTER_FREQ_MAX_HZ (FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBXSYN_FILTER_FREQ_RANGE - 1 - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING)))
@@ -229,6 +230,30 @@ double apply_filters(double sample, double input1, double input2, dyn_biquad_s f
     }
 
     return sample;
+}
+
+void sanitize_filters(dyn_biquad_s *filters, int count) {
+    for (int i = 0; i < count; ++i) {
+        dyn_biquad_s *const filter = filters + i;
+        double out1 = fabs(filter->output1);
+        double out2 = fabs(filter->output2);
+
+        // If either is a large value, Infinity, or NaN, then just reset all filter history.
+        if (!(out1 < 100) || !(out2 < 100)) {
+            goto reset;
+        }
+
+        if (out1 < FLUSH_ZERO_EPSILON) filter->output1 = 0.0;
+        if (out2 < FLUSH_ZERO_EPSILON) filter->output2 = 0.0;
+    }
+    return;
+    
+    reset:
+    for (int i = 0; i < count; ++i) {
+        dyn_biquad_s *const filter = filters + i;
+        filter->output1 = 0.0;
+        filter->output2 = 0.0;
+    }
 }
 
 bpbxsyn_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {

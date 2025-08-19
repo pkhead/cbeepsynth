@@ -295,14 +295,21 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
         right[frame] = sample_r;
     }
 
+    sanitize_delay_line(delay_line[0], delay_pos, mask);
+    sanitize_delay_line(delay_line[1], delay_pos, mask);
+
     inst->delay_line_pos = delay_pos;
     inst->echo_mult = mult;
     inst->delay_offset_ratio = delay_offset_ratio;
     
-    // if (!Number.isFinite(echoShelfSampleL) || Math.abs(echoShelfSampleL) < epsilon) echoShelfSampleL = 0.0;
-    // if (!Number.isFinite(echoShelfSampleR) || Math.abs(echoShelfSampleR) < epsilon) echoShelfSampleR = 0.0;
-    // if (!Number.isFinite(echoShelfPrevInputL) || Math.abs(echoShelfPrevInputL) < epsilon) echoShelfPrevInputL = 0.0;
-    // if (!Number.isFinite(echoShelfPrevInputR) || Math.abs(echoShelfPrevInputR) < epsilon) echoShelfPrevInputR = 0.0;
+    if (!isfinite(shelf_sample[0]) || fabs(shelf_sample[0]) < FLUSH_ZERO_EPSILON)
+        shelf_sample[0] = 0.0;
+    if (!isfinite(shelf_sample[1]) || fabs(shelf_sample[1]) < FLUSH_ZERO_EPSILON)
+        shelf_sample[1] = 0.0;
+    if (!isfinite(shelf_prev_input[0]) || fabs(shelf_prev_input[0]) < FLUSH_ZERO_EPSILON)
+        shelf_prev_input[0] = 0.0;
+    if (!isfinite(shelf_prev_input[1]) || fabs(shelf_prev_input[1]) < FLUSH_ZERO_EPSILON)
+        shelf_prev_input[1] = 0.0;
 
     inst->echo_shelf_sample[0] = shelf_sample[0];
     inst->echo_shelf_sample[1] = shelf_sample[1];

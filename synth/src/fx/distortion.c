@@ -114,11 +114,16 @@ void distortion_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
     inst->distortion = distortion;
     inst->drive = drive;
     
-    // if (!Number.isFinite(fractional_input1) || Math.abs(fractional_input1) < epsilon) fractional_input1 = 0.0;
-    // if (!Number.isFinite(fractional_input2) || Math.abs(fractional_input2) < epsilon) fractional_input2 = 0.0;
-    // if (!Number.isFinite(fractional_input3) || Math.abs(fractional_input3) < epsilon) fractional_input3 = 0.0;
-    // if (!Number.isFinite(prev_input) || Math.abs(prev_input) < epsilon) prev_input = 0.0;
-    // if (!Number.isFinite(next_output) || Math.abs(next_output) < epsilon) next_output = 0.0;
+    if (!isfinite(fractional_input1) || fabs(fractional_input1) < FLUSH_ZERO_EPSILON)
+        fractional_input1 = 0.0;
+    if (!isfinite(fractional_input2) || fabs(fractional_input2) < FLUSH_ZERO_EPSILON)
+        fractional_input2 = 0.0;
+    if (!isfinite(fractional_input3) || fabs(fractional_input3) < FLUSH_ZERO_EPSILON)
+        fractional_input3 = 0.0;
+    if (!isfinite(prev_input) || fabs(prev_input) < FLUSH_ZERO_EPSILON)
+        prev_input = 0.0;
+    if (!isfinite(next_output) || fabs(next_output) < FLUSH_ZERO_EPSILON)
+        next_output = 0.0;
     
     inst->fractional_input[0] = fractional_input1;
     inst->fractional_input[1] = fractional_input2;

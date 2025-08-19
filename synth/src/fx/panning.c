@@ -161,6 +161,7 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
         right[frame] = sample_r;
     }
 
+    sanitize_delay_line(delay_line, delay_pos, mask);
     inst->delay_pos = delay_pos;
     for (int i = 0; i < 2; ++i) {
         inst->volume[i] = volume[i];

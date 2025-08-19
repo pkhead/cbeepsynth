@@ -179,6 +179,8 @@ static void wave_audio_render_callback(
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
 
+        sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+
         for (int i = 0; i < UNISON_MAX_VOICES; i++) {
             voice->phase[i] = phase[i] / wave_length;
             voice->phase_delta[i] = phase_delta[i] / wave_length;

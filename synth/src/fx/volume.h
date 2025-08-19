@@ -14,7 +14,7 @@ typedef struct {
     double linear_gain_delta;
 } volume_effect_s;
 
-void bpbxsyn_effect_init_volume(volume_effect_s *inst);
+void bpbxsyn_effect_init_volume(bpbxsyn_context_s *ctx, volume_effect_s *inst);
 void volume_destroy(bpbxsyn_effect_s *inst);
 void volume_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
 void volume_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);

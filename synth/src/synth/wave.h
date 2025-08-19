@@ -50,14 +50,14 @@ typedef struct {
     float wave[HARMONICS_WAVE_LENGTH + 1];
 } harmonics_inst_s;
 
-void bpbxsyn_synth_init_chip(chip_inst_s *inst);
+void bpbxsyn_synth_init_chip(bpbxsyn_context_s *ctx, chip_inst_s *inst);
 bpbxsyn_voice_id chip_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length);
 void chip_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
 void chip_note_all_off(bpbxsyn_synth_s *inst);
 void chip_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx);
 void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count);
 
-void bpbxsyn_synth_init_harmonics(harmonics_inst_s *inst);
+void bpbxsyn_synth_init_harmonics(bpbxsyn_context_s *ctx, harmonics_inst_s *inst);
 bpbxsyn_voice_id harmonics_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length);
 void harmonics_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
 void harmonics_note_all_off(bpbxsyn_synth_s *inst);

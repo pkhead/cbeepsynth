@@ -12,6 +12,7 @@
 #include "synth/synth.h"
 #include "envelope.h"
 #include "filtering.h"
+#include "context.h"
 
 #include "synth/wave.h"
 #include "synth/fm.h"
@@ -66,6 +67,51 @@ void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *revision = BPBXSYN_VERSION_REVISION;
 }
 
+static void* std_alloc(size_t size, void *ud) {
+    return malloc(size);
+}
+
+static void std_free(void *ptr, void *ud) {
+    free(ptr);
+}
+
+bpbxsyn_context_s* bpbxsyn_context_new(
+    const bpbxsyn_allocator_s *alloc)
+{
+    bpbxsyn_context_s *ctx = NULL;
+
+    if (alloc) {
+        ctx = alloc->alloc(sizeof(bpbxsyn_context_s), alloc->userdata);
+        if (!ctx) return NULL;
+
+        ctx->alloc = *alloc;
+    } else {
+        ctx = malloc(sizeof(bpbxsyn_context_s));
+        if (!ctx) return NULL;
+
+        ctx->alloc = (bpbxsyn_allocator_s) {
+            .alloc = std_alloc,
+            .free = std_free,
+        };
+    }
+
+    init_wavetables(&ctx->wavetables);
+
+    return ctx;
+}
+
+void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx) {
+    if (!ctx) return;
+    ctx->alloc.free(ctx, ctx->alloc.userdata);
+}
+
+void bpbxsyn_set_log_func(bpbxsyn_context_s *ctx, bpbxsyn_log_f log_func,
+                          void *userdata)
+{
+    ctx->log_func = log_func;
+    ctx->log_userdata = userdata;
+}
+
 
 unsigned int bpbxsyn_synth_param_count(bpbxsyn_synth_type_e type) {
     const inst_vtable_s *vtable = inst_vtables[type];
@@ -114,9 +160,7 @@ uint32_t bpbxsyn_synth_effect_toggle_param(bpbxsyn_synthfx_type_e type) {
 }
 
 
-bpbxsyn_synth_s* bpbxsyn_synth_new(bpbxsyn_synth_type_e type) {
-    init_wavetables();
-
+bpbxsyn_synth_s* bpbxsyn_synth_new(bpbxsyn_context_s *ctx, bpbxsyn_synth_type_e type) {
     const inst_vtable_s *vtable = inst_vtables[type];
     assert(vtable);
     if (vtable == NULL) return NULL;
@@ -133,9 +177,9 @@ bpbxsyn_synth_s* bpbxsyn_synth_new(bpbxsyn_synth_type_e type) {
     assert(vtable->param_count == 0 || vtable->param_addresses);
     assert(vtable->envelope_target_count == 0 || vtable->envelope_targets);
 
-    bpbxsyn_synth_s *inst = bpbxsyn_malloc(vtable->struct_size);
+    bpbxsyn_synth_s *inst = bpbxsyn_malloc(ctx, vtable->struct_size);
     if (inst)
-        vtable->inst_init(inst);
+        vtable->inst_init(ctx, inst);
     return inst;
 }
 
@@ -149,7 +193,7 @@ void bpbxsyn_synth_destroy(bpbxsyn_synth_s *inst) {
             vtable->inst_destroy(inst);
         }
 
-        bpbxsyn_free(inst);
+        bpbxsyn_free(inst->ctx, inst);
     }
 }
 
@@ -466,19 +510,7 @@ const char* bpbxsyn_envelope_index_name(bpbxsyn_envelope_compute_index_e index) 
 
 
 const char** bpbxsyn_envelope_curve_preset_names(void) {
-    static int need_init = 1;
-    static const char* env_curve_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT + 1];
-
-    if (need_init) {
-        need_init = 0;
-        for (int i = 0; i < BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT; i++) {
-            env_curve_names[i] = envelope_curve_presets[i].name;
-        }
-
-        env_curve_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT] = NULL;
-    }
-
-    return env_curve_names;
+    return envelope_curve_preset_names;
 }
 
 
@@ -508,7 +540,7 @@ bpbxsyn_effect_param_info(bpbxsyn_effect_type_e type, unsigned int index) {
 }
 
 bpbxsyn_effect_s *
-bpbxsyn_effect_new(bpbxsyn_effect_type_e effect_type) {
+bpbxsyn_effect_new(bpbxsyn_context_s *ctx, bpbxsyn_effect_type_e effect_type) {
     const effect_vtable_s *vtable = effect_vtables[effect_type];
     assert(vtable);
     if (vtable == NULL) return NULL;
@@ -523,9 +555,9 @@ bpbxsyn_effect_new(bpbxsyn_effect_type_e effect_type) {
     assert(vtable->param_count == 0 || vtable->param_info);
     assert(vtable->param_count == 0 || vtable->param_addresses);
 
-    bpbxsyn_effect_s *inst = bpbxsyn_malloc(vtable->struct_size);
+    bpbxsyn_effect_s *inst = bpbxsyn_malloc(ctx, vtable->struct_size);
     if (inst)
-        vtable->effect_init(inst);
+        vtable->effect_init(ctx, inst);
     return inst;
 }
 
@@ -537,7 +569,7 @@ void bpbxsyn_effect_destroy(bpbxsyn_effect_s *effect) {
     if (vtable->effect_destroy)
         vtable->effect_destroy(effect);
 
-    bpbxsyn_free(effect);
+    bpbxsyn_free(effect->ctx, effect);
 }
 
 bpbxsyn_effect_type_e

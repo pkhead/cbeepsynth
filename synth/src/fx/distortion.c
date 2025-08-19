@@ -9,9 +9,10 @@
 
 #define DISTORTION_BASE_VOLUME 0.011
 
-void bpbxsyn_effect_init_distortion(distortion_effect_s *inst) {
+void bpbxsyn_effect_init_distortion(bpbxsyn_context_s *ctx, distortion_effect_s *inst) {
     *inst = (distortion_effect_s){
-        .base.type = BPBXSYN_EFFECT_DISTORTION
+        .base.type = BPBXSYN_EFFECT_DISTORTION,
+        .base.ctx = ctx
     };
 }
 

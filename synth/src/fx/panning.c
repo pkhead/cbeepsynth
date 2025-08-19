@@ -9,12 +9,15 @@
 #include "../audio.h"
 #include "../alloc.h"
 #include "../util.h"
+#include "../log.h"
 
 #define PAN_DELAY_SECS_MAX 0.001
 
-void bpbxsyn_effect_init_panning(panning_effect_s *inst) {
-    *inst = (panning_effect_s){0};
-    inst->base.type = BPBXSYN_EFFECT_PANNING;
+void bpbxsyn_effect_init_panning(bpbxsyn_context_s *ctx, panning_effect_s *inst) {
+    *inst = (panning_effect_s){
+        .base.ctx = ctx,
+        .base.type = BPBXSYN_EFFECT_PANNING
+    };
 
     // assert(fitting_power_of_two(34) == 64);
     // assert(fitting_power_of_two(64) == 64);
@@ -40,23 +43,25 @@ void panning_stop(bpbxsyn_effect_s *p_inst) {
 
 void panning_destroy(bpbxsyn_effect_s *p_inst) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
-    bpbxsyn_free(inst->delay_line);
+    const bpbxsyn_context_s *ctx = inst->base.ctx;
+    bpbxsyn_free(ctx, inst->delay_line);
 }
 
 void panning_sample_rate_changed(bpbxsyn_effect_s *p_inst,
                                  double old_sr, double new_sr) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
+    const bpbxsyn_context_s *ctx = inst->base.ctx;
     if (old_sr == new_sr) return;
 
-    bpbxsyn_free(inst->delay_line);
+    bpbxsyn_free(ctx, inst->delay_line);
 
     inst->delay_line_size =
         fitting_power_of_two(ceil(new_sr * PAN_DELAY_SECS_MAX));
-    inst->delay_line = bpbxsyn_malloc(inst->delay_line_size * sizeof(float));
+    inst->delay_line = bpbxsyn_malloc(ctx, inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
 
     if (!inst->delay_line)
-        logmsgf(BPBXSYN_LOG_ERROR, "Could not allocate panning delay line");
+        logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate panning delay line");
 }
 
 void panning_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {

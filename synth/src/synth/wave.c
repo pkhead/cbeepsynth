@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include "../util.h"
-#include "../wavetables.h"
+#include "../context.h"
 
 ///////////////
 //  GENERIC  //
@@ -204,9 +204,9 @@ static void wave_audio_render_callback(
 
 #define CHIP_VOICE_BASE_EXPRESSION 0.03375
 
-void bpbxsyn_synth_init_chip(chip_inst_s *inst) {
+void bpbxsyn_synth_init_chip(bpbxsyn_context_s *ctx, chip_inst_s *inst) {
     *inst = (chip_inst_s){0};
-    inst_init(&inst->base, BPBXSYN_SYNTH_CHIP);
+    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_CHIP);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -240,7 +240,7 @@ void chip_note_all_off(bpbxsyn_synth_s *inst) {
 static void compute_chip_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
 
-    wavetable_desc_s wavetable = chip_wavetables[inst->waveform];
+    wavetable_desc_s wavetable = base_inst->ctx->wavetables.chip_wavetables[inst->waveform];
     double settings_expression_mult = CHIP_VOICE_BASE_EXPRESSION * wavetable.expression;
 
     compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
@@ -266,9 +266,9 @@ void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
 
     wavetable_desc_s wavetable;
     if (aliases) {
-        wavetable = raw_chip_wavetables[chip->waveform];
+        wavetable = src_inst->ctx->wavetables.raw_chip_wavetables[chip->waveform];
     } else {
-        wavetable = chip_wavetables[chip->waveform];
+        wavetable = src_inst->ctx->wavetables.chip_wavetables[chip->waveform];
     }
 
     unison_desc_s unison = unison_info[chip->unison_type];
@@ -306,9 +306,9 @@ void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
 
 #define HARMONICS_VOICE_BASE_EXPRESSION 0.025
 
-void bpbxsyn_synth_init_harmonics(harmonics_inst_s *inst) {
+void bpbxsyn_synth_init_harmonics(bpbxsyn_context_s *ctx, harmonics_inst_s *inst) {
     *inst = (harmonics_inst_s){0};
-    inst_init(&inst->base, BPBXSYN_SYNTH_HARMONICS);
+    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_HARMONICS);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -317,7 +317,7 @@ void bpbxsyn_synth_init_harmonics(harmonics_inst_s *inst) {
     inst->unison_type = BPBXSYN_UNISON_NONE;
     inst->controls[0] = BPBXSYN_HARMONICS_CONTROL_MAX;
 
-    generate_harmonics(inst->controls, 64, inst->wave);
+    generate_harmonics(&inst->base.ctx->wavetables, inst->controls, 64, inst->wave);
 
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
 }
@@ -372,7 +372,7 @@ void harmonics_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count
     // if harmonic controls changed, rebuild the wave
     if (memcmp(harmonics->controls, harmonics->last_controls, sizeof(harmonics->controls))) {
         memcpy(harmonics->last_controls, harmonics->controls, sizeof(harmonics->controls));
-        generate_harmonics(harmonics->controls, 64, harmonics->wave);
+        generate_harmonics(&src_inst->ctx->wavetables, harmonics->controls, 64, harmonics->wave);
     }
 
     wave_audio_render_callback(

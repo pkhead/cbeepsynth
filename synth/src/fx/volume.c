@@ -10,8 +10,9 @@ static double inst_volume_to_mult(double inst_volume) {
     return pow(2.0, VOLUME_LOG_SCALE * inst_volume);
 }
 
-void bpbxsyn_effect_init_volume(volume_effect_s *inst) {
+void bpbxsyn_effect_init_volume(bpbxsyn_context_s *ctx, volume_effect_s *inst) {
     *inst = (volume_effect_s){
+        .base.ctx = ctx,
         .base.type = BPBXSYN_EFFECT_VOLUME
     };
 }

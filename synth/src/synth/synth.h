@@ -14,8 +14,9 @@
 #define PITCH_DAMPING 48
 #define ARPEGGIO_SPEED_SETTING_COUNT 51
 
-typedef struct bpbxsyn_synth_s {
+typedef struct bpbxsyn_synth {
     bpbxsyn_synth_type_e type;
+    const bpbxsyn_context_s *ctx;
     double sample_rate;
     
     double fade_in; // double in range of 0-9
@@ -67,7 +68,7 @@ typedef struct bpbxsyn_synth_s {
     void *userdata;
 } bpbxsyn_synth_s;
 
-typedef void (*inst_init_f)(bpbxsyn_synth_s *inst);
+typedef void (*inst_init_f)(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst);
 typedef void (*inst_destroy_f)(bpbxsyn_synth_s *inst);
 
 // (showing this to someone who isn't too familiar with C code)
@@ -209,7 +210,7 @@ typedef struct {
     double sign;
 } unison_desc_s;
 
-void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type);
+void inst_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type);
 
 bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
                             void *voices, size_t sizeof_voice,

@@ -9,7 +9,7 @@ double secs_fade_in(double setting) {
 }
 
 // neutral index is at idx4
-static double fade_out_ticks[] = { -24.0, -12.0, -6.0, -3.0, -1.0, 6.0, 12.0, 24.0, 48.0, 72.0, 96.0 };
+static const double fade_out_ticks[] = { -24.0, -12.0, -6.0, -3.0, -1.0, 6.0, 12.0, 24.0, 48.0, 72.0, 96.0 };
 
 double ticks_fade_out(double setting) {
     setting += 4.0;
@@ -357,4 +357,34 @@ const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRES
         .curve_type = ENV_CURVE_BLIP,
         .speed = 32.0
     },
+};
+
+const char *envelope_curve_preset_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT+1] = {
+    "none",
+    "note size",
+    "mod x",
+    "mod y",
+    "punch",
+    "flare 1",
+    "flare 2",
+    "flare 3",
+    "twang 1",
+    "twang 2",
+    "twang 3",
+    "swell 1",
+    "swell 2",
+    "swell 3",
+    "tremolo 1",
+    "tremolo 2",
+    "tremolo 3",
+    "tremolo 4",
+    "tremolo 5",
+    "tremolo 6",
+    "decay 1",
+    "decay 2",
+    "decay 3",
+    "blip 1",
+    "blip 2",
+    "blip 3",
+    NULL,
 };

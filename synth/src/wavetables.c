@@ -4,6 +4,7 @@
 #include "util.h"
 #include "wavetables.h"
 #include "fft.h"
+#include "context.h"
 
 // performIntegralOld
 static void harmonics_perform_integral(float *wave, size_t length) {
@@ -16,10 +17,13 @@ static void harmonics_perform_integral(float *wave, size_t length) {
     }
 }
 
-void generate_harmonics(uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *wave) {
+void generate_harmonics(const wavetables_s *tables,
+                        uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
+                        int harmonics_rendered, float *wave)
+{
     memset(wave, 0, HARMONICS_WAVE_LENGTH * sizeof(float));
 
-    const float *retro_wave = noise_wavetables[BPBXSYN_NOISE_RETRO].samples;
+    const float *retro_wave = tables->noise_wavetables[BPBXSYN_NOISE_RETRO].samples;
 
     const double overall_slope = -0.25;
     double combined_control_point_amp = 1;
@@ -60,14 +64,6 @@ void generate_harmonics(uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT], int h
     wave[HARMONICS_WAVE_LENGTH] = wave[0];
 }
 
-float sine_wave_f[SINE_WAVE_LENGTH + 1];
-double sine_wave_d[SINE_WAVE_LENGTH + 1];
-static int need_init_wavetables = 1;
-
-wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
-wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
-noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
-
 #define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
 
 #define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...) \
@@ -76,12 +72,12 @@ noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
         static float arr2[ARRLEN(arr)];                     \
         TRANSFORM(arr, ARRLEN(arr));                        \
         perform_integral(arr, arr2, ARRLEN(arr));           \
-        raw_chip_wavetables[INDEX] = (wavetable_desc_s) {   \
+        wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {   \
             .expression = EXPR,                             \
             .samples = arr,                                 \
             .length = ARRLEN(arr)                           \
         };                                                  \
-        chip_wavetables[INDEX] = (wavetable_desc_s) {       \
+        wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {       \
             .expression = EXPR,                             \
             .samples = arr2,                                \
             .length = ARRLEN(arr2)                          \
@@ -137,14 +133,10 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-void init_wavetables() {
-    if (!need_init_wavetables) return;
-    need_init_wavetables = 0;
-
+void init_wavetables(wavetables_s *wavetables) {
     // init sine wavetable
     for (int i = 0; i < SINE_WAVE_LENGTH + 1; i++) {
-        sine_wave_d[i] = sin((double)i / SINE_WAVE_LENGTH * PI2);
-        sine_wave_f[i] = sinf((float)i / SINE_WAVE_LENGTH * PI2f);
+        wavetables->sine_wave[i] = sin((double)i / SINE_WAVE_LENGTH * PI2);
     }
 
     // set up chip wavetables
@@ -259,12 +251,13 @@ void init_wavetables() {
     // there is an extra 0 at the end of each wavetable.
     // This is just for interpolation purposes.
     for (int i = 0; i < BPBXSYN_NOISE_COUNT; i++) {
-        noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
+        wavetables->noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
     }
 
     // The "retro" drum uses a "Linear Feedback Shift Register" similar to the NES noise channel.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_RETRO];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_RETRO];
         wavetable->expression = 0.25;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -284,7 +277,8 @@ void init_wavetables() {
 
     // White noise is just random values for each sample.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_WHITE];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_WHITE];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 8.0;
@@ -298,7 +292,8 @@ void init_wavetables() {
 
     // The "clang" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_CLANG];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_CLANG];
         wavetable->expression = 0.4;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -318,7 +313,8 @@ void init_wavetables() {
 
     // The "buzz" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_BUZZ];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_BUZZ];
         wavetable->expression = 0.3;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -339,7 +335,8 @@ void init_wavetables() {
     // TODO: hollow drums
     // "hollow" drums, designed in frequency space and then converted via FFT:
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_HOLLOW];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_HOLLOW];
         wavetable->expression = 1.5;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1.0;
@@ -351,7 +348,8 @@ void init_wavetables() {
     // "Shine" drums from modbox!
     // (it's the same as buzz but louder)
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_SHINE];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_SHINE];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
@@ -373,7 +371,8 @@ void init_wavetables() {
     // TODO: deep drums
     // "Deep" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_DEEP];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_DEEP];
         wavetable->expression = 1.5;
         wavetable->base_pitch = 120;
         wavetable->pitch_filter_mult = 1024.0;
@@ -384,7 +383,8 @@ void init_wavetables() {
 
     // "Cutter" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_CUTTER];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_CUTTER];
         wavetable->expression = 0.005;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;
@@ -404,7 +404,8 @@ void init_wavetables() {
 
     // "Metallic" drums from modbox!
     {
-        noise_wavetable_s *wavetable = &noise_wavetables[BPBXSYN_NOISE_METALLIC];
+        noise_wavetable_s *wavetable =
+            &wavetables->noise_wavetables[BPBXSYN_NOISE_METALLIC];
         wavetable->expression = 1.0;
         wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;

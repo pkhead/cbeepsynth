@@ -73,5 +73,6 @@ void compute_envelopes(
 );
 
 extern const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT];
+extern const char *envelope_curve_preset_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT+1];
 
 #endif

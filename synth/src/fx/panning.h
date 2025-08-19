@@ -23,7 +23,7 @@ typedef struct {
     int delay_buffer_mask;
 } panning_effect_s;
 
-void bpbxsyn_effect_init_panning(panning_effect_s *inst);
+void bpbxsyn_effect_init_panning(bpbxsyn_context_s *ctx, panning_effect_s *inst);
 void panning_destroy(bpbxsyn_effect_s *inst);
 void panning_sample_rate_changed(bpbxsyn_effect_s *inst,
                                  double old_sr, double new_sr);

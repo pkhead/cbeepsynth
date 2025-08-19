@@ -314,12 +314,20 @@ typedef struct {
     double imag;
 } bpbxsyn_complex_s;
 
-typedef struct bpbxsyn_synth_s bpbxsyn_synth_s;
-typedef struct bpbxsyn_effect_s bpbxsyn_effect_s;
+typedef struct bpbxsyn_context bpbxsyn_context_s;
+typedef struct bpbxsyn_synth bpbxsyn_synth_s;
+typedef struct bpbxsyn_effect bpbxsyn_effect_s;
 
 typedef void *(*bpbxsyn_malloc_f)(size_t size, void *userdata);
 typedef void (*bpbxsyn_mfree_f)(void *ptr, void *userdata);
+
 typedef int8_t bpbxsyn_voice_id;
+
+typedef struct bpbxsyn_allocator {
+    bpbxsyn_malloc_f alloc;
+    bpbxsyn_mfree_f free;
+    void *userdata;
+} bpbxsyn_allocator_s;
 
 typedef enum {
     BPBXSYN_LOG_DEBUG,
@@ -355,12 +363,17 @@ BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
                                  uint32_t *revision);
 
 /**
- * @brief Set custom allocators.
+ * @brief Create a new context.
  *
- * Use this function if you want cbeepsynth to use a custom allocator instead of
- * the one in the C standard library.
+ * Creates a new context, which is the first thing you must do in order to use
+ * this library. The context is allocated using a pointer to the given
+ * allocator, and a copy of the allocator structure will be kept in the context
+ * structure for any further allocations. If NULL is given instead, it will use
+ * the allocators from the C standard library. A pointer to the newly allocated
+ * bpbxsyn_context struct will be returned, or NULL if there was an error.
  *
- * There are a couple of functions where allocation/freeing may occur:
+ * Other than this function, there are a couple of others where allocation or
+ * freeing may occur:
  *   - bpbxsyn_synth_new
  *   - bpbxsyn_effect_new
  *   - bpbxsyn_synth_destroy
@@ -368,23 +381,34 @@ BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
  *   - bpbxsyn_synth_set_sample_rate
  *   - bpbxsyn_effect_set_sample_rate
  *
- * @param alloc The function to allocate a new block of memory.
- * @param free The function to free an allocated block of memory.
- * @param userdata An opaque pointer passed to the two allocation functions.
- */
-BPBXSYN_API void bpbxsyn_set_allocator(bpbxsyn_malloc_f alloc,
-                                       bpbxsyn_mfree_f free, void *userdata);
+ * @param alloc Pointer to the allocator.
+ * @return Pointer to the newly created bpbxsyn_context struct.
+ * */
+BPBXSYN_API bpbxsyn_context_s* bpbxsyn_context_new(
+    const bpbxsyn_allocator_s *alloc);
 
 /**
- * @brief Set the log function for the library.
+ * @brief Destroy a context.
  *
- * Set the log function to be used by the library. The given log function
+ * Destroys and deallocates a given bpbxsyn_context. Afterwards, all remaining
+ * instruments or effects created with this context may produce undefined
+ * behavior when interacted with.
+ *
+ * @param ctx The context to destroy.
+ */
+BPBXSYN_API void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx);
+
+/**
+ * @brief Set the log function for the context.
+ *
+ * Set the log function to be used by the context. The given log function
  * must be thread-safe.
  *
  * @param log_func The log function to use.
  * @param userdata An opaque pointer to be passed to the given log function.
  */
-BPBXSYN_API void bpbxsyn_set_log_func(bpbxsyn_log_f log_func, void *userdata);
+BPBXSYN_API void bpbxsyn_set_log_func(bpbxsyn_context_s *ctx,
+                                      bpbxsyn_log_f log_func, void *userdata);
 
 /**
  * @brief Obtain the number of parameters for a given instrument type.
@@ -407,16 +431,18 @@ BPBXSYN_API const bpbxsyn_param_info_s *
 bpbxsyn_synth_param_info(bpbxsyn_synth_type_e type, unsigned int index);
 
 /**
- * @brief Allocate a new instrument of a given type.
+ * @brief Allocate a new synth instance of a given type.
  *
- * This allocates a new insturment of a given type. Since it uses memory
+ * This allocates a new synth instance of a given type. Since it uses memory
  * allocation functions, this function may return a failure notice.
  *
+ * @param ctx       The context to create the synth instance with.
  * @param inst_type The BPBXSYN_SYNTH_* enum that identifies the instrument
  *                  type.
  * @return Pointer to the newly allocated instrument. NULL on error.
  */
-BPBXSYN_API bpbxsyn_synth_s *bpbxsyn_synth_new(bpbxsyn_synth_type_e inst_type);
+BPBXSYN_API bpbxsyn_synth_s *bpbxsyn_synth_new(bpbxsyn_context_s *ctx,
+                                               bpbxsyn_synth_type_e inst_type);
 
 /**
  * @brief Free a previously allocated instrument.
@@ -740,11 +766,12 @@ bpbxsyn_effect_param_info(bpbxsyn_effect_type_e type, unsigned int index);
  * This allocates a new effect instance of a given type. Since it uses memory
  * allocation functions, this function may return a failure notice.
  *
+ * @param ctx The context to create the effect instance with.
  * @param effect_type The BPBXSYN_EFFECT_* enum that identifies the effect type.
  * @return Pointer to the newly allocated effect instance. NULL on error.
  */
 BPBXSYN_API bpbxsyn_effect_s *
-bpbxsyn_effect_new(bpbxsyn_effect_type_e effect_type);
+bpbxsyn_effect_new(bpbxsyn_context_s *ctx, bpbxsyn_effect_type_e effect_type);
 
 /**
  * @brief Free a previously allocated effect instance.

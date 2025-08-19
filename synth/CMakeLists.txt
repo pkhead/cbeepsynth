@@ -19,9 +19,8 @@ set(SOURCES
     src/envelope.c
     src/filtering.c
     src/fft.c
-    src/log.c
-    src/alloc.c
     src/audio.c
+    src/context.c
     src/util.c
 )
 

@@ -1,6 +1,8 @@
 #ifndef _wavetables_h_
 #define _wavetables_h_
 
+// wavetable data is stored in the bpbxsyn_context struct
+
 #include <stdbool.h>
 #include "../include/beepbox_synth.h"
 
@@ -9,8 +11,6 @@
 // synthesizer code uses the last index of the wavetable,
 // and then gets the next element for interpolation purposes.
 #define SINE_WAVE_LENGTH 256
-extern float sine_wave_f[SINE_WAVE_LENGTH + 1];
-extern double sine_wave_d[SINE_WAVE_LENGTH + 1];
 
 // chip wave tables
 typedef struct {
@@ -33,17 +33,23 @@ typedef struct {
 
 #define HARMONICS_WAVE_LENGTH 2048
 
-extern noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
+typedef struct wavetables {
+    float sine_wave[SINE_WAVE_LENGTH + 1];
 
-// raw chip wavetables
-extern wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+    noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
 
-// chip wavetables integrated for the purposes of anti-aliasing
-extern wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+    // raw chip wavetables
+    wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 
-void init_wavetables(void);
+    // chip wavetables integrated for the purposes of anti-aliasing
+    wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+} wavetables_s;
+
+void init_wavetables(wavetables_s *wavetables);
 
 // size is assumed to be HARMONICS_WAVE_LENGTH + 1
-void generate_harmonics(uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT], int harmonics_rendered, float *out);
+void generate_harmonics(const wavetables_s *wavetables,
+                        uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
+                        int harmonics_rendered, float *out);
 
 #endif

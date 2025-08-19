@@ -247,23 +247,23 @@ local algo_signatures = {}
 local func_count = 0
 
 do
-    local lines = {"#ifndef _fm_algo_h_", "#define _fm_algo_h_", "#include \"fm.h\"", ""}
+    local lines = {"#ifndef _fm_algo_h_", "#define _fm_algo_h_", "#include \"fm.h\"", "#include \"../wavetables.h\"", ""}
 
     for algo_index, _ in ipairs(algorithms) do
         algo_signatures[algo_index] = {}
 
         for fdbk_index, _ in ipairs(feedback_types) do
-            table.insert(algo_signatures[algo_index], ("double fm_algo%02d%02d(fm_voice_s *voice, const double feedback_amp)"):format(algo_index-1, fdbk_index-1))
+            table.insert(algo_signatures[algo_index], ("double fm_algo%02d%02d(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp)"):format(algo_index-1, fdbk_index-1))
             func_count = func_count + 1
         end
     end
 
-    lines[#lines+1] = "typedef double (*fm_algo_f)(fm_voice_s *voice, const double feedback_amp);"
+    lines[#lines+1] = "typedef double (*fm_algo_f)(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp);"
     lines[#lines+1] = "extern fm_algo_f fm_algorithm_table["..func_count.."];"
 
     lines[#lines+1] = "#endif"
 
-    write_lines_to_file("src/fm_algo.h", lines)
+    write_lines_to_file("synth/src/synth/fm_algo.h", lines)
 end
 
 do
@@ -288,7 +288,7 @@ do
                 end
 
                 lines[#lines+1] = "    double op"..(op-1).."_scaled = voice->op_states["..(op-1).."].expression * (voice->op_states[" .. (op-1) .. "].output = fm_calc_op("
-                lines[#lines+1] = "        voice->op_states["..(op-1).."].phase" .. mod_gen .. fdb_str
+                lines[#lines+1] = "        sine_wave, voice->op_states["..(op-1).."].phase" .. mod_gen .. fdb_str
                 lines[#lines+1] = "    ));"
             end
 
@@ -312,5 +312,5 @@ do
 
     lines[#lines+1] = "};"
     
-    write_lines_to_file("synth/src/fm_algo.c", lines)
+    write_lines_to_file("synth/src/synth/fm_algo.c", lines)
 end

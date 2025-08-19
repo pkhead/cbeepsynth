@@ -3,7 +3,7 @@
 
 #include "../include/beepbox_synth.h"
 
-void* bpbxsyn_malloc(size_t size);
-void bpbxsyn_free(void *ptr);
+void* bpbxsyn_malloc(const bpbxsyn_context_s *ctx, size_t size);
+void bpbxsyn_free(const bpbxsyn_context_s *ctx, void *ptr);
 
 #endif

@@ -8,6 +8,7 @@
 #include "../alloc.h"
 #include "../util.h"
 #include "../filtering.h"
+#include "../log.h"
 
 #define ECHO_SHELF_HZ 4000.0 // The cutoff freq of the shelf filter that is used
                              // to decay echoes.
@@ -30,9 +31,10 @@ a reasonable maximum. This length will have to depend only on the sample rate.
 #define ECHO_SUSTAIN_DEFAULT 3
 #define ECHO_DELAY_DEFAULT 11
 
-void bpbxsyn_effect_init_echo(echo_effect_s *inst) {
+void bpbxsyn_effect_init_echo(bpbxsyn_context_s *ctx, echo_effect_s *inst) {
     *inst = (echo_effect_s){
         .base.type = BPBXSYN_EFFECT_ECHO,
+        .base.ctx = ctx,
 
         .sustain[0] = ECHO_SUSTAIN_DEFAULT,
         .sustain[1] = ECHO_SUSTAIN_DEFAULT,
@@ -60,10 +62,11 @@ void echo_stop(bpbxsyn_effect_s *p_inst) {
 
 void echo_destroy(bpbxsyn_effect_s *p_inst) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
+    const bpbxsyn_context_s *ctx = inst->base.ctx;
 
     for (int i = 0; i < 2; ++i) {
-        bpbxsyn_free(inst->delay_lines[i][0]);
-        bpbxsyn_free(inst->delay_lines[i][1]);
+        bpbxsyn_free(ctx, inst->delay_lines[i][0]);
+        bpbxsyn_free(ctx, inst->delay_lines[i][1]);
         inst->delay_lines[i][0] = NULL;
         inst->delay_lines[i][1] = NULL;
     }
@@ -73,29 +76,30 @@ void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
                                  double old_sr, double new_sr)
 {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
+    const bpbxsyn_context_s *ctx = inst->base.ctx;
     
     int delay_line_capacity = (int)ceil(new_sr * ECHO_MAX_DELAY_SECS);
     delay_line_capacity = fitting_power_of_two(delay_line_capacity);
     inst->delay_line_capacity = delay_line_capacity;
 
     for (int i = 0; i < 2; ++i) {
-        bpbxsyn_free(inst->delay_lines[i][0]);
-        bpbxsyn_free(inst->delay_lines[i][1]);
+        bpbxsyn_free(ctx, inst->delay_lines[i][0]);
+        bpbxsyn_free(ctx, inst->delay_lines[i][1]);
 
         size_t alloc_size = (size_t)delay_line_capacity * sizeof(float);
-        inst->delay_lines[i][0] = bpbxsyn_malloc(alloc_size);
-        inst->delay_lines[i][1] = bpbxsyn_malloc(alloc_size);
+        inst->delay_lines[i][0] = bpbxsyn_malloc(ctx, alloc_size);
+        inst->delay_lines[i][1] = bpbxsyn_malloc(ctx, alloc_size);
         inst->delay_line_dirty = true;
 
         if (!inst->delay_lines[i][0])
-            logmsgf(BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].L", i);
+            logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].L", i);
     
         if (!inst->delay_lines[i][1])
-            logmsgf(BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].R", i);
+            logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].R", i);
     
         if (!inst->delay_lines[i][0] || !inst->delay_lines[i][1]) {
-            bpbxsyn_free(inst->delay_lines[i][0]);
-            bpbxsyn_free(inst->delay_lines[i][1]);
+            bpbxsyn_free(ctx, inst->delay_lines[i][0]);
+            bpbxsyn_free(ctx, inst->delay_lines[i][1]);
             inst->delay_lines[i][0] = NULL;
             inst->delay_lines[i][1] = NULL;
         }

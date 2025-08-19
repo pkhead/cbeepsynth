@@ -43,7 +43,7 @@ typedef struct echo_effect {
 
 } echo_effect_s;
 
-void bpbxsyn_effect_init_echo(echo_effect_s *inst);
+void bpbxsyn_effect_init_echo(bpbxsyn_context_s *ctx, echo_effect_s *inst);
 void echo_destroy(bpbxsyn_effect_s *inst);
 void echo_sample_rate_changed(bpbxsyn_effect_s *inst, double old_sr,
                               double new_sr);

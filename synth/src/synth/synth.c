@@ -27,9 +27,10 @@ static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
     8.0 // dummy value in edge case for interpolation
 };
 
-void inst_init(bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
+void inst_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
     *inst = (bpbxsyn_synth_s) {
         .type = type,
+        .ctx = ctx,
         .sample_rate = 0.0,
 
         .fade_in = 0.0,
@@ -62,7 +63,7 @@ typedef struct {
     const double *periods_secs;
 } vibrato_type_def_s;
 
-static vibrato_type_def_s vibrato_types[2] = {
+static const vibrato_type_def_s vibrato_types[2] = {
     {
         .size_periods_secs = 1,
         .periods_secs = vibrato_normal_periods_secs

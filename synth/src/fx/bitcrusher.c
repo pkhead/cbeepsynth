@@ -11,9 +11,10 @@
 #define BITCRUSHER_BASE_VOLUME 0.010
 
 
-void bpbxsyn_effect_init_bitcrusher(bitcrusher_effect_s *inst) {
+void bpbxsyn_effect_init_bitcrusher(bpbxsyn_context_s *ctx, bitcrusher_effect_s *inst) {
     *inst = (bitcrusher_effect_s){
-        .base.type = BPBXSYN_EFFECT_BITCRUSHER
+        .base.type = BPBXSYN_EFFECT_BITCRUSHER,
+        .base.ctx = ctx
     };
 }
 

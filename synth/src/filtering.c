@@ -5,19 +5,8 @@
 #include <math.h>
 #include <assert.h>
 
-static double get_filter_freq_max(void) {
-    static double cache;
-    static uint8_t cache_needs_init = TRUE;
-
-    if (cache_needs_init) {
-        cache_needs_init = FALSE;
-        cache = FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBXSYN_FILTER_FREQ_RANGE - 1 - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING)); // ~19khz
-    }
-
-    return cache;
-}
-
-#define FILTER_FREQ_MAX_HZ (get_filter_freq_max())
+// ~19khz
+#define FILTER_FREQ_MAX_HZ (FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBXSYN_FILTER_FREQ_RANGE - 1 - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING)))
 
 double get_hz_from_setting_value(double value) {
     return FILTER_FREQ_REFERENCE_HZ * pow(2.0, (value - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP);

@@ -11,6 +11,7 @@
 #include "../wavetables.h"
 #include "../envelope.h"
 #include "../filtering.h"
+#include "../context.h"
 
 /*
 algorithms:
@@ -56,9 +57,9 @@ typedef struct {
     double amplitude_sign;
 } fm_freq_data_s;
 
-static fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT];
-static int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4];
-static double carrier_intervals[FM_OP_COUNT];
+static const fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT];
+static const int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4];
+static const double carrier_intervals[FM_OP_COUNT];
 
 #define VOICE_BASE_EXPRESSION 0.03
 
@@ -98,9 +99,9 @@ static void setup_algorithm(fm_inst_s *inst) {
     }
 }
 
-void bpbxsyn_synth_init_fm(fm_inst_s *inst) {
+void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst) {
     *inst = (fm_inst_s){0};
-    inst_init(&inst->base, BPBXSYN_SYNTH_FM);
+    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_FM);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -285,6 +286,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
+    const bpbxsyn_context_s *ctx = src_inst->ctx;
     setup_algorithm(fm);
 
     fm_algo_f algo_func = fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
@@ -312,7 +314,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
         
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            double x0 = algo_func(voice, voice->feedback_mult) *
+            double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
                 voice->base.expression * voice->base.volume;
             
             float sample;
@@ -611,7 +613,7 @@ const size_t fm_param_addresses[BPBXSYN_FM_PARAM_COUNT] = {
     offsetof(fm_inst_s, feedback),
 };
 
-static fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT] = {
+static const fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT] = {
     { .mult = 0.125,    .hz_offset= 0.0,      .amplitude_sign = 1.0 },
     { .mult= 0.25,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
     { .mult= 0.5,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
@@ -655,7 +657,7 @@ static fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT] = {
     { .mult= 250.0,     .hz_offset= 0.0,      .amplitude_sign= 1.0},
 };
 
-static int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4] = {
+static const int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4] = {
     { 1, 1, 1, 1 },
     { 1, 1, 1, 1 },
     { 1, 1, 1, 1 },
@@ -671,7 +673,7 @@ static int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4] = {
     { 1, 2, 3, 4 }
 };
 
-static double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
+static const double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
 
 
 

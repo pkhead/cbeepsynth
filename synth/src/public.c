@@ -17,10 +17,11 @@
 #include "synth/wave.h"
 #include "synth/fm.h"
 #include "fx/panning.h"
-#include "fx/distortion.h"
-#include "fx/echo.h"
 #include "fx/volume.h"
+#include "fx/distortion.h"
 #include "fx/bitcrusher.h"
+#include "fx/chorus.h"
+#include "fx/echo.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -49,7 +50,7 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_BITCRUSHER,
     &effect_bitcrusher_vtable,
     // BPBXSYN_EFFECT_CHORUS,
-    NULL,
+    &effect_chorus_vtable,
     // BPBXSYN_EFFECT_ECHO,
     &effect_echo_vtable,
     // BPBXSYN_EFFECT_REVERB,

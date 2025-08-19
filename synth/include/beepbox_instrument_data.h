@@ -187,6 +187,17 @@ typedef enum {
     BPBXSYN_BITCRUSHER_PARAM_FREQ_QUANTIZATION,
 } bpbxsyn_bitcrusher_param_e;
 
+////////////////////////
+// Chorus effect data //
+////////////////////////
+#define BPBXSYN_CHORUS_PARAM_COUNT 1
+#define BPBXSYN_CHORUS_RANGE 8
+#define BPBXSYN_CHORUS_MAX (BPBXSYN_CHORUS_RANGE - 1)
+
+typedef enum {
+    BPBXSYN_CHORUS_PARAM_CHORUS
+} bpbxsyn_chorus_param_e;
+
 //////////////////////
 // Echo effect data //
 //////////////////////

@@ -20,6 +20,7 @@
 #include "fx/volume.h"
 #include "fx/distortion.h"
 #include "fx/bitcrusher.h"
+#include "fx/eq.h"
 #include "fx/chorus.h"
 #include "fx/echo.h"
 
@@ -56,7 +57,7 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_REVERB,
     NULL,
     // BPBXSYN_EFFECT_EQ,
-    NULL,
+    &effect_eq_vtable,
     // BPBXSYN_EFFECT_VOLUME,
     &effect_volume_vtable
 };

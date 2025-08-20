@@ -767,8 +767,8 @@ static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
     "x3.5", "x3.6", "x3.7", "x3.8", "x3.9", "x4", "x4.15", "x4.3", "x4.5", "x4.8", "x5", "x5.5", "x6", "x8"
 };
 
-#define FILTER_MAX_FREQ 33
-#define FILTER_MAX_GAIN 14
+#define FILTER_MAX_FREQ BPBXSYN_FILTER_FREQ_MAX
+#define FILTER_MAX_GAIN BPBXSYN_FILTER_GAIN_MAX
 
 const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT] = {
     // none

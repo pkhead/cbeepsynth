@@ -13,6 +13,7 @@ set(SOURCES
     src/fx/panning.c
     src/fx/distortion.c
     src/fx/bitcrusher.c
+    src/fx/eq.c
     src/fx/chorus.c
     src/fx/echo.c
     

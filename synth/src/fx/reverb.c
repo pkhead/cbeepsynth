@@ -10,9 +10,12 @@
 #include "../filtering.h"
 
 
-// TODO: Make reverb delay line sample rate agnostic. Maybe just double buffer size for 96KHz? Adjust attenuation and shelf cutoff appropriately?
+// TODO: think of better/more efficient way of making reverb sample
+// rate-agnostic. i just "scale" the buffer operations and this requires me to
+// use modulo rather than and. Not as performant then, i guess.
 #define REVERB_DELAY_BUFFER_SIZE 16384
-#define REVERB_SHELF_HZ 8000.0 // The cutoff freq of the shelf filter that is used to decay reverb.
+#define REVERB_SHELF_HZ 8000.0 // The cutoff freq of the shelf filter that is
+                               // used to decay reverb.
 #define REVERB_SHELF_GAIN (pow(2.0, -1.5))
 
 void bpbxsyn_effect_init_reverb(bpbxsyn_context_s *ctx, reverb_effect_s *inst) {
@@ -41,26 +44,30 @@ void reverb_stop(bpbxsyn_effect_s *p_inst) {
 void reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
                                 double new_sr)
 {
-    (void)old_sr;
+    if (new_sr == old_sr)
+        return;
+
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
-    if (new_sr != 48000.0) {
-        logmsgf(ctx, BPBXSYN_LOG_WARNING, "Reverb effect only supports sample rate of 48khz");
-    }
+    bpbxsyn_free(ctx, inst->delay_line);
 
+    // good ratios:    0.555235 + 0.618033 + 0.818 +   1.0 = 2.991268
+    // Delay lengths:  3041     + 3385     + 4481  +  5477 = 16384 = 2^14
+    // Buffer offsets: 3041    -> 6426   -> 10907 -> 16384
+    const int size =
+        (int)((double)REVERB_DELAY_BUFFER_SIZE / 48000.0 * new_sr);
+    inst->delay_offsets[0] = (int)((3041.0  / 48000.0) * new_sr);
+    inst->delay_offsets[1] = (int)((6426.0  / 48000.0) * new_sr);
+    inst->delay_offsets[2] = (int)((10907.0 / 48000.0) * new_sr);
+
+    inst->delay_line_size = size;
+    size_t alloc_size = (size_t)inst->delay_line_size * sizeof(float);
+    inst->delay_line = bpbxsyn_malloc(ctx, alloc_size);
+    memset(inst->delay_line, 0, alloc_size);
+    
     if (!inst->delay_line) {
-        inst->delay_line_size = REVERB_DELAY_BUFFER_SIZE;
-        inst->delay_line_mask = inst->delay_line_size - 1;
-
-        size_t alloc_size = (size_t)inst->delay_line_size * sizeof(float);
-        inst->delay_line =
-            bpbxsyn_malloc(ctx, alloc_size);
-        memset(inst->delay_line, 0, alloc_size);
-        
-        if (!inst->delay_line) {
-            logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate reverb delay line");
-        }
+        logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate reverb delay line");
     }
 }
 
@@ -95,16 +102,19 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
 {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
-    const int mask = inst->delay_line_mask;
+    // const int mask = inst->delay_line_mask;
+    const int wrap = inst->delay_line_size;
     float *const delay_line = inst->delay_line;
     // instrumentState.reverbDelayLineDirty = true;
-    int delay_pos = inst->delay_pos & mask;
+    int delay_pos = inst->delay_pos % wrap;
     
     double reverb = inst->mult;
     const double delta = inst->mult_delta;
     
     double shelf_sample[4];
     double shelf_prev_input[4];
+    int offset[3];
+
     const double shelf_a1 = inst->shelf_a1;
     const double shelf_b0 = inst->shelf_b0;
     const double shelf_b1 = inst->shelf_b1;
@@ -117,6 +127,9 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
     shelf_prev_input[1] = inst->shelf_prev_input[1];
     shelf_prev_input[2] = inst->shelf_prev_input[2];
     shelf_prev_input[3] = inst->shelf_prev_input[3];
+    offset[0] = inst->delay_offsets[0];
+    offset[1] = inst->delay_offsets[1];
+    offset[2] = inst->delay_offsets[2];
 
     float *const left = buffer[0];
     float *const right = buffer[1];
@@ -131,12 +144,9 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
         double sample_r = (double)right[frame];
 
         // Reverb, implemented using a feedback delay network with a Hadamard matrix and lowpass filters.
-        // good ratios:    0.555235 + 0.618033 + 0.818 +   1.0 = 2.991268
-        // Delay lengths:  3041     + 3385     + 4481  +  5477 = 16384 = 2^14
-        // Buffer offsets: 3041    -> 6426   -> 10907 -> 16384
-        const int delay_pos1 = (delay_pos +  3041) & mask;
-        const int delay_pos2 = (delay_pos +  6426) & mask;
-        const int delay_pos3 = (delay_pos + 10907) & mask;
+        const int delay_pos1 = (delay_pos + offset[0]) % wrap;
+        const int delay_pos2 = (delay_pos + offset[1]) % wrap;
+        const int delay_pos3 = (delay_pos + offset[2]) % wrap;
         const double sample0 = (delay_line[delay_pos]);
         const double sample1 = delay_line[delay_pos1];
         const double sample2 = delay_line[delay_pos2];
@@ -161,7 +171,7 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
         delay_line[delay_pos2] = shelf_sample[1] * delayInputMult;
         delay_line[delay_pos3] = shelf_sample[2] * delayInputMult;
         delay_line[delay_pos ] = shelf_sample[3] * delayInputMult;
-        delay_pos = (delay_pos + 1) & mask;
+        delay_pos = (delay_pos + 1) % wrap;
         sample_l += sample1 + sample2 + sample3;
         sample_r += sample0 + sample2 - sample3;
         reverb += delta;
@@ -170,10 +180,10 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
         right[frame] = (float)sample_r;
     }
 
-    sanitize_delay_line(delay_line, delay_pos        , mask);
-    sanitize_delay_line(delay_line, delay_pos +  3041, mask);
-    sanitize_delay_line(delay_line, delay_pos +  6426, mask);
-    sanitize_delay_line(delay_line, delay_pos + 10907, mask);
+    sanitize_delay_line_mod(delay_line, delay_pos            , wrap);
+    sanitize_delay_line_mod(delay_line, delay_pos + offset[0], wrap);
+    sanitize_delay_line_mod(delay_line, delay_pos + offset[1], wrap);
+    sanitize_delay_line_mod(delay_line, delay_pos + offset[2], wrap);
     inst->delay_pos = delay_pos;
     inst->mult = reverb;
     

@@ -11,5 +11,6 @@
 double calc_samples_per_tick(double bpm, double sample_rate);
 
 void sanitize_delay_line(float *buffer, int last_index, int mask);
+void sanitize_delay_line_mod(float *buffer, int last_index, int wrap);
 
 #endif

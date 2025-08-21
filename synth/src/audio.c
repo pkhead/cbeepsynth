@@ -19,3 +19,14 @@ void sanitize_delay_line(float *buffer, int last_index, int mask) {
         buffer[index] = 0.f;
     }
 }
+
+void sanitize_delay_line_mod(float *buffer, int last_index, int wrap) {
+    while (1) {
+        int index = (--last_index) % wrap;
+        float sample = fabsf(buffer[index]);
+        if (isfinite(sample) && (sample == 0.0 || sample >= FLUSH_ZERO_EPSILON))
+            break;
+
+        buffer[index] = 0.f;
+    }
+}

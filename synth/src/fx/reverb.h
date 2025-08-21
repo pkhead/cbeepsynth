@@ -16,6 +16,8 @@ typedef struct reverb_effect {
     int delay_line_mask;
     int delay_pos;
 
+    int delay_offsets[3];
+
     double mult;
     double mult_delta;
 

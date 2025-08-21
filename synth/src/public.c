@@ -70,10 +70,12 @@ void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
 }
 
 static void* std_alloc(size_t size, void *ud) {
+    (void)ud;
     return malloc(size);
 }
 
 static void std_free(void *ptr, void *ud) {
+    (void)ud;
     free(ptr);
 }
 

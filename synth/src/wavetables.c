@@ -72,7 +72,7 @@ void generate_harmonics(const wavetables_s *tables,
 
 #define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...)                 \
     {                                                                       \
-        const static float arrdata[] = {__VA_ARGS__, 0};                    \
+        static const float arrdata[] = {__VA_ARGS__, 0};                    \
         float *raw = bpbxsyn_malloc(ctx, sizeof(arrdata));                  \
         assert(raw);                                                        \
         if (!raw) return false;                                             \

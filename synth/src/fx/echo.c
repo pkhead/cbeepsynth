@@ -75,6 +75,8 @@ void echo_destroy(bpbxsyn_effect_s *p_inst) {
 void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
                                  double old_sr, double new_sr)
 {
+    (void)old_sr;
+
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
     
@@ -181,7 +183,7 @@ void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->echo_mult = echo_mult_start;
     inst->echo_mult_delta = max(0.0, (echo_mult_end - echo_mult_start) / rounded_samples_per_tick);
 
-    double max_echo_mult = max(echo_mult_start, echo_mult_end);
+    // double max_echo_mult = max(echo_mult_start, echo_mult_end);
 
     // TODO: After computing a tick's settings once for multiple run lengths (which is
     // good for audio worklet threads), compute the echo delay envelopes at tick (or
@@ -201,7 +203,7 @@ void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     // }
 
     inst->delay_offset_end = tmp_echo_delay_offset_end;
-    double avg_echo_delay_secs = (inst->delay_offset_start + inst->delay_offset_end) * 0.5 / inst->base.sample_rate;
+    // double avg_echo_delay_secs = (inst->delay_offset_start + inst->delay_offset_end) * 0.5 / inst->base.sample_rate;
 
     inst->delay_offset_ratio = 0.0;
     inst->delay_offset_ratio_delta = 1.0 / rounded_samples_per_tick;
@@ -223,8 +225,9 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
 {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
 
-    assert(inst->delay_lines[inst->delay_line_buffer_idx]);
-    if (!inst->delay_lines[inst->delay_line_buffer_idx])
+    assert(inst->delay_lines[inst->delay_line_buffer_idx][0] && inst->delay_lines[inst->delay_line_buffer_idx][1]);
+    if (!inst->delay_lines[inst->delay_line_buffer_idx][0] ||
+        !inst->delay_lines[inst->delay_line_buffer_idx][1])
         return;
 
     float *delay_line[2];

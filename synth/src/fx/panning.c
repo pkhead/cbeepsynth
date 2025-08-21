@@ -136,7 +136,7 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample = (double)left[frame];
 
-        assert(delay_pos < inst->delay_line_size);
+        assert(delay_pos >= 0 && (unsigned int)delay_pos < inst->delay_line_size);
         delay_line[delay_pos] = sample;
         double ratio_l = fmod(offset[0], 1.0);
         double ratio_r = fmod(offset[1], 1.0);

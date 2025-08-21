@@ -60,7 +60,7 @@ void chorus_destroy(bpbxsyn_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
-    bpbxsyn_free(inst->base.ctx, inst->delay_line_alloc);
+    bpbxsyn_free(ctx, inst->delay_line_alloc);
     inst->delay_line_alloc = NULL;
     inst->delay_line[0] = NULL;
     inst->delay_line[1] = NULL;

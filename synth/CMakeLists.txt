@@ -17,6 +17,7 @@ set(SOURCES
     src/fx/chorus.c
     src/fx/echo.c
     src/fx/reverb.c
+    src/fx/limiter.c
     
     src/wavetables.c
     src/envelope.c

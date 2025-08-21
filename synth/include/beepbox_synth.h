@@ -167,6 +167,7 @@ typedef enum {
     BPBXSYN_EFFECT_REVERB,
     BPBXSYN_EFFECT_EQ,
     BPBXSYN_EFFECT_VOLUME,
+    BPBXSYN_EFFECT_LIMITER,
 
     BPBXSYN_EFFECT_COUNT,
 } bpbxsyn_effect_type_e;

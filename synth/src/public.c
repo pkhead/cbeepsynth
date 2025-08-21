@@ -24,6 +24,7 @@
 #include "fx/chorus.h"
 #include "fx/echo.h"
 #include "fx/reverb.h"
+#include "fx/limiter.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -60,7 +61,9 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_EQ,
     &effect_eq_vtable,
     // BPBXSYN_EFFECT_VOLUME,
-    &effect_volume_vtable
+    &effect_volume_vtable,
+    // BPBXSYN_EFFECT_LIMITER
+    &effect_limiter_vtable,
 };
 
 

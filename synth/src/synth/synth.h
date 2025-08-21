@@ -14,7 +14,7 @@
 #define PITCH_DAMPING 48
 #define ARPEGGIO_SPEED_SETTING_COUNT 51
 
-typedef struct bpbxsyn_synth {
+struct bpbxsyn_synth {
     bpbxsyn_synth_type_e type;
     const bpbxsyn_context_s *ctx;
     double sample_rate;
@@ -66,7 +66,7 @@ typedef struct bpbxsyn_synth {
 
     bpbxsyn_synth_callbacks_s callbacks;
     void *userdata;
-} bpbxsyn_synth_s;
+};
 
 typedef void (*inst_init_f)(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst);
 typedef void (*inst_destroy_f)(bpbxsyn_synth_s *inst);

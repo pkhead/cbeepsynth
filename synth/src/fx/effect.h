@@ -4,13 +4,13 @@
 #include "../../include/beepbox_synth.h"
 #include <stddef.h>
 
-typedef struct bpbxsyn_effect {
+struct bpbxsyn_effect {
     bpbxsyn_effect_type_e type;
     const bpbxsyn_context_s *ctx;
     double sample_rate;
 
     void *userdata;
-} bpbxsyn_effect_s;
+};
 
 typedef void (*effect_init_f)(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *inst);
 typedef void (*effect_destroy_f)(bpbxsyn_effect_s *inst);

@@ -16,12 +16,6 @@ This project is structured such that the synth library can be used independently
     - Spectrum
     - Picked string
     - Supersaw
-- Audio effects:
-    - Distortion
-    - Bitcrusher
-    - Chorus
-    - Reverb
-    - Compressor/Limiter (in one)
 
 ### Song
 - Loading BeepBox/JummBox song URL data into a song structure.

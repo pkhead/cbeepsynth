@@ -23,6 +23,7 @@
 #include "fx/eq.h"
 #include "fx/chorus.h"
 #include "fx/echo.h"
+#include "fx/reverb.h"
 
 static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_CHIP
@@ -55,7 +56,7 @@ static const effect_vtable_s *effect_vtables[] = {
     // BPBXSYN_EFFECT_ECHO,
     &effect_echo_vtable,
     // BPBXSYN_EFFECT_REVERB,
-    NULL,
+    &effect_reverb_vtable,
     // BPBXSYN_EFFECT_EQ,
     &effect_eq_vtable,
     // BPBXSYN_EFFECT_VOLUME,

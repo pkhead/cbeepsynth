@@ -244,4 +244,15 @@ typedef enum {
     BPBXSYN_ECHO_PARAM_DELAY
 } bpbxsyn_echo_param_e;
 
+////////////////////////
+// Reverb effect data //
+////////////////////////
+#define BPBXSYN_REVERB_PARAM_COUNT 1
+#define BPBXSYN_REVERB_RANGE 32
+#define BPBXSYN_REVERB_MAX (BPBXSYN_REVERB_RANGE - 1)
+
+typedef enum {
+    BPBXSYN_REVERB_PARAM_REVERB
+} bpbxsyn_reverb_param_e;
+
 #endif

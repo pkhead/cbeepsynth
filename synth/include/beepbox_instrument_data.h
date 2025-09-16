@@ -138,6 +138,21 @@ typedef enum {
         (BPBXSYN_HARMONICS_CONTROL_COUNT - 1)
 } bpbxsyn_harmonics_param_e;
 
+///////////////////
+// Spectrum data //
+///////////////////
+#define BPBXSYN_SPECTRUM_CONTROL_COUNT 30
+#define BPBXSYN_SPECTRUM_CONTROL_RANGE 8
+#define BPBXSYN_SPECTRUM_CONTROL_MAX ((BPBXSYN_SPECTRUM_CONTROL_RANGE - 1))
+#define BPBXSYN_SPECTRUM_PARAM_COUNT BPBXSYN_SPECTRUM_CONTROL_COUNT
+
+typedef enum {
+    BPBXSYN_SPECTRUM_PARAM_CONTROL_FIRST,
+    BPBXSYN_SPECTRUM_PARAM_CONTROL_LAST =
+        BPBXSYN_SPECTRUM_PARAM_CONTROL_FIRST +
+        (BPBXSYN_SPECTRUM_CONTROL_COUNT - 1)
+} bpbxsyn_spectrum_param_e;
+
 ////////////////////////
 // Volume effect data //
 ////////////////////////

@@ -16,6 +16,7 @@
 
 #include "synth/wave.h"
 #include "synth/fm.h"
+#include "synth/spectrum.h"
 #include "fx/panning.h"
 #include "fx/volume.h"
 #include "fx/distortion.h"
@@ -38,7 +39,7 @@ static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_HARMONICS
     &inst_harmonics_vtable,
     // BPBXSYN_SYNTH_SPECTRUM
-    NULL,
+    &inst_spectrum_vtable,
     // BPBXSYN_SYNTH_PICKED_STRING
     NULL,
     // BPBXSYN_SYNTH_SUPERSAW
@@ -425,9 +426,6 @@ void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst) {
 
 
 bpbxsyn_voice_id bpbxsyn_synth_begin_note(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
-    // TODO: implement length
-    (void)length;
-
     const inst_vtable_s *vtable = inst_vtables[inst->type];
     assert(vtable);
 

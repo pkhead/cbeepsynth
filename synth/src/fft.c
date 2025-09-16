@@ -5,13 +5,9 @@
 #include <stdbool.h>
 #include "util.h"
 
-static inline bool is_power_of_2(unsigned int n) {
-    return (n & (n - 1)) == 0;
-}
-
 int count_bits(unsigned int n) {
     assert(n != 0);
-    assert(is_power_of_2(n) && "FFT array length must be a power of 2!");
+    assert(is_power_of_two(n) && "FFT array length must be a power of 2!");
 
     // return Math.round(Math.log(n) / Math.log(2));
     // I feel like use the math log for this is a bit weird.

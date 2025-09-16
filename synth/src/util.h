@@ -2,6 +2,7 @@
 #define _util_h_
 
 #include <math.h>
+#include <stdbool.h>
 #include "../include/beepbox_synth.h"
 
 #define PI 3.14159265358979323846
@@ -69,5 +70,9 @@ static inline double key_to_hz_d(double key) {
 }
 
 int fitting_power_of_two(int x);
+
+static inline bool is_power_of_two(unsigned int n) {
+    return (n & (n - 1)) == 0;
+}
 
 #endif

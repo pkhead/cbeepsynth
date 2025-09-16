@@ -52,6 +52,14 @@ static inline double max(double a, double b) {
     return a > b ? a : b;
 }
 
+static inline double mini(int a, int b) {
+    return a < b ? a : b;
+}
+
+static inline double maxi(int a, int b) {
+    return a > b ? a : b;
+}
+
 static inline float key_to_hz_f(int key) {
     return powf(2.f, (key - 69) / 12.f) * 440.f;
 }

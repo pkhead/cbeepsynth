@@ -34,16 +34,22 @@ void generate_harmonics(const wavetables_s *tables,
 
     for (int harmonic_index = 0; harmonic_index < harmonics_rendered; harmonic_index++) {
         const int harmonic_freq = harmonic_index + 1;
-        double control_value = harmonic_index < BPBXSYN_HARMONICS_CONTROL_COUNT ?
+        double control_value =
+            harmonic_index < BPBXSYN_HARMONICS_CONTROL_COUNT ?
             (double)controls[harmonic_index] : 
             (double)controls[BPBXSYN_HARMONICS_CONTROL_COUNT - 1];
 
         if (harmonic_index >= BPBXSYN_HARMONICS_CONTROL_COUNT) {
-            control_value *= 1.0 - (double)(harmonic_index - BPBXSYN_HARMONICS_CONTROL_COUNT) / (harmonics_rendered - BPBXSYN_HARMONICS_CONTROL_COUNT);
+            control_value *= 1.0 -
+                (double)(harmonic_index - BPBXSYN_HARMONICS_CONTROL_COUNT) /
+                (harmonics_rendered - BPBXSYN_HARMONICS_CONTROL_COUNT);
         }
 
         const double normalized_value = control_value / BPBXSYN_HARMONICS_CONTROL_MAX;
-        double amplitude = pow(2.0, control_value - BPBXSYN_HARMONICS_CONTROL_MAX + 1) * sqrt(normalized_value);
+        double amplitude =
+            pow(2.0, control_value - BPBXSYN_HARMONICS_CONTROL_MAX + 1) *
+            sqrt(normalized_value);
+        
         if (harmonic_index < BPBXSYN_HARMONICS_CONTROL_COUNT) {
             combined_control_point_amp += amplitude;
         }
@@ -64,34 +70,150 @@ void generate_harmonics(const wavetables_s *tables,
 
     harmonics_perform_integral(wave, HARMONICS_WAVE_LENGTH);
 
-    // The first sample should be zero, and we'll duplicate it at the end for easier interpolation.
+    // The first sample should be zero, and we'll duplicate it at the end for
+    // easier interpolation.
     wave[HARMONICS_WAVE_LENGTH] = wave[0];
+}
+
+static double draw_noise_spectrum(const wavetables_s *tables, float *wave,
+                                  int wave_length, double low_octave,
+                                  double high_octave, double low_power,
+                                  double high_power, double overall_slope)
+{
+    const int reference_octave = 11;
+    const int reference_index = 1 << reference_octave;
+    const int low_index = (int)pow(2, low_octave);
+    const int high_index = mini(wave_length >> 1, (int)pow(2, high_octave));
+    const float *retro_wave =
+        tables->noise_wavetables[BPBXSYN_NOISE_RETRO].samples;
+    
+    double combined_amplitude = 0.0;
+    for (int i = low_index; i < high_index; ++i) {
+        double lerped = low_power +
+            (high_power - low_power) * (log2(i) - low_octave) /
+            (high_octave - low_octave);
+        
+        double amplitude = pow(2, (lerped - 1.0) * 7.0 + 1.0) * lerped;
+
+        amplitude *= pow((double)i / reference_index, overall_slope);
+        combined_amplitude += amplitude;
+
+        // Add two different sources of psuedo-randomness to the noise
+        // (individually they aren't random enough) but in a deterministic
+        // way so that live spectrum editing doesn't result in audible pops.
+        // Multiply all the sine wave amplitudes by 1 or -1 based on the
+        // LFSR retro wave (effectively random), and also rotate the phase
+        // of each sine wave based on the golden angle to disrupt the symmetry.
+        amplitude *= retro_wave[i];
+        const double radians = 0.61803398875 * i * i * PI2;
+
+        wave[i] = cos(radians) * amplitude;
+        wave[wave_length - i] = sin(radians) * amplitude;
+    }
+
+    return combined_amplitude;
+}
+
+static double control_point_to_octave(int point, const double *pitch_tweak,
+                                      double lowest_octave
+) {
+    return lowest_octave
+        + (int)(point / SPECTRUM_CONTROL_POINTS_PER_OCTAVE)
+        + pitch_tweak[(point + SPECTRUM_CONTROL_POINTS_PER_OCTAVE) % SPECTRUM_CONTROL_POINTS_PER_OCTAVE];
+}
+
+void generate_spectrum_wave(const wavetables_s *tables,
+                            uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
+                            double lowest_octave,
+                            float wave[SPECTRUM_WAVE_LENGTH + 1]
+) {
+    memset(wave, 0, sizeof(float) * SPECTRUM_WAVE_LENGTH);
+
+    const double highest_octave = 14;
+    const double falloff_ratio = 0.25;
+
+    // Nudge the 2/7 and 4/7 control points so that they form harmonic
+    // intervals.
+    const double pitch_tweak[] = {
+        0.0,
+        1.0 / 7.0,
+        log2(5.0 / 4.0),
+        3.0 / 7.0,
+        log2(3.0 / 2.0),
+        5.0 / 7.0,
+        6.0 / 7.0
+    };
+
+    double combined_amplitude = 1;
+
+    for (int i = 0; i < BPBXSYN_SPECTRUM_CONTROL_COUNT + 1; ++i) {
+        const uint8_t value1 = (i <= 0) ? 0 : controls[i - 1];
+        const uint8_t value2 = (i >= BPBXSYN_SPECTRUM_CONTROL_COUNT)
+            ? controls[BPBXSYN_SPECTRUM_CONTROL_COUNT - 1]
+            : controls[i];
+        
+        const double octave1 = control_point_to_octave(i - 1, pitch_tweak,
+                                                       lowest_octave);
+        double octave2 = control_point_to_octave(i, pitch_tweak, lowest_octave);
+
+        if (i >= BPBXSYN_SPECTRUM_CONTROL_COUNT)
+            octave2 = highest_octave +
+                      (octave2 - highest_octave) * falloff_ratio;
+        
+        if (value1 == 0 && value2 == 0) continue;
+
+        double spectrum =
+            draw_noise_spectrum(tables, wave, SPECTRUM_WAVE_LENGTH, octave1,
+                                octave2,
+                                (double)value1 / BPBXSYN_SPECTRUM_CONTROL_MAX,
+                                (double)value2 / BPBXSYN_SPECTRUM_CONTROL_MAX,
+                                -0.5);
+        
+        combined_amplitude += 0.02 * spectrum;
+    }
+
+    if (controls[BPBXSYN_SPECTRUM_CONTROL_COUNT - 1] > 0) {
+        double low_octave = highest_octave + (control_point_to_octave(BPBXSYN_SPECTRUM_CONTROL_COUNT, pitch_tweak, lowest_octave) - highest_octave) * falloff_ratio;
+        double low_power = (double)controls[BPBXSYN_SPECTRUM_CONTROL_COUNT - 1] / BPBXSYN_SPECTRUM_CONTROL_MAX;
+
+        combined_amplitude += 0.02 *
+            draw_noise_spectrum(tables, wave, SPECTRUM_WAVE_LENGTH, low_octave,
+                                highest_octave, low_power, 0, -0.5);
+    }
+
+    fft_inverse_real_fourier_transform(wave, SPECTRUM_WAVE_LENGTH);
+    fft_scale_array(wave,
+                    SPECTRUM_WAVE_LENGTH + 1,
+                    5.0 / (sqrt(SPECTRUM_WAVE_LENGTH) * pow(combined_amplitude, 0.75)));
+
+    // Duplicate the first sample at the end for easier wrap-around interpolation.
+    wave[SPECTRUM_WAVE_LENGTH] = wave[0];
 }
 
 #define ARRLEN(arr) (sizeof(arr)/sizeof(*arr))
 
-#define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...)                 \
-    {                                                                       \
-        static const float arrdata[] = {__VA_ARGS__, 0};                    \
-        float *raw = bpbxsyn_malloc(ctx, sizeof(arrdata));                  \
-        assert(raw);                                                        \
-        if (!raw) return false;                                             \
-        memcpy(raw, arrdata, sizeof(arrdata));                              \
-        TRANSFORM(raw, ARRLEN(arrdata));                                    \
-        float *use = bpbxsyn_malloc(ctx, sizeof(arrdata));                  \
-        assert(use);                                                        \
-        if (!use) return false;                                             \
-        perform_integral(raw, use, ARRLEN(arrdata));                        \
-        wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {       \
-            .expression = EXPR,                                             \
-            .samples = raw,                                                 \
-            .length = ARRLEN(arrdata)                                       \
-        };                                                                  \
-        wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {           \
-            .expression = EXPR,                                             \
-            .samples = use,                                                 \
-            .length = ARRLEN(arrdata)                                       \
-        };                                                                  \
+#define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...)                    \
+    {                                                                          \
+        static const float arrdata[] = {__VA_ARGS__, 0};                       \
+        float *raw = bpbxsyn_malloc(ctx, sizeof(arrdata));                     \
+        assert(raw);                                                           \
+        if (!raw) return false;                                                \
+        memcpy(raw, arrdata, sizeof(arrdata));                                 \
+        TRANSFORM(raw, ARRLEN(arrdata));                                       \
+        float *use = bpbxsyn_malloc(ctx, sizeof(arrdata));                     \
+        assert(use);                                                           \
+        if (!use) return false;                                                \
+        perform_integral(raw, use, ARRLEN(arrdata));                           \
+        wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {          \
+            .expression = EXPR,                                                \
+            .samples = raw,                                                    \
+            .length = ARRLEN(arrdata)                                          \
+        };                                                                     \
+        wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {              \
+            .expression = EXPR,                                                \
+            .samples = use,                                                    \
+            .length = ARRLEN(arrdata)                                          \
+        };                                                                     \
     }
 
 #define INIT_WAVETABLE(INDEX, EXPR, ...) \
@@ -115,15 +237,17 @@ static void center_wave(float *wave, size_t length) {
     }
     // perform_intergal(wave);  // what is the point of this?
 
-    // The first sample should be zero, and we'll duplicate it at the end for easier interpolation.
-    // (adding the 0 is done in the macro. this is why i subtract 1 from length.)
+    // The first sample should be zero, and we'll duplicate it at the end for
+    // easier interpolation. (adding the 0 is done in the macro. this is why i
+    // subtract 1 from length.)
 }
 
 static void center_and_normalize_wave(float *wave, size_t length) {
     double magn = 0.0;
     center_wave(wave, length);
 
-    // Going to length-1 because an extra 0 sample is added on the end as part of centerWave, which shouldn't impact magnitude calculation.
+    // Going to length-1 because an extra 0 sample is added on the end as part
+    // of centerWave, which shouldn't impact magnitude calculation.
     for (size_t i = 0; i < length - 1; i++) {
         magn += fabs(wave[i]);
     }
@@ -135,7 +259,8 @@ static void center_and_normalize_wave(float *wave, size_t length) {
 }
 
 static void perform_integral(float *wave, float *new_wave, size_t length) {
-    // Perform the integral on the wave. The synth function will perform the derivative to get the original wave back but with antialiasing.
+    // Perform the integral on the wave. The synth function will perform the
+    // derivative to get the original wave back but with antialiasing.
     double cumulative = 0.0;
     for (size_t i = 0; i < length; i++) {
         new_wave[i] = cumulative;
@@ -266,7 +391,8 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         wavetables->noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
     }
 
-    // The "retro" drum uses a "Linear Feedback Shift Register" similar to the NES noise channel.
+    // The "retro" drum uses a "Linear Feedback Shift Register" similar to the
+    // NES noise channel.
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BPBXSYN_NOISE_RETRO];
@@ -302,7 +428,8 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         }
     }
 
-    // The "clang" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
+    // The "clang" noise wave is based on a similar noise wave in the modded
+    // beepbox made by DAzombieRE.
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BPBXSYN_NOISE_CLANG];
@@ -323,7 +450,8 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         }
     }
 
-    // The "buzz" noise wave is based on a similar noise wave in the modded beepbox made by DAzombieRE.
+    // The "buzz" noise wave is based on a similar noise wave in the modded
+    // beepbox made by DAzombieRE.
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BPBXSYN_NOISE_BUZZ];

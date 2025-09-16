@@ -12,6 +12,10 @@
 // and then gets the next element for interpolation purposes.
 #define SINE_WAVE_LENGTH 256
 
+#define HARMONICS_WAVE_LENGTH 2048
+#define SPECTRUM_WAVE_LENGTH 32768
+#define SPECTRUM_CONTROL_POINTS_PER_OCTAVE 7
+
 // chip wave tables
 typedef struct {
     double expression;
@@ -31,8 +35,6 @@ typedef struct {
     float samples[NOISE_WAVETABLE_LENGTH+1];
 } noise_wavetable_s;
 
-#define HARMONICS_WAVE_LENGTH 2048
-
 typedef struct wavetables {
     float sine_wave[SINE_WAVE_LENGTH + 1];
 
@@ -47,9 +49,13 @@ typedef struct wavetables {
 
 bool init_wavetables_for_context(bpbxsyn_context_s *ctx);
 
-// size is assumed to be HARMONICS_WAVE_LENGTH + 1
 void generate_harmonics(const wavetables_s *wavetables,
                         uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
-                        int harmonics_rendered, float *out);
+                        int harmonics_rendered, float out[HARMONICS_WAVE_LENGTH + 1]);
+
+void generate_spectrum_wave(const wavetables_s *wavetables,
+                            uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
+                            double lowest_octave,
+                            float out[SPECTRUM_WAVE_LENGTH + 1]);
 
 #endif

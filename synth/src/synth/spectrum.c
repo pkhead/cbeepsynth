@@ -4,6 +4,7 @@
 #include <string.h>
 #include "../util.h"
 #include "../context.h"
+#include "../wavetables.h"
 
 // Spectrum can be in pitch or noise
 // channels, the expression is doubled for
@@ -39,6 +40,10 @@ void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
             maxi(0, (int)round(BPBXSYN_SPECTRUM_CONTROL_MAX * (1 - (double)i / 30))) :
             0;
     }
+
+    inst->control_hash = hash_spectrum_controls(inst->controls);
+    generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls, 8.0,
+                           inst->wave);
 }
 
 bpbxsyn_voice_id spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,
@@ -207,7 +212,7 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 
         voice->phase = phase / SPECTRUM_WAVE_LENGTH;
         voice->phase_delta = phaseDelta / samplesInPeriod;
-        voice->base.expression_delta = expression;
+        voice->base.expression = expression;
         voice->noise_sample = noiseSample;
 
         sanitize_filters(voice->base.note_filters, 8);
@@ -551,7 +556,7 @@ const size_t spectrum_param_addresses[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
 const inst_vtable_s inst_spectrum_vtable = {
     .struct_size = sizeof(spectrum_inst_s),
 
-    .param_count = BPBXSYN_FM_PARAM_COUNT,
+    .param_count = BPBXSYN_SPECTRUM_PARAM_COUNT,
     .param_info = spectrum_param_info,
     .param_addresses = spectrum_param_addresses,
 

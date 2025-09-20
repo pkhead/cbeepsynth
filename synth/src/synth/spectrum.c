@@ -113,8 +113,12 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
     voice->has_prev_pitch_expression = true;
     voice->prev_pitch_expression = pitch_expression_end;
 
-    const double expr_start = SPECTRUM_BASE_EXPRESSION * varying->expr_start * pitch_expression_start;
-    const double expr_end = SPECTRUM_BASE_EXPRESSION * varying->expr_end * pitch_expression_end;
+    double base_expr = inst->is_noise_channel ?
+        SPECTRUM_BASE_EXPRESSION * 2.0 :
+        SPECTRUM_BASE_EXPRESSION;
+
+    const double expr_start = base_expr * varying->expr_start * pitch_expression_start;
+    const double expr_end = base_expr * varying->expr_end * pitch_expression_end;
 
     const double start_freq = key_to_hz_d(start_pitch);
     const double end_freq = key_to_hz_d(end_pitch);
@@ -221,6 +225,8 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
     }
 }
 
+const char *yes_no_values[] = { "No", "Yes" };
+
 /*
 import sys
 
@@ -239,6 +245,17 @@ for i in range(30):
     print(template.replace("#", numstr).replace("@", numstr.zfill(2)))
 */
 const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
+    {
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .id = "sptNoise",
+        .name = "Is Noise Channel?",
+        .min_value = 0,
+        .max_value = 1,
+        .default_value = 0,
+
+        .enum_values = yes_no_values
+    },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
@@ -512,6 +529,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
 };
 
 const size_t spectrum_param_addresses[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
+    offsetof(spectrum_inst_s, is_noise_channel),
     offsetof(spectrum_inst_s, controls[0]),
     offsetof(spectrum_inst_s, controls[1]),
     offsetof(spectrum_inst_s, controls[2]),

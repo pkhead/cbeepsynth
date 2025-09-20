@@ -21,6 +21,7 @@ typedef struct spectrum_voice {
 typedef struct spectrum_inst {
     bpbxsyn_synth_s base;
     
+    uint8_t is_noise_channel; // a boolean
     uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT];
     int control_hash;
 

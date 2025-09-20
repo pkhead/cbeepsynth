@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "../include/beepbox_synth.h"
 
 #define PI 3.14159265358979323846
@@ -74,5 +75,16 @@ int fitting_power_of_two(int x);
 static inline bool is_power_of_two(unsigned int n) {
     return (n & (n - 1)) == 0;
 }
+
+// random number generator: xorshift128+
+// implementation taken from the code snippet in this paper
+// https://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf
+typedef struct prng_state {
+    uint64_t s[2];
+} prng_state_s;
+
+prng_state_s random_seeded_state(uint64_t seed);
+uint64_t random(prng_state_s *state);
+double frandom(prng_state_s *state);
 
 #endif

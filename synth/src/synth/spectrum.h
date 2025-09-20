@@ -28,6 +28,7 @@ typedef struct spectrum_inst {
     spectrum_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
 
     float wave[SPECTRUM_WAVE_LENGTH + 1];
+    prng_state_s prng_state;
 } spectrum_inst_s;
 
 void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx, spectrum_inst_s *inst);

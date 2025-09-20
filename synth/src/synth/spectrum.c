@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <time.h> // for seeding the prng
 #include "../util.h"
 #include "../context.h"
 #include "../wavetables.h"
@@ -44,6 +45,8 @@ void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
     inst->control_hash = hash_spectrum_controls(inst->controls);
     generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls, 8.0,
                            inst->wave);
+    
+    inst->prng_state = random_seeded_state((uint64_t)clock());
 }
 
 bpbxsyn_voice_id spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,
@@ -182,8 +185,9 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
         // Zero phase means the tone was reset, just give noise a random start
         // phase instead.
         if (voice->phase == 0.0)
-            phase = find_random_zero_crossing(inst->wave, SPECTRUM_WAVE_LENGTH)
-                + phase_delta;
+            phase = find_random_zero_crossing(&inst->prng_state, inst->wave,
+                                              SPECTRUM_WAVE_LENGTH)
+                    + phase_delta;
         
         const int phase_mask = SPECTRUM_WAVE_LENGTH - 1;
 

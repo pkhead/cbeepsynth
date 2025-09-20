@@ -1,6 +1,8 @@
 #ifndef _audio_h_
 #define _audio_h_
 
+#include "util.h"
+
 #define NOTE_SIZE_MAX 3
 #define PARTS_PER_BEAT 24
 #define TICKS_PER_PART 2
@@ -13,6 +15,7 @@ double calc_samples_per_tick(double bpm, double sample_rate);
 void sanitize_delay_line(float *buffer, int last_index, int mask);
 void sanitize_delay_line_mod(float *buffer, int last_index, int wrap);
 
-double find_random_zero_crossing(float *wave, int wave_length);
+double find_random_zero_crossing(prng_state_s *rng_state, float *wave,
+                                 int wave_length);
 
 #endif

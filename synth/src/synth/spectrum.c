@@ -166,60 +166,62 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
         spectrum_voice_s *voice = &inst->voices[i];
         if (!voice_is_computing(&voice->base)) continue;
         
-        const int samplesInPeriod = 1 << 7;
-        double phaseDelta = voice->phase_delta * samplesInPeriod;
-        const double phaseDeltaScale = voice->phase_delta_scale;
+        const int samples_in_period = 1 << 7;
+        double phase_delta = voice->phase_delta * samples_in_period;
+        const double phase_delta_scale = voice->phase_delta_scale;
         double expression = voice->base.expression;
-        const double expressionDelta = voice->base.expression_delta;
+        const double expression_delta = voice->base.expression_delta;
 
-        double noiseSample = voice->noise_sample;
+        double noise_sample = voice->noise_sample;
 
         double x1 = voice->base.note_filter_input[0];
         double x2 = voice->base.note_filter_input[1];
 
         double phase = fmod(voice->phase, 1.0) * SPECTRUM_WAVE_LENGTH;
+
         // Zero phase means the tone was reset, just give noise a random start
         // phase instead.
         if (voice->phase == 0.0)
             phase = find_random_zero_crossing(inst->wave, SPECTRUM_WAVE_LENGTH)
-                + phaseDelta;
+                + phase_delta;
         
-        const int phaseMask = SPECTRUM_WAVE_LENGTH - 1;
+        const int phase_mask = SPECTRUM_WAVE_LENGTH - 1;
 
         // This is for a "legacy" style simplified 1st order lowpass filter with
         // a cutoff frequency that is relative to the tone's fundamental
         // frequency.
-        const double pitchRelativefilter = min(1.0, phaseDelta);
+        const double pitch_relative_filter = min(1.0, phase_delta);
 
         for (size_t smp = 0; smp < frame_count; ++smp) {
-            const int phaseInt = (int)phase;
-            const int index = phaseInt & phaseMask;
-            double waveSample = wave[index];
-            const double phaseRatio = phase - phaseInt;
+            const int phase_int = (int)phase;
+            const int index = phase_int & phase_mask;
+            double wave_sample = wave[index];
+            const double phase_ratio = phase - phase_int;
 
-            waveSample += (wave[index + 1] - waveSample) * phaseRatio;
-            noiseSample += (waveSample - noiseSample) * pitchRelativefilter;
+            wave_sample += (wave[index + 1] - wave_sample) * phase_ratio;
+            noise_sample +=
+                (wave_sample - noise_sample) * pitch_relative_filter;
 
-            const double x0 = noiseSample;
+            const double x0 = noise_sample;
             double sample = apply_filters(x0, x1, x2, voice->base.note_filters);
             x2 = x1;
             x1 = x0;
 
-            phase += phaseDelta;
-            phaseDelta *= phaseDeltaScale;
+            phase += phase_delta;
+            phase_delta *= phase_delta_scale;
 
             const double output = sample * expression;
-            expression += expressionDelta;
+            expression += expression_delta;
 
             samples[smp] += output;
         }
 
         voice->phase = phase / SPECTRUM_WAVE_LENGTH;
-        voice->phase_delta = phaseDelta / samplesInPeriod;
+        voice->phase_delta = phase_delta / samples_in_period;
         voice->base.expression = expression;
-        voice->noise_sample = noiseSample;
+        voice->noise_sample = noise_sample;
 
-        sanitize_filters(voice->base.note_filters, 8);
+        sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
     }

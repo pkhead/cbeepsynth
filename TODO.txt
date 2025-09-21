@@ -1,4 +1,3 @@
-- implement audio.c rnd() function (currently always returns 0)
 - implement custom interval chord type
 - implement envelope speed
 - explicitly-named note size, instead of calling it "mod wheel" or whatever.

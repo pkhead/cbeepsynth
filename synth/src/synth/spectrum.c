@@ -236,25 +236,45 @@ const char *yes_no_values[] = { "No", "Yes" };
 /*
 import sys
 
+default_values = dict([
+    (0, 7),
+    (7, 5),
+    (11, 4),
+    (14, 4),
+    (16, 2),
+    (18, 3),
+    (21, 2),
+    (23, 2),
+    (25, 1),
+    (26, 1),
+    (27, 1)
+])
+
 template = """    {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl@",
+        .group = "Spectrum",
         .name = "Spectrum Control #",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = $
     },"""
 
 for i in range(30):
     numstr = str(i + 1)
-    print(template.replace("#", numstr).replace("@", numstr.zfill(2)))
+    print(template
+        .replace("#", numstr)
+        .replace("@", numstr.zfill(2))
+        .replace("$", str(default_values.get(i, 0)))
+    )
 */
 const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptNoise",
+        .group = "Spectrum",
         .name = "Is Noise Channel?",
         .min_value = 0,
         .max_value = 1,
@@ -266,15 +286,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl01",
+        .group = "Spectrum",
         .name = "Spectrum Control 1",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 7
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl02",
+        .group = "Spectrum",
         .name = "Spectrum Control 2",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -284,6 +306,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl03",
+        .group = "Spectrum",
         .name = "Spectrum Control 3",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -293,6 +316,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl04",
+        .group = "Spectrum",
         .name = "Spectrum Control 4",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -302,6 +326,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl05",
+        .group = "Spectrum",
         .name = "Spectrum Control 5",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -311,6 +336,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl06",
+        .group = "Spectrum",
         .name = "Spectrum Control 6",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -320,6 +346,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl07",
+        .group = "Spectrum",
         .name = "Spectrum Control 7",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -329,15 +356,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl08",
+        .group = "Spectrum",
         .name = "Spectrum Control 8",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 5
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl09",
+        .group = "Spectrum",
         .name = "Spectrum Control 9",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -347,6 +376,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl10",
+        .group = "Spectrum",
         .name = "Spectrum Control 10",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -356,6 +386,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl11",
+        .group = "Spectrum",
         .name = "Spectrum Control 11",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -365,15 +396,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl12",
+        .group = "Spectrum",
         .name = "Spectrum Control 12",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 4
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl13",
+        .group = "Spectrum",
         .name = "Spectrum Control 13",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -383,6 +416,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl14",
+        .group = "Spectrum",
         .name = "Spectrum Control 14",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -392,15 +426,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl15",
+        .group = "Spectrum",
         .name = "Spectrum Control 15",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 4
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl16",
+        .group = "Spectrum",
         .name = "Spectrum Control 16",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -410,15 +446,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl17",
+        .group = "Spectrum",
         .name = "Spectrum Control 17",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 2
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl18",
+        .group = "Spectrum",
         .name = "Spectrum Control 18",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -428,15 +466,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl19",
+        .group = "Spectrum",
         .name = "Spectrum Control 19",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 3
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl20",
+        .group = "Spectrum",
         .name = "Spectrum Control 20",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -446,6 +486,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl21",
+        .group = "Spectrum",
         .name = "Spectrum Control 21",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -455,15 +496,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl22",
+        .group = "Spectrum",
         .name = "Spectrum Control 22",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 2
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl23",
+        .group = "Spectrum",
         .name = "Spectrum Control 23",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -473,15 +516,17 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl24",
+        .group = "Spectrum",
         .name = "Spectrum Control 24",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 2
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl25",
+        .group = "Spectrum",
         .name = "Spectrum Control 25",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -491,33 +536,37 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl26",
+        .group = "Spectrum",
         .name = "Spectrum Control 26",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 1
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl27",
+        .group = "Spectrum",
         .name = "Spectrum Control 27",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 1
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl28",
+        .group = "Spectrum",
         .name = "Spectrum Control 28",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
-        .default_value = 0
+        .default_value = 1
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl29",
+        .group = "Spectrum",
         .name = "Spectrum Control 29",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,
@@ -527,6 +576,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "sptCtl30",
+        .group = "Spectrum",
         .name = "Spectrum Control 30",
         .min_value = 0,
         .max_value = BPBXSYN_SPECTRUM_CONTROL_MAX,

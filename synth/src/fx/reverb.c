@@ -34,7 +34,6 @@ void reverb_destroy(bpbxsyn_effect_s *p_inst) {
 
 void reverb_stop(bpbxsyn_effect_s *p_inst) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
-    const bpbxsyn_context_s *ctx = inst->base.ctx;
 
     if (inst->delay_line) {
         memset(inst->delay_line, 0, inst->delay_line_size * sizeof(float));

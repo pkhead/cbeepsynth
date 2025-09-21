@@ -252,6 +252,10 @@ typedef struct {
 
     const char *name;
     const char *group;
+
+#ifdef __GNUC__
+    __attribute__((nonstring)) // string does not end with NUL terminator
+#endif
     char id[8];
 
     double min_value;

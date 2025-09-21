@@ -23,7 +23,8 @@ static void harmonics_perform_integral(float *wave, size_t length) {
 
 void generate_harmonics(const wavetables_s *tables,
                         uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
-                        int harmonics_rendered, float *wave)
+                        int harmonics_rendered,
+                        float wave[HARMONICS_WAVE_LENGTH + 1])
 {
     memset(wave, 0, HARMONICS_WAVE_LENGTH * sizeof(float));
 

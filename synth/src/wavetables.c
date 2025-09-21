@@ -286,7 +286,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
 #ifdef _MSC_VER
 #   pragma warning(push)
 #   pragma warning(disable : 4305)
-#elif defined(__GNUC__)
+#elif defined(__clang__)
 #   pragma GCC diagnostic push
 #   pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
 #endif
@@ -399,7 +399,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
 
 #ifdef _MSC_VER
 #   pragma warning(pop)
-#elif defined(__GNUC__)
+#elif defined(__clang__)
 #   pragma GCC diagnostic pop
 #endif
 

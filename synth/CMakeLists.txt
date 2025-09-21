@@ -46,7 +46,7 @@ set(TARGET_DEFINITIONS
 )
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-    set(TARGET_OPTIONS -Wall -Wextra -Wpedantic)
+    set(TARGET_OPTIONS -Wall -Wextra -Wpedantic -Wno-newline-eof)
 elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
     set(TARGET_OPTIONS /W3)
 endif()

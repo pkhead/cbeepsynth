@@ -44,8 +44,9 @@ void volume_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
     float *left = buffer[0];
     float *right = buffer[1];
     for (size_t i = 0; i < frame_count; ++i) {
-        left[i] *= linear_gain;
-        right[i] *= linear_gain;
+        float linear_gain_f = (float)linear_gain;
+        left[i] *= linear_gain_f;
+        right[i] *= linear_gain_f;
 
         linear_gain += linear_gain_delta;
     }

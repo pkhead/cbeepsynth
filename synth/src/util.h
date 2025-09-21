@@ -54,11 +54,11 @@ static inline double max(double a, double b) {
     return a > b ? a : b;
 }
 
-static inline double mini(int a, int b) {
+static inline int mini(int a, int b) {
     return a < b ? a : b;
 }
 
-static inline double maxi(int a, int b) {
+static inline int maxi(int a, int b) {
     return a > b ? a : b;
 }
 

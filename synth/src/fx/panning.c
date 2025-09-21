@@ -56,7 +56,7 @@ void panning_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     bpbxsyn_free(ctx, inst->delay_line);
 
     inst->delay_line_size =
-        fitting_power_of_two(ceil(new_sr * PAN_DELAY_SECS_MAX));
+        fitting_power_of_two((int)ceil(new_sr * PAN_DELAY_SECS_MAX));
     inst->delay_line = bpbxsyn_malloc(ctx, inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
 
@@ -136,8 +136,8 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample = (double)left[frame];
 
-        assert(delay_pos >= 0 && (unsigned int)delay_pos < inst->delay_line_size);
-        delay_line[delay_pos] = sample;
+        assert(delay_pos >= 0 && delay_pos < inst->delay_line_size);
+        delay_line[delay_pos] = (float)sample;
         double ratio_l = fmod(offset[0], 1.0);
         double ratio_r = fmod(offset[1], 1.0);
         double tap_la = delay_line[(int)(offset[0])     & mask];
@@ -157,8 +157,8 @@ void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
         offset[1] += offset_delta[1];
 
         assert(frame < frame_count);
-        left[frame] = sample_l;
-        right[frame] = sample_r;
+        left[frame] = (float)sample_l;
+        right[frame] = (float)sample_r;
     }
 
     sanitize_delay_line(delay_line, delay_pos, mask);

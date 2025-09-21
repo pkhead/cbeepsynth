@@ -21,9 +21,11 @@ int count_bits(unsigned int n) {
 }
 
 void fft_scale_array(float *array, size_t length, double factor) {
+	const float factor_f = (float)factor;
+
     // i wonder if the compiler will vectorize this
     for (size_t i = 0; i < length; i++) {
-        array[i] *= factor;
+        array[i] *= factor_f;
     }
 }
 

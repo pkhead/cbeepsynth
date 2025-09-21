@@ -16,7 +16,7 @@ static void harmonics_perform_integral(float *wave, size_t length) {
     double cumulative = 0.0;
     for (size_t i = 0; i < length; i++) {
         const double temp = (double)wave[i];
-        wave[i] += cumulative;
+        wave[i] += (float)(cumulative);
         cumulative += temp;
     }
 }
@@ -60,14 +60,15 @@ void generate_harmonics(const wavetables_s *tables,
         // retro wave (effectively random) to avoid egregiously tall spikes.
         amplitude *= retro_wave[harmonic_index + 589];
 
-        wave[HARMONICS_WAVE_LENGTH - harmonic_freq] = amplitude;
+        wave[HARMONICS_WAVE_LENGTH - harmonic_freq] = (float)(amplitude);
     }
 
     fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
 
     // Limit the maximum wave amplitude
-    const double mult = 1.0 / pow(combined_control_point_amp, 0.7);
-    for (int i = 0; i < HARMONICS_WAVE_LENGTH; i++) wave[i] *= mult;
+    const float mult = (float)(1.0 / pow(combined_control_point_amp, 0.7));
+    for (int i = 0; i < HARMONICS_WAVE_LENGTH; i++)
+        wave[i] *= mult;
 
     harmonics_perform_integral(wave, HARMONICS_WAVE_LENGTH);
 
@@ -108,8 +109,8 @@ static double draw_noise_spectrum(const wavetables_s *tables, float *wave,
         amplitude *= retro_wave[i];
         const double radians = 0.61803398875 * i * i * PI2;
 
-        wave[i] = cos(radians) * amplitude;
-        wave[wave_length - i] = sin(radians) * amplitude;
+        wave[i] = (float)(cos(radians) * amplitude);
+        wave[wave_length - i] = (float)(sin(radians) * amplitude);
     }
 
     return combined_amplitude;
@@ -232,7 +233,7 @@ static void center_wave(float *wave, size_t length) {
     for (size_t i = 0; i < length; i++) {
         sum += wave[i];
     }
-    const double average = sum / length;
+    const float average = (float)(sum / length);
     for (size_t i = 0; i < length; i++) {
         wave[i] -= average;
     }
@@ -252,8 +253,8 @@ static void center_and_normalize_wave(float *wave, size_t length) {
     for (size_t i = 0; i < length - 1; i++) {
         magn += fabs(wave[i]);
     }
-    const double magn_avg = magn / (length - 1);
 
+    const float magn_avg = (float)(magn / (length - 1));
     for (size_t i = 0; i < length - 1; i++) {
         wave[i] = wave[i] / magn_avg;
     }
@@ -262,7 +263,7 @@ static void center_and_normalize_wave(float *wave, size_t length) {
 static void perform_integral(float *wave, float *new_wave, size_t length) {
     // Perform the integral on the wave. The synth function will perform the
     // derivative to get the original wave back but with antialiasing.
-    double cumulative = 0.0;
+    float cumulative = 0.0;
     for (size_t i = 0; i < length; i++) {
         new_wave[i] = cumulative;
         cumulative += wave[i];
@@ -274,10 +275,22 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
 
     // init sine wavetable
     for (int i = 0; i < SINE_WAVE_LENGTH + 1; i++) {
-        wavetables->sine_wave[i] = sin((double)i / SINE_WAVE_LENGTH * PI2);
+        wavetables->sine_wave[i] =
+            (float)sin((double)i / SINE_WAVE_LENGTH * PI2);
     }
 
     // set up chip wavetables
+    // a warning is emitted because i'm initializing a float array with doubles
+    // but what the fuck. i'm not suffixing and f to every number here. fuck you
+    // compiler.
+#ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 4305)
+#elif defined(__GNUC__)
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+#endif
+
     INIT_WAVETABLE(
         BPBXSYN_CHIP_WAVE_ROUNDED,
         0.94,
@@ -384,6 +397,12 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0
     );
 
+#ifdef _MSC_VER
+#   pragma warning(pop)
+#elif defined(__GNUC__)
+#   pragma GCC diagnostic pop
+#endif
+
     // generate noise wavetables
 
     // there is an extra 0 at the end of each wavetable.
@@ -405,7 +424,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i] = (float)(drum_buffer & 1) * 2.0 - 1.0;
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 1 << 14;
@@ -442,7 +461,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 2 << 14;
@@ -464,7 +483,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 10 << 2;
@@ -500,7 +519,7 @@ bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i] = (drum_buffer & 1) * 2.0 - 1.0;
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 10 << 2;

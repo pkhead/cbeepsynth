@@ -68,8 +68,8 @@ void limiter_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
         limit += ((limitTarget - limit) * (limit < limitTarget ? rise : decay));
 
         const double limitedVolume = 1.0 / (limit >= 1 ? limit * 1.05 : limit * 0.8 + 0.25);
-        left[i] = sampleL * limitedVolume;
-        right[i] = sampleR * limitedVolume;
+        left[i] = (float)(sampleL * limitedVolume);
+        right[i] = (float)(sampleR * limitedVolume);
 
         // this.song.outVolumeCap = (this.song.outVolumeCap > abs * limitedVolume ? this.song.outVolumeCap : abs * limitedVolume); // Analytics, spit out limited output volume
     }

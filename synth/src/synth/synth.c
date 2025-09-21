@@ -7,7 +7,8 @@
 #include "../util.h"
 
 #define TICKS_PER_ARPEGGIO 3
-#define GET_VOICE(voice_list, size, idx) ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
+#define GET_VOICE(voice_list, size, idx)                                       \
+    ((inst_base_voice_s*)((uint8_t*)(voice_list) + (idx) * (size)))
 #define CHORD_INDEX_INACTIVE UINT8_MAX
 
 #define ARPEGGIO_PATTERN_COUNT 8
@@ -235,11 +236,13 @@ bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
         voice->flags &= ~(VOICE_FLAG_RELEASE_TRIGGERED | VOICE_FLAG_RELEASED);
         voice->key = (uint16_t)key;
         voice->current_key = (double)voice->key;
-        voice->volume = velocity;
+        voice->volume = (float)velocity;
         voice->note_length = (int) length;
 
         if (inst->callbacks.voice_end)
-            inst->callbacks.voice_end(inst, voice_index_to_shadow);
+            inst->callbacks.voice_end(
+                inst, (bpbxsyn_voice_id)voice_index_to_shadow);
+            
         shadowed_voice->flags = 0;
 
         if (inst->active_effects[BPBXSYN_SYNTHFX_TRANSITION_TYPE])
@@ -267,7 +270,7 @@ bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
             .chord_index = chord_index,
 
             .key = (uint16_t)key,
-            .volume = velocity,
+            .volume = (float)velocity,
             .note_length = (int)length
         };
 
@@ -306,7 +309,7 @@ void release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpb
 }
 
 void release_all_voices(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice) {
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
+    for (bpbxsyn_voice_id i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_releasedt(voice)) {
             release_voice(inst, voices, sizeof_voice, i);

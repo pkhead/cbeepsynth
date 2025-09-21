@@ -166,10 +166,10 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
         shelf_prev_input[1] = shelf_input1;
         shelf_prev_input[2] = shelf_input2;
         shelf_prev_input[3] = shelf_input3;
-        delay_line[delay_pos1] = shelf_sample[0] * delayInputMult;
-        delay_line[delay_pos2] = shelf_sample[1] * delayInputMult;
-        delay_line[delay_pos3] = shelf_sample[2] * delayInputMult;
-        delay_line[delay_pos ] = shelf_sample[3] * delayInputMult;
+        delay_line[delay_pos1] = (float)(shelf_sample[0] * delayInputMult);
+        delay_line[delay_pos2] = (float)(shelf_sample[1] * delayInputMult);
+        delay_line[delay_pos3] = (float)(shelf_sample[2] * delayInputMult);
+        delay_line[delay_pos ] = (float)(shelf_sample[3] * delayInputMult);
         delay_pos = (delay_pos + 1) % wrap;
         sample_l += sample1 + sample2 + sample3;
         sample_r += sample0 + sample2 - sample3;

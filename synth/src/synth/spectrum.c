@@ -38,7 +38,7 @@ void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
                                 i == 16 || i == 18 || i == 21 || i == 23 ||
                                 i >= 25;
         inst->controls[i] = isHarmonic ?
-            maxi(0, (int)round(BPBXSYN_SPECTRUM_CONTROL_MAX * (1 - (double)i / 30))) :
+            (uint8_t)maxi(0, (int)round(BPBXSYN_SPECTRUM_CONTROL_MAX * (1 - (double)i / 30))) :
             0;
     }
 
@@ -217,7 +217,7 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
             const double output = sample * expression;
             expression += expression_delta;
 
-            samples[smp] += output;
+            samples[smp] += (float)output;
         }
 
         voice->phase = phase / SPECTRUM_WAVE_LENGTH;

@@ -115,7 +115,7 @@ static void echo_realloc_buffers_if_necessary(echo_effect_s *inst,
     // The delay may be very short now, but if it increases later make sure we
     // have enough sample history.
     int safe_echo_delay_steps =
-        max((double)(BPBXSYN_ECHO_DELAY_RANGE >> 1), (inst->delay[1] + 1));
+        (int)max((double)(BPBXSYN_ECHO_DELAY_RANGE >> 1), (inst->delay[1] + 1));
     
     int base_echo_delay_buffer_size =
         fitting_power_of_two((int)(safe_echo_delay_steps * ECHO_DELAY_STEP_TICKS * samples_per_tick));
@@ -288,14 +288,14 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
         sample_l += shelf_sample[0];
         sample_r += shelf_sample[1];
         
-        delay_line[0][delay_pos] = sample_l * delay_input_mult;
-        delay_line[1][delay_pos] = sample_r * delay_input_mult;
+        delay_line[0][delay_pos] = (float)(sample_l * delay_input_mult);
+        delay_line[1][delay_pos] = (float)(sample_r * delay_input_mult);
         delay_pos = (delay_pos + 1) & mask;
         delay_offset_ratio += delay_offset_ratio_delta;
         mult += mult_delta;
         
-        left[frame] = sample_l;
-        right[frame] = sample_r;
+        left[frame] = (float)sample_l;
+        right[frame] = (float)sample_r;
     }
 
     sanitize_delay_line(delay_line[0], delay_pos, mask);

@@ -18,7 +18,7 @@ typedef struct {
     double offset_delta[2];
 
     float *delay_line;
-    size_t delay_line_size;
+    int delay_line_size;
     int delay_pos;
     int delay_buffer_mask;
 } panning_effect_s;

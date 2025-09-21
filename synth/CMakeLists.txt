@@ -45,6 +45,12 @@ set(TARGET_DEFINITIONS
     BPBXSYN_VERSION_REVISION=${PROJECT_VERSION_PATCH}
 )
 
+if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    set(TARGET_OPTIONS -Wall -Wextra -Wpedantic)
+elseif (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    set(TARGET_OPTIONS /W3)
+endif()
+
 # static target
 if (BEEPBOX_SYNTH_BUILD_STATIC)
     add_library(beepbox_synth_static STATIC ${SOURCES})
@@ -52,10 +58,7 @@ if (BEEPBOX_SYNTH_BUILD_STATIC)
     target_compile_definitions(beepbox_synth_static PUBLIC ${TARGET_DEFINITIONS})
     target_include_directories(beepbox_synth_static PRIVATE ${TARGET_INCLUDES})
     target_include_directories(beepbox_synth_static PUBLIC ${PROJECT_SOURCE_DIR}/include)
-
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        target_compile_options(beepbox_synth_static PRIVATE -Wall -Wextra -Wpedantic)
-    endif()
+    target_compile_options(beepbox_synth_static PRIVATE ${TARGET_OPTIONS})
 endif()
 
 # dynamic target
@@ -72,8 +75,5 @@ if (BEEPBOX_SYNTH_BUILD_SHARED)
         PRIVATE BPBXSYN_SHARED
         PUBLIC ${TARGET_DEFINITIONS}
     )
-    
-    if (CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        target_compile_options(beepbox_synth_shared PRIVATE -Wall -Wextra -Wpedantic)
-    endif()
+    target_compile_options(beepbox_synth_shared PRIVATE ${TARGET_OPTIONS})
 endif()

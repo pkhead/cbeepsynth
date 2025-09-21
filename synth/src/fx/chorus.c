@@ -75,7 +75,7 @@ void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     // reallocate/resize delay line
     bpbxsyn_free(ctx, inst->delay_line_alloc);
 
-    inst->delay_line_size = fitting_power_of_two(new_sr * chorus_max_delay());
+    inst->delay_line_size = fitting_power_of_two((int)(new_sr * chorus_max_delay()));
     inst->delay_line_mask = inst->delay_line_size - 1;
 
     inst->delay_line_alloc_size = (size_t)inst->delay_line_size * 2;
@@ -202,8 +202,8 @@ void chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
         const double tap3 = tap3a + (tap3b - tap3a) * tap3_ratio;
         const double tap4 = tap4a + (tap4b - tap4a) * tap4_ratio;
         const double tap5 = tap5a + (tap5b - tap5a) * tap5_ratio;
-        delay_line_l[delay_pos] = sample_l * delay_input_mult;
-        delay_line_r[delay_pos] = sample_r * delay_input_mult;
+        delay_line_l[delay_pos] = (float)(sample_l * delay_input_mult);
+        delay_line_r[delay_pos] = (float)(sample_r * delay_input_mult);
         sample_l = combined_mult * (sample_l + voice_mult * (tap1 - tap0 - tap2));
         sample_r = combined_mult * (sample_r + voice_mult * (tap4 - tap3 - tap5));
         delay_pos = (delay_pos + 1) & mask;
@@ -216,8 +216,8 @@ void chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
         voice_mult += voice_mult_delta;
         combined_mult += combined_mult_delta;
 
-        left[frame] = sample_l;
-        right[frame] = sample_r;
+        left[frame] = (float)sample_l;
+        right[frame] = (float)sample_r;
     }
 
     sanitize_delay_line(delay_line_l, delay_pos, mask);

@@ -284,7 +284,7 @@ static inline int set_param_int(void *addr, bpbxsyn_param_info_s info,
 
     switch (info.type) {
         case BPBXSYN_PARAM_UINT8:
-            *((uint8_t *)addr) = clampi(val_clamped, 0, UINT8_MAX);
+            *((uint8_t *)addr) = (uint8_t)clampi(val_clamped, 0, UINT8_MAX);
             break;
 
         case BPBXSYN_PARAM_INT:
@@ -533,7 +533,7 @@ const bpbxsyn_envelope_compute_index_e* bpbxsyn_synth_envelope_targets(bpbxsyn_s
     const inst_vtable_s *vtable = inst_vtables[type];
     assert(vtable);
 
-    *size = vtable->envelope_target_count;
+    *size = (int)vtable->envelope_target_count;
     return vtable->envelope_targets;
 }
 

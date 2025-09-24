@@ -12,8 +12,6 @@ This project is structured such that the synth library can be used independently
     - Custom chip
     - FM6 (from mods)
     - Noise
-    - Pulse width
-    - Spectrum
     - Picked string
     - Supersaw
 

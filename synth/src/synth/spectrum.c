@@ -231,7 +231,18 @@ void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
     }
 }
 
-const char *yes_no_values[] = { "No", "Yes" };
+
+
+
+
+
+
+
+
+
+//////////
+// DATA //
+//////////
 
 /*
 import sys
@@ -280,7 +291,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
         .max_value = 1,
         .default_value = 0,
 
-        .enum_values = yes_no_values
+        .enum_values = yes_no_enum_values
     },
     {
         .type = BPBXSYN_PARAM_UINT8,
@@ -624,9 +635,6 @@ const size_t spectrum_param_addresses[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
 
 
 
-//////////
-// DATA //
-//////////
 const inst_vtable_s inst_spectrum_vtable = {
     .struct_size = sizeof(spectrum_inst_s),
 

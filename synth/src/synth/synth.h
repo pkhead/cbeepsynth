@@ -233,4 +233,7 @@ extern bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT];
 extern size_t base_param_offsets[BPBXSYN_BASE_PARAM_COUNT];
 extern const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT];
 
+extern const char *bool_enum_values[2];
+extern const char *yes_no_enum_values[2];
+
 #endif

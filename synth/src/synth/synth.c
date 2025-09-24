@@ -757,7 +757,9 @@ static const arpeggio_pattern_s normal_two_note_arpeggio = {
     .length = 4, .pitches = {0, 0, 1, 1}
 };
 
-static const char *bool_enum_values[] = {"Off", "On"};
+const char *bool_enum_values[2] = {"Off", "On"};
+const char *yes_no_enum_values[2] = {"No", "Yes"};
+
 static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};
 static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
 static const char *chord_type_values[] = {"Simultaneous", "Strum", "Arpeggio", "Custom Interval"};

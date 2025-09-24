@@ -16,6 +16,7 @@
 
 #include "synth/wave.h"
 #include "synth/fm.h"
+#include "synth/pwm.h"
 #include "synth/spectrum.h"
 #include "fx/panning.h"
 #include "fx/volume.h"
@@ -35,7 +36,7 @@ static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_NOISE
     NULL,
     // BPBXSYN_SYNTH_PULSE_WIDTH
-    NULL,
+    &inst_pwm_vtable,
     // BPBXSYN_SYNTH_HARMONICS
     &inst_harmonics_vtable,
     // BPBXSYN_SYNTH_SPECTRUM

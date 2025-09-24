@@ -122,6 +122,19 @@ typedef enum {
     BPBXSYN_CHIP_PARAM_UNISON,
 } bpbxsyn_chip_param_e;
 
+//////////////////////
+// Pulse Width data //
+//////////////////////
+#define BPBXSYN_PULSE_WIDTH_PARAM_COUNT 2
+#define BPBXSYN_PULSE_WIDTH_WIDTH_RANGE 50
+#define BPBXSYN_PULSE_WIDTH_WIDTH_MIN 0
+#define BPBXSYN_PULSE_WIDTH_WIDTH_MAX ((BPBXSYN_PULSE_WIDTH_WIDTH_RANGE - 1))
+
+typedef enum {
+    BPBXSYN_PULSE_WIDTH_PARAM_WIDTH = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_PULSE_WIDTH_ALIASES
+} bpbxsyn_pulse_width_param_e;
+
 ////////////////////
 // Harmonics data //
 ////////////////////

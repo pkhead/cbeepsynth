@@ -8,6 +8,7 @@ set(SOURCES
     src/synth/fm_algo.c
     src/synth/fm.c
     src/synth/wave.c
+    src/synth/pwm.c
     src/synth/spectrum.c
 
     src/fx/volume.c

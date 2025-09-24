@@ -25,7 +25,7 @@ typedef struct pwm_inst {
 
     // [0] = prev
     // [1] = cur
-    uint8_t pulse_width_param[2];
+    double pulse_width_param[2];
     uint8_t aliases;
 
     pwm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];

@@ -9,6 +9,9 @@
 // of a square wave is 4/π times the measured square wave amplitude.
 #define BASE_EXPRESSION 0.04725
 
+#define pulse_width_ratio(x)                                                   \
+    ((double)(x) / (BPBXSYN_PULSE_WIDTH_WIDTH_RANGE * 2))
+
 void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst) {
     *inst = (pwm_inst_s){0};
     inst_init(ctx, &inst->base, BPBXSYN_SYNTH_PULSE_WIDTH);
@@ -98,9 +101,11 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
         (expr_end - expr_start) / rounded_samples_per_tick;
     
     // pulse width modulation calculation
-    const double pulse_width_start = inst->pulse_width_param[0] *
+    const double pulse_width_start =
+        pulse_width_ratio(inst->pulse_width_param[0]) *
         voice->base.env_computer.envelope_starts[BPBXSYN_ENV_INDEX_PULSE_WIDTH];
-    const double pulse_width_end = inst->pulse_width_param[1] *
+    const double pulse_width_end =
+        pulse_width_ratio(inst->pulse_width_param[1]) *
         voice->base.env_computer.envelope_ends[BPBXSYN_ENV_INDEX_PULSE_WIDTH];
 
     voice->pulse_width = pulse_width_start;
@@ -184,7 +189,7 @@ void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
             const double output = sample * expression;
             expression += expression_delta;
 
-            samples[smp] = (float)output;
+            samples[smp] += (float)output;
         }
 
         // post
@@ -215,7 +220,7 @@ void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 
 const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
     {
-        .type = BPBXSYN_PARAM_UINT8,
+        .type = BPBXSYN_PARAM_DOUBLE,
         .id = "pwmWidth",
         .group = "Pulse Width",
         .name = "Pulse Width",

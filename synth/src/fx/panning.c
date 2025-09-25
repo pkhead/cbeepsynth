@@ -194,7 +194,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
         
         .min_value = 0.0,
         .max_value = BPBXSYN_PAN_DELAY_MAX,
-        .default_value = BPBXSYN_PAN_VALUE_CENTER,
+        .default_value = (double)BPBXSYN_PAN_DELAY_MAX / 2,
 
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION
     },

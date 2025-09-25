@@ -120,15 +120,36 @@ typedef enum {
 typedef enum {
     BPBXSYN_CHIP_PARAM_WAVEFORM = BPBXSYN_BASE_PARAM_COUNT,
     BPBXSYN_CHIP_PARAM_UNISON,
+    // TODO: chip aliasing
 } bpbxsyn_chip_param_e;
+
+//////////////////////
+// Custom Chip data //
+//////////////////////
+#define BPBXSYN_CUSTOM_CHIP_PARAM_COUNT 2
+
+typedef enum {
+    BPBXSYN_CUSTOM_CHIP_PARAM_UNISON = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_CUSTOM_CHIP_PARAM_ALIASES
+} bpbxsyn_custom_chip_param_e;
+
+////////////////
+// Noise data //
+////////////////
+#define BPBXSYN_NOISE_PARAM_COUNT 2
+
+typedef enum {
+    BPBXSYN_NOISE_PARAM_IS_NOISE_CHANNEL = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_NOISE_PARAM_TYPE
+} bpbxsyn_noise_param_e;
 
 //////////////////////
 // Pulse Width data //
 //////////////////////
 #define BPBXSYN_PULSE_WIDTH_PARAM_COUNT 2
-#define BPBXSYN_PULSE_WIDTH_WIDTH_RANGE 50
-#define BPBXSYN_PULSE_WIDTH_WIDTH_MIN 1
-#define BPBXSYN_PULSE_WIDTH_WIDTH_MAX BPBXSYN_PULSE_WIDTH_WIDTH_RANGE
+#define BPBXSYN_PULSE_WIDTH_RANGE 50
+#define BPBXSYN_PULSE_WIDTH_MIN 1
+#define BPBXSYN_PULSE_WIDTH_MAX BPBXSYN_PULSE_WIDTH_RANGE
 
 typedef enum {
     BPBXSYN_PULSE_WIDTH_PARAM_WIDTH = BPBXSYN_BASE_PARAM_COUNT,
@@ -151,6 +172,21 @@ typedef enum {
         (BPBXSYN_HARMONICS_CONTROL_COUNT - 1)
 } bpbxsyn_harmonics_param_e;
 
+////////////////////////
+// Picked String data //
+////////////////////////
+#define BPBXSYN_PICKED_STRING_PARAM_COUNT                                      \
+    ((2 + BPBXSYN_HARMONICS_CONTROL_COUNT))
+
+typedef enum {
+    BPBXSYN_PICKED_STRING_PARAM_UNISON = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_PICKED_STRING_PARAM_SUSTAIN,
+    BPBXSYN_PICKED_STRING_PARAM_CONTROL_FIRST,
+    BPBXSYN_PICKED_STRING_PARAM_CONTROL_LAST =
+        BPBXSYN_PICKED_STRING_PARAM_CONTROL_FIRST +
+        (BPBXSYN_HARMONICS_CONTROL_COUNT - 1)
+} bpbxsyn_picked_string_param_e;
+
 ///////////////////
 // Spectrum data //
 ///////////////////
@@ -160,12 +196,25 @@ typedef enum {
 #define BPBXSYN_SPECTRUM_PARAM_COUNT ((BPBXSYN_SPECTRUM_CONTROL_COUNT + 1))
 
 typedef enum {
-    BPBXSYN_SPECTRUM_PARAN_IS_NOISE_CHANNEL = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_SPECTRUM_PARAM_IS_NOISE_CHANNEL = BPBXSYN_BASE_PARAM_COUNT,
     BPBXSYN_SPECTRUM_PARAM_CONTROL_FIRST,
     BPBXSYN_SPECTRUM_PARAM_CONTROL_LAST =
         BPBXSYN_SPECTRUM_PARAM_CONTROL_FIRST +
         (BPBXSYN_SPECTRUM_CONTROL_COUNT - 1)
 } bpbxsyn_spectrum_param_e;
+
+///////////////////
+// Supersaw data //
+///////////////////
+#define BPBXSYN_SUPERSAW_PARAM_COUNT 5
+
+typedef enum {
+    BPBXSYN_SUPERSAW_PARAM_DYNAMISM = BPBXSYN_BASE_PARAM_COUNT,
+    BPBXSYN_SUPERSAW_PARAM_SPREAD,
+    BPBXSYN_SUPERSAW_PARAM_BLEND,
+    BPBXSYN_SUPERSAW_PARAM_PULSE_WIDTH,
+    BPBXSYN_SUPERSAW_PARAM_ALIASES
+} bpbxsyn_supersaw_param_e;
 
 ////////////////////////
 // Volume effect data //

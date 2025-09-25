@@ -28,7 +28,7 @@
 #include "fx/reverb.h"
 #include "fx/limiter.h"
 
-static const inst_vtable_s *inst_vtables[] = {
+static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_CHIP
     &inst_chip_vtable,
     // BPBXSYN_SYNTH_FM
@@ -44,10 +44,12 @@ static const inst_vtable_s *inst_vtables[] = {
     // BPBXSYN_SYNTH_PICKED_STRING
     NULL,
     // BPBXSYN_SYNTH_SUPERSAW
-    NULL
+    NULL,
+    // BPBXSYN_SYNTH_CUSTOM_CHIP
+    NULL,
 };
 
-static const effect_vtable_s *effect_vtables[] = {
+static const effect_vtable_s *effect_vtables[BPBXSYN_EFFECT_COUNT] = {
     // BPBXSYN_EFFECT_PANNING,
     &effect_panning_vtable,
     // BPBXSYN_EFFECT_DISTORTION,

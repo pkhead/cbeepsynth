@@ -10,13 +10,13 @@
 #define BASE_EXPRESSION 0.04725
 
 #define pulse_width_ratio(x)                                                   \
-    ((double)(x) / (BPBXSYN_PULSE_WIDTH_WIDTH_RANGE * 2))
+    ((double)(x) / (BPBXSYN_PULSE_WIDTH_RANGE * 2))
 
 void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst) {
     *inst = (pwm_inst_s){0};
     inst_init(ctx, &inst->base, BPBXSYN_SYNTH_PULSE_WIDTH);
 
-    inst->pulse_width_param[0] = BPBXSYN_PULSE_WIDTH_WIDTH_MAX;
+    inst->pulse_width_param[0] = BPBXSYN_PULSE_WIDTH_MAX;
     inst->pulse_width_param[1] = inst->pulse_width_param[0];
 }
 
@@ -224,9 +224,9 @@ const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
         .id = "pwmWidth",
         .group = "Pulse Width",
         .name = "Pulse Width",
-        .min_value = BPBXSYN_PULSE_WIDTH_WIDTH_MIN,
-        .max_value = BPBXSYN_PULSE_WIDTH_WIDTH_MAX,
-        .default_value = BPBXSYN_PULSE_WIDTH_WIDTH_MAX,
+        .min_value = BPBXSYN_PULSE_WIDTH_MIN,
+        .max_value = BPBXSYN_PULSE_WIDTH_MAX,
+        .default_value = BPBXSYN_PULSE_WIDTH_MAX,
     },
     {
         .type = BPBXSYN_PARAM_UINT8,

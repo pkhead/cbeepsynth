@@ -83,8 +83,8 @@ typedef struct prng_state {
     uint64_t s[2];
 } prng_state_s;
 
-prng_state_s random_seeded_state(uint64_t seed);
-uint64_t random(prng_state_s *state);
-double frandom(prng_state_s *state);
+prng_state_s bbsyn_random_seeded_state(uint64_t seed);
+uint64_t bbsyn_random(prng_state_s *state);
+double bbsyn_frandom(prng_state_s *state);
 
 #endif

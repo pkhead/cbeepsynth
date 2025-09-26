@@ -11,7 +11,7 @@ static int32_t clz32(int32_t x) {
 
 int fitting_power_of_two(int x) { return 1 << (32 - clz32(x - 1)); }
 
-prng_state_s random_seeded_state(uint64_t seed) {
+prng_state_s bbsyn_random_seeded_state(uint64_t seed) {
     return (prng_state_s) {
         .s[0] = seed,
         .s[1] = seed
@@ -20,7 +20,7 @@ prng_state_s random_seeded_state(uint64_t seed) {
 
 // implementation taken from the code snippet in this paper
 // https://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf
-uint64_t random(prng_state_s *state) {
+uint64_t bbsyn_random(prng_state_s *state) {
     uint64_t s1 = state->s[0];
     const uint64_t s0 = state->s[1];
     const uint64_t result = s0 + s1;
@@ -30,6 +30,6 @@ uint64_t random(prng_state_s *state) {
     return result;
 }
 
-double frandom(prng_state_s *state) {
-    return (double)(random(state) & UINT32_MAX) / UINT32_MAX;
+double bbsyn_frandom(prng_state_s *state) {
+    return (double)(bbsyn_random(state) & UINT32_MAX) / UINT32_MAX;
 }

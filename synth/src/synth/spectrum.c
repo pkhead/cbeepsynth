@@ -46,7 +46,7 @@ void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
     generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls, 8.0,
                            inst->wave);
     
-    inst->prng_state = random_seeded_state((uint64_t)clock());
+    inst->prng_state = bbsyn_random_seeded_state((uint64_t)clock());
 }
 
 bpbxsyn_voice_id spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,

@@ -37,7 +37,7 @@ double find_random_zero_crossing(prng_state_s *rng_state, float *wave,
                                  int wave_length) {
     assert(is_power_of_two(wave_length) && "wave length must be a power of 2!");
 
-    double phase = frandom(rng_state) * wave_length;
+    double phase = bbsyn_frandom(rng_state) * wave_length;
     const int phaseMask = wave_length - 1;
 
     // Spectrum and drumset waves sounds best when they start at a zero

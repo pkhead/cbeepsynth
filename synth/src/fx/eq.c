@@ -15,7 +15,7 @@ void bbsyn_eq_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void eq_stop(bpbxsyn_effect_s *p_inst) {
+static void eq_stop(bpbxsyn_effect_s *p_inst) {
     eq_effect_s *const inst = (eq_effect_s*)p_inst;
     inst->filter_input[0] = 0.0;
     inst->filter_input[1] = 0.0;

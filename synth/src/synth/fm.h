@@ -46,6 +46,14 @@ typedef struct {
     fm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
 } fm_inst_s;
 
+static inline double fm_calc_op(const float sine_wave[SINE_WAVE_LENGTH+1],
+                                const double phase_mix) {
+    const int phase_int = (int) phase_mix;
+    const int index = phase_int & (SINE_WAVE_LENGTH - 1);
+    const double sample = sine_wave[index];
+    return sample + (sine_wave[index+1] - sample) * (phase_mix - phase_int);
+}
+
 void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst);
 bpbxsyn_voice_id bbsyn_fm_note_on(bpbxsyn_synth_s *inst, int key,
                                   double velocity, int32_t length);

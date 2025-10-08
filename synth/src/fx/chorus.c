@@ -44,7 +44,7 @@ void bpbxsyn_effect_init_chorus(bpbxsyn_context_s *ctx, chorus_effect_s *inst) {
     };
 }
 
-void chorus_stop(bpbxsyn_effect_s *p_inst) {
+static void chorus_stop(bpbxsyn_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s*)p_inst;
     
     if (inst->delay_line[0])

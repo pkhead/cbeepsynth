@@ -57,8 +57,8 @@ double bbsyn_note_size_to_volume_mult(double size) {
     return pow(max(0.0, size) / NOTE_SIZE_MAX, 1.5);
 }
 
-const double vibrato_normal_periods_secs[1] = {0.14};
-const double vibrato_shaky_periods_secs[3] = {0.11, 1.618 * 0.11, 3 * 0.11};
+static const double vibrato_normal_periods_secs[1] = {0.14};
+static const double vibrato_shaky_periods_secs[3] = {0.11, 1.618 * 0.11, 3 * 0.11};
 
 typedef struct {
     int size_periods_secs;
@@ -90,10 +90,9 @@ double bbsyn_get_lfo_amplitude(bpbxsyn_vibrato_type_e type,
 }
 
 // get list of voices in a chord, sorted by ascending chord index
-uint8_t get_chord_list(
-    inst_base_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES], size_t sizeof_voice,
-    uint8_t chord_id, inst_base_voice_s *out_list[BPBXSYN_SYNTH_MAX_VOICES]
-) {
+static uint8_t get_chord_list(inst_base_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES],
+                             size_t sizeof_voice, uint8_t chord_id,
+                             inst_base_voice_s *out_list[BPBXSYN_SYNTH_MAX_VOICES]) {
     uint8_t length = 0;
 
     // first, add voices of the same chord id to the list

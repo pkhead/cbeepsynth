@@ -253,7 +253,7 @@ do
         algo_signatures[algo_index] = {}
 
         for fdbk_index, _ in ipairs(feedback_types) do
-            table.insert(algo_signatures[algo_index], ("double fm_algo%02d%02d(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp)"):format(algo_index-1, fdbk_index-1))
+            table.insert(algo_signatures[algo_index], ("static double fm_algo%02d%02d(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp)"):format(algo_index-1, fdbk_index-1))
             func_count = func_count + 1
         end
     end

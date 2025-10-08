@@ -43,7 +43,7 @@ void bpbxsyn_effect_init_echo(bpbxsyn_context_s *ctx, echo_effect_s *inst) {
     };
 }
 
-void echo_stop(bpbxsyn_effect_s *p_inst) {
+static void echo_stop(bpbxsyn_effect_s *p_inst) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
     
     for (int i = 0; i < 2; ++i) {

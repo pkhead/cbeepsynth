@@ -32,7 +32,7 @@ void bbsyn_reverb_destroy(bpbxsyn_effect_s *p_inst) {
     bpbxsyn_free(ctx, inst->delay_line);
 }
 
-void reverb_stop(bpbxsyn_effect_s *p_inst) {
+static void reverb_stop(bpbxsyn_effect_s *p_inst) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
     if (inst->delay_line) {

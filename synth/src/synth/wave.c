@@ -488,7 +488,7 @@ for i in range(28):
 with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
     proc.stdin.write(bytes(out, "utf-8"))
 */
-const bpbxsyn_param_info_s harmonics_param_info[] = {
+static const bpbxsyn_param_info_s harmonics_param_info[] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
@@ -814,7 +814,7 @@ const bpbxsyn_param_info_s harmonics_param_info[] = {
 
 };
 
-const bpbxsyn_envelope_compute_index_e harmonics_env_targets[] = {
+static const bpbxsyn_envelope_compute_index_e harmonics_env_targets[] = {
     BPBXSYN_ENV_INDEX_UNISON
 };
 
@@ -831,7 +831,7 @@ for i in range(28):
 with subprocess.Popen("clip.exe", shell=True, stdin=subprocess.PIPE) as proc:
     proc.stdin.write(bytes(out, "utf-8"))
 */
-const size_t harmonics_param_addresses[] = {
+static const size_t harmonics_param_addresses[] = {
     offsetof(harmonics_inst_s, unison_type),
     offsetof(harmonics_inst_s, controls[0]),
     offsetof(harmonics_inst_s, controls[1]),

@@ -12,9 +12,7 @@
 // noise.
 #define SPECTRUM_BASE_EXPRESSION 0.3
 
-static int hash_spectrum_controls(
-    const uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT])
-{
+static int hash_spectrum_controls(const uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT]) {
     const int hash_mult =
         bbsyn_fitting_power_of_two(BPBXSYN_SPECTRUM_CONTROL_MAX + 2) - 1;
     
@@ -280,7 +278,7 @@ for i in range(30):
         .replace("$", str(default_values.get(i, 0)))
     )
 */
-const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
+static const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
@@ -595,7 +593,7 @@ const bpbxsyn_param_info_s spectrum_param_info[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
     },
 };
 
-const size_t spectrum_param_addresses[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
+static const size_t spectrum_param_addresses[BPBXSYN_SPECTRUM_PARAM_COUNT] = {
     offsetof(spectrum_inst_s, is_noise_channel),
     offsetof(spectrum_inst_s, controls[0]),
     offsetof(spectrum_inst_s, controls[1]),

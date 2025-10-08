@@ -20,7 +20,7 @@ void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst) {
     inst->pulse_width_param[1] = inst->pulse_width_param[0];
 }
 
-bpbxsyn_voice_id pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
+bpbxsyn_voice_id bbsyn_pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
                               double velocity, int32_t length) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
@@ -41,7 +41,7 @@ bpbxsyn_voice_id pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
     return id;
 }
 
-void pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
+void bbsyn_pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -49,7 +49,7 @@ void pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
-void pwm_note_all_off(bpbxsyn_synth_s *p_inst) {
+void bbsyn_pwm_note_all_off(bpbxsyn_synth_s *p_inst) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -114,7 +114,7 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
         rounded_samples_per_tick;
 }
 
-void pwm_tick(bpbxsyn_synth_s *p_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
+void bbsyn_pwm_tick(bpbxsyn_synth_s *p_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -129,7 +129,7 @@ void pwm_tick(bpbxsyn_synth_s *p_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     inst->pulse_width_param[0] = inst->pulse_width_param[1];
 }
 
-void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
+void bbsyn_pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -220,7 +220,7 @@ void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 // DATA //
 //////////
 
-const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
+static const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_DOUBLE,
         .id = "pwmWidth",
@@ -243,7 +243,7 @@ const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
     },
 };
 
-const size_t pwm_param_addresses[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
+static const size_t pwm_param_addresses[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
     offsetof(pwm_inst_s, pulse_width_param[1]),
     offsetof(pwm_inst_s, aliases),
 };
@@ -263,10 +263,10 @@ const inst_vtable_s bbsyn_inst_pwm_vtable = {
     .envelope_targets = pwm_env_targets,
 
     .inst_init = (inst_init_f)bpbxsyn_synth_init_pwm,
-    .inst_note_on = pwm_note_on,
-    .inst_note_off = pwm_note_off,
-    .inst_note_all_off = pwm_note_all_off,
+    .inst_note_on = bbsyn_pwm_note_on,
+    .inst_note_off = bbsyn_pwm_note_off,
+    .inst_note_all_off = bbsyn_pwm_note_all_off,
 
-    .inst_tick = pwm_tick,
-    .inst_run = pwm_run
+    .inst_tick = bbsyn_pwm_tick,
+    .inst_run = bbsyn_pwm_run
 };

@@ -456,7 +456,7 @@ static const char *feedback_enum_values[] = {
     "1→2→3→4",
 };
 
-const bpbxsyn_param_info_s fm_param_info[BPBXSYN_FM_PARAM_COUNT] = {
+static const bpbxsyn_param_info_s fm_param_info[BPBXSYN_FM_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
@@ -592,7 +592,7 @@ const bpbxsyn_param_info_s fm_param_info[BPBXSYN_FM_PARAM_COUNT] = {
     }
 };
 
-const bpbxsyn_envelope_compute_index_e fm_env_targets[FM_MOD_COUNT] = {
+static const bpbxsyn_envelope_compute_index_e fm_env_targets[FM_MOD_COUNT] = {
     BPBXSYN_ENV_INDEX_OPERATOR_FREQ0,
     BPBXSYN_ENV_INDEX_OPERATOR_AMP0,
     BPBXSYN_ENV_INDEX_OPERATOR_FREQ1,
@@ -604,7 +604,7 @@ const bpbxsyn_envelope_compute_index_e fm_env_targets[FM_MOD_COUNT] = {
     BPBXSYN_ENV_INDEX_FEEDBACK_AMP
 };
 
-const size_t fm_param_addresses[BPBXSYN_FM_PARAM_COUNT] = {
+static const size_t fm_param_addresses[BPBXSYN_FM_PARAM_COUNT] = {
     offsetof(fm_inst_s, algorithm),
     offsetof(fm_inst_s, freq_ratios[0]),
     offsetof(fm_inst_s, amplitudes[0]),

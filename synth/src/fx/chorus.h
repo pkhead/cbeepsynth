@@ -28,13 +28,13 @@ typedef struct chorus_effect {
 } chorus_effect_s;
 
 void bpbxsyn_effect_init_chorus(bpbxsyn_context_s *ctx, chorus_effect_s *inst);
-void chorus_destroy(bpbxsyn_effect_s *inst);
-void chorus_sample_rate_changed(bpbxsyn_effect_s *inst,
-                                 double old_sr, double new_sr);
-void chorus_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void chorus_run(bpbxsyn_effect_s *inst, float **buffer,
-                 size_t frame_count);
+void bbsyn_chorus_destroy(bpbxsyn_effect_s *inst);
+void bbsyn_chorus_sample_rate_changed(bpbxsyn_effect_s *inst,
+                                      double old_sr, double new_sr);
+void bbsyn_chorus_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_chorus_run(bpbxsyn_effect_s *inst, float **buffer,
+                      size_t frame_count);
 
-extern const effect_vtable_s effect_chorus_vtable;
+extern const effect_vtable_s bbsyn_effect_chorus_vtable;
 
 #endif

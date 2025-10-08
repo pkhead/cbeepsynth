@@ -16,15 +16,16 @@ void bpbxsyn_effect_init_distortion(bpbxsyn_context_s *ctx, distortion_effect_s 
     };
 }
 
-void distortion_destroy(bpbxsyn_effect_s *inst) {
+void bbsyn_distortion_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void distortion_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_distortion_tick(bpbxsyn_effect_s *p_inst,
+                           const bpbxsyn_tick_ctx_s *ctx) {
     distortion_effect_s *const inst = (distortion_effect_s*)p_inst;
 
     double rounded_samples_per_tick = 
-        ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
     
     double use_distortion_start = inst->param[0];
     double use_distortion_end = inst->param[1];
@@ -55,8 +56,8 @@ void distortion_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->param[0] = inst->param[1];
 }
 
-void distortion_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
-                 size_t frame_count)
+void bbsyn_distortion_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
+                          size_t frame_count)
 {
     distortion_effect_s *const inst = (distortion_effect_s*)p_inst;
 
@@ -154,10 +155,10 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(distortion_effect_s, param[1]),
 };
 
-const effect_vtable_s effect_distortion_vtable = {
+const effect_vtable_s bbsyn_effect_distortion_vtable = {
     .struct_size = sizeof(distortion_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_distortion,
-    .effect_destroy = distortion_destroy,
+    .effect_destroy = bbsyn_distortion_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -166,6 +167,6 @@ const effect_vtable_s effect_distortion_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = distortion_tick,
-    .effect_run = distortion_run
+    .effect_tick = bbsyn_distortion_tick,
+    .effect_run = bbsyn_distortion_run
 };

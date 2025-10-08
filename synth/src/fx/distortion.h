@@ -21,11 +21,11 @@ typedef struct {
 } distortion_effect_s;
 
 void bpbxsyn_effect_init_distortion(bpbxsyn_context_s *ctx, distortion_effect_s *inst);
-void distortion_destroy(bpbxsyn_effect_s *inst);
-void distortion_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void distortion_run(bpbxsyn_effect_s *inst, float **buffer,
-                 size_t frame_count);
+void bbsyn_distortion_destroy(bpbxsyn_effect_s *inst);
+void bbsyn_distortion_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_distortion_run(bpbxsyn_effect_s *inst, float **buffer,
+                          size_t frame_count);
 
-extern const effect_vtable_s effect_distortion_vtable;
+extern const effect_vtable_s bbsyn_effect_distortion_vtable;
 
 #endif

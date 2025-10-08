@@ -11,7 +11,7 @@ void bpbxsyn_effect_init_eq(bpbxsyn_context_s *ctx, eq_effect_s *inst) {
     };
 }
 
-void eq_destroy(bpbxsyn_effect_s *inst) {
+void bbsyn_eq_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
@@ -21,14 +21,14 @@ void eq_stop(bpbxsyn_effect_s *p_inst) {
     inst->filter_input[1] = 0.0;
 }
 
-// void panning_sample_rate_changed(bpbxsyn_effect_s *inst,
+// void bbsyn_panning_sample_rate_changed(bpbxsyn_effect_s *inst,
 //                                  double old_sr, double new_sr);
-void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     eq_effect_s *const inst = (eq_effect_s*)p_inst;
 
     const double sample_rate = inst->base.sample_rate;
     const double rounded_samples_per_tick =
-        ceil(calc_samples_per_tick(ctx->bpm, sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, sample_rate));
 
     double eq_filter_volume = 1.0;
     for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
@@ -45,23 +45,23 @@ void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
         } else {
             inst->filters[i].enabled = true;
 
-            filter_coefs_s start_coefs = filter_to_coefficients(
+            filter_coefs_s start_coefs = bbsyn_filter_to_coefficients(
                 filter_group_start, i,
                 sample_rate,
                 1.0,
                 1.0);
 
-            filter_coefs_s end_coefs = filter_to_coefficients(
+            filter_coefs_s end_coefs = bbsyn_filter_to_coefficients(
                 filter_group_end, i,
                 sample_rate,
                 1.0,
                 1.0);
             
-            dyn_biquad_load(&inst->filters[i],
+            bbsyn_dyn_biquad_load(&inst->filters[i],
                 start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
                 filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_LP);
 
-            eq_filter_volume *= filter_get_volume_compensation_mult(filter_group_start, i);
+            eq_filter_volume *= bbsyn_filter_get_volume_compensation_mult(filter_group_start, i);
         }
     }
 
@@ -73,7 +73,8 @@ void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->filter_volume = eq_filter_volume;
 }
 
-void eq_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
+void bbsyn_eq_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                  size_t frame_count) {
     eq_effect_s *const inst = (eq_effect_s*)p_inst;
 
     float *const audio = buffer[0];
@@ -86,7 +87,7 @@ void eq_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
         double sample = (double)audio[frame];
 
         double x0 = sample;
-        sample = apply_filters(sample, x1, x2, inst->filters);
+        sample = bbsyn_apply_filters(sample, x1, x2, inst->filters);
         x2 = x1;
         x1 = x0;
 
@@ -97,7 +98,7 @@ void eq_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
 
     inst->filter_input[0] = x1;
     inst->filter_input[1] = x2;
-    sanitize_filters(inst->filters, FILTER_GROUP_COUNT);
+    bbsyn_sanitize_filters(inst->filters, FILTER_GROUP_COUNT);
 }
 
 
@@ -411,10 +412,10 @@ static const size_t param_addresses[BPBXSYN_EQ_PARAM_COUNT] = {
     offsetof(eq_effect_s, params.gain_idx[7]),
 };
 
-const effect_vtable_s effect_eq_vtable = {
+const effect_vtable_s bbsyn_effect_eq_vtable = {
     .struct_size = sizeof(eq_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_eq,
-    .effect_destroy = eq_destroy,
+    .effect_destroy = bbsyn_eq_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -424,6 +425,6 @@ const effect_vtable_s effect_eq_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = eq_stop,
-    .effect_tick = eq_tick,
-    .effect_run = eq_run
+    .effect_tick = bbsyn_eq_tick,
+    .effect_run = bbsyn_eq_run
 };

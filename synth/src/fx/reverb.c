@@ -25,7 +25,7 @@ void bpbxsyn_effect_init_reverb(bpbxsyn_context_s *ctx, reverb_effect_s *inst) {
     };
 }
 
-void reverb_destroy(bpbxsyn_effect_s *p_inst) {
+void bbsyn_reverb_destroy(bpbxsyn_effect_s *p_inst) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -40,8 +40,8 @@ void reverb_stop(bpbxsyn_effect_s *p_inst) {
     }
 }
 
-void reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
-                                double new_sr)
+void bbsyn_reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
+                                      double new_sr)
 {
     if (new_sr == old_sr)
         return;
@@ -66,15 +66,16 @@ void reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
     memset(inst->delay_line, 0, alloc_size);
     
     if (!inst->delay_line) {
-        logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate reverb delay line");
+        bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate reverb delay line");
     }
 }
 
-void reverb_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_reverb_tick(bpbxsyn_effect_s *p_inst,
+                       const bpbxsyn_tick_ctx_s *ctx) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
     const double rounded_samples_per_tick =
-        ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_reverb_start = inst->param[0];
     double use_reverb_end = inst->param[1];
@@ -88,7 +89,7 @@ void reverb_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
 
     double shelf_radians = 2.0 * PI * REVERB_SHELF_HZ / inst->base.sample_rate;
     filter_coefs_s coefs;
-    filter_hshelf1(&coefs, shelf_radians, REVERB_SHELF_GAIN);
+    bbsyn_filter_hshelf1(&coefs, shelf_radians, REVERB_SHELF_GAIN);
 
     inst->shelf_a1 = coefs.a[1];
     inst->shelf_b0 = coefs.b[0];
@@ -97,7 +98,8 @@ void reverb_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->param[0] = inst->param[1];
 }
 
-void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
+void bbsyn_reverb_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                      size_t frame_count)
 {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
@@ -179,10 +181,10 @@ void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count)
         right[frame] = (float)sample_r;
     }
 
-    sanitize_delay_line_mod(delay_line, delay_pos            , wrap);
-    sanitize_delay_line_mod(delay_line, delay_pos + offset[0], wrap);
-    sanitize_delay_line_mod(delay_line, delay_pos + offset[1], wrap);
-    sanitize_delay_line_mod(delay_line, delay_pos + offset[2], wrap);
+    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos            , wrap);
+    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[0], wrap);
+    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[1], wrap);
+    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[2], wrap);
     inst->delay_pos = delay_pos;
     inst->mult = reverb;
     
@@ -223,10 +225,10 @@ static const size_t param_addresses[BPBXSYN_REVERB_PARAM_COUNT] = {
     offsetof(reverb_effect_s, param[1]),
 };
 
-const effect_vtable_s effect_reverb_vtable = {
+const effect_vtable_s bbsyn_effect_reverb_vtable = {
     .struct_size = sizeof(reverb_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_reverb,
-    .effect_destroy = reverb_destroy,
+    .effect_destroy = bbsyn_reverb_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -236,7 +238,7 @@ const effect_vtable_s effect_reverb_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = reverb_stop,
-    .effect_sample_rate_changed = reverb_sample_rate_changed,
-    .effect_tick = reverb_tick,
-    .effect_run = reverb_run
+    .effect_sample_rate_changed = bbsyn_reverb_sample_rate_changed,
+    .effect_tick = bbsyn_reverb_tick,
+    .effect_run = bbsyn_reverb_run
 };

@@ -21,10 +21,10 @@ static void harmonics_perform_integral(float *wave, size_t length) {
     }
 }
 
-void generate_harmonics(const wavetables_s *tables,
-                        uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
-                        int harmonics_rendered,
-                        float wave[HARMONICS_WAVE_LENGTH + 1])
+void bbsyn_generate_harmonics(const wavetables_s *tables,
+                              uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
+                              int harmonics_rendered,
+                              float wave[HARMONICS_WAVE_LENGTH + 1])
 {
     memset(wave, 0, HARMONICS_WAVE_LENGTH * sizeof(float));
 
@@ -63,7 +63,7 @@ void generate_harmonics(const wavetables_s *tables,
         wave[HARMONICS_WAVE_LENGTH - harmonic_freq] = (float)(amplitude);
     }
 
-    fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
+    bbsyn_fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
 
     // Limit the maximum wave amplitude
     const float mult = (float)(1.0 / pow(combined_control_point_amp, 0.7));
@@ -124,10 +124,10 @@ static double control_point_to_octave(int point, const double *pitch_tweak,
         + pitch_tweak[(point + SPECTRUM_CONTROL_POINTS_PER_OCTAVE) % SPECTRUM_CONTROL_POINTS_PER_OCTAVE];
 }
 
-void generate_spectrum_wave(const wavetables_s *tables,
-                            uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
-                            double lowest_octave,
-                            float wave[SPECTRUM_WAVE_LENGTH + 1]
+void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
+                                  uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
+                                  double lowest_octave,
+                                  float wave[SPECTRUM_WAVE_LENGTH + 1]
 ) {
     memset(wave, 0, sizeof(float) * SPECTRUM_WAVE_LENGTH);
 
@@ -183,12 +183,13 @@ void generate_spectrum_wave(const wavetables_s *tables,
                                 highest_octave, low_power, 0, -0.5);
     }
 
-    fft_inverse_real_fourier_transform(wave, SPECTRUM_WAVE_LENGTH);
-    fft_scale_array(wave,
-                    SPECTRUM_WAVE_LENGTH + 1,
-                    5.0 / (sqrt(SPECTRUM_WAVE_LENGTH) * pow(combined_amplitude, 0.75)));
+    bbsyn_fft_inverse_real_fourier_transform(wave, SPECTRUM_WAVE_LENGTH);
+    bbsyn_fft_scale_array(wave,
+                          SPECTRUM_WAVE_LENGTH + 1,
+                          5.0 / (sqrt(SPECTRUM_WAVE_LENGTH) * pow(combined_amplitude, 0.75)));
 
-    // Duplicate the first sample at the end for easier wrap-around interpolation.
+    // Duplicate the first sample at the end for easier wrap-around
+    // interpolation.
     wave[SPECTRUM_WAVE_LENGTH] = wave[0];
 }
 
@@ -270,7 +271,7 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-bool init_wavetables_for_context(bpbxsyn_context_s *ctx) {
+bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
     wavetables_s *const wavetables = &ctx->wavetables;
 
     // init sine wavetable

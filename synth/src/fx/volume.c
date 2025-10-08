@@ -17,14 +17,15 @@ void bpbxsyn_effect_init_volume(bpbxsyn_context_s *ctx, volume_effect_s *inst) {
     };
 }
 
-void volume_destroy(bpbxsyn_effect_s *inst) {
+void bbsyn_volume_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void volume_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_volume_tick(bpbxsyn_effect_s *p_inst,
+                       const bpbxsyn_tick_ctx_s *ctx) {
     volume_effect_s *const inst = (volume_effect_s*)p_inst;
     const double rounded_samples_per_tick =
-        ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
     
     const double volume_start = inst_volume_to_mult(inst->param[0]);
     const double volume_end = inst_volume_to_mult(inst->param[1]);
@@ -35,7 +36,8 @@ void volume_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->param[0] = inst->param[1];
 }
 
-void volume_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
+void bbsyn_volume_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                      size_t frame_count) {
     volume_effect_s *const inst = (volume_effect_s*)p_inst;
 
     double linear_gain = inst->linear_gain;
@@ -75,10 +77,10 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(volume_effect_s, param[1]),
 };
 
-const effect_vtable_s effect_volume_vtable = {
+const effect_vtable_s bbsyn_effect_volume_vtable = {
     .struct_size = sizeof(volume_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_volume,
-    .effect_destroy = volume_destroy,
+    .effect_destroy = bbsyn_volume_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -87,6 +89,6 @@ const effect_vtable_s effect_volume_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = volume_tick,
-    .effect_run = volume_run
+    .effect_tick = bbsyn_volume_tick,
+    .effect_run = bbsyn_volume_run
 };

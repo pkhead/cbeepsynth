@@ -33,15 +33,15 @@ typedef struct spectrum_inst {
 
 void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx, spectrum_inst_s *inst);
 
-bpbxsyn_voice_id spectrum_note_on(bpbxsyn_synth_s *inst, int key,
-                                  double velocity, int32_t length);
-void spectrum_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
-void spectrum_note_all_off(bpbxsyn_synth_s *inst);
-void spectrum_tick(bpbxsyn_synth_s *src_inst,
-                   const bpbxsyn_tick_ctx_s *tick_ctx);
-void spectrum_run(bpbxsyn_synth_s *src_inst, float *samples,
-                  size_t frame_count);
+bpbxsyn_voice_id bbsyn_spectrum_note_on(bpbxsyn_synth_s *inst, int key,
+                                        double velocity, int32_t length);
+void bbsyn_spectrum_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
+void bbsyn_spectrum_note_all_off(bpbxsyn_synth_s *inst);
+void bbsyn_spectrum_tick(bpbxsyn_synth_s *src_inst,
+                         const bpbxsyn_tick_ctx_s *tick_ctx);
+void bbsyn_spectrum_run(bpbxsyn_synth_s *src_inst, float *samples,
+                        size_t frame_count);
 
-extern const inst_vtable_s inst_spectrum_vtable;
+extern const inst_vtable_s bbsyn_inst_spectrum_vtable;
 
 #endif

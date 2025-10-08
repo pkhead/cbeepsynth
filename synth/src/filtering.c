@@ -9,7 +9,7 @@
 // ~19khz
 #define FILTER_FREQ_MAX_HZ (FILTER_FREQ_REFERENCE_HZ * pow(2.0, FILTER_FREQ_STEP * (BPBXSYN_FILTER_FREQ_RANGE - 1 - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING)))
 
-double get_hz_from_setting_value(double value) {
+double bbsyn_get_hz_from_setting_value(double value) {
     return FILTER_FREQ_REFERENCE_HZ * pow(2.0, (value - BPBXSYN_FILTER_FREQ_REFERENCE_SETTING) * FILTER_FREQ_STEP);
 }
 
@@ -20,26 +20,26 @@ static double filter_get_linear_gain(const filter_group_s *group, int index, dou
     return pow(2.0, interpolated_power);
 }
 
-filter_coefs_s filter_to_coefficients(
+filter_coefs_s bbsyn_filter_to_coefficients(
     const filter_group_s *group, int index,
     double sample_rate, double freq_mult, double peak_mult)
 {
-    const double hz = get_hz_from_setting_value(group->freq_idx[index]);
+    const double hz = bbsyn_get_hz_from_setting_value(group->freq_idx[index]);
     const double corner_radians_per_sample = PI2 * clampd(freq_mult * hz, FILTER_FREQ_MIN_HZ, FILTER_FREQ_MAX_HZ) / sample_rate;
     const double linear_gain = filter_get_linear_gain(group, index, peak_mult);
     filter_coefs_s filter = {0};
 
     switch (group->type[index]) {
         case BPBXSYN_FILTER_TYPE_LP:
-            filter_lp2bw(&filter, corner_radians_per_sample, linear_gain);
+            bbsyn_filter_lp2bw(&filter, corner_radians_per_sample, linear_gain);
             break;
 
         case BPBXSYN_FILTER_TYPE_HP:
-            filter_hp2bw(&filter, corner_radians_per_sample, linear_gain);
+            bbsyn_filter_hp2bw(&filter, corner_radians_per_sample, linear_gain);
             break;
 
         case BPBXSYN_FILTER_TYPE_NOTCH:
-            filter_peak2(&filter, corner_radians_per_sample, linear_gain, 1.0);
+            bbsyn_filter_peak2(&filter, corner_radians_per_sample, linear_gain, 1.0);
             break;
         
         case BPBXSYN_FILTER_TYPE_OFF:
@@ -53,14 +53,14 @@ filter_coefs_s filter_to_coefficients(
             break;
 
         default:
-            assert(FALSE && "filter_to_coefficients: invalid filter type");
+            assert(FALSE && "bbsyn_filter_to_coefficients: invalid filter type");
             break;
     }
 
     return filter;
 }
 
-double filter_get_volume_compensation_mult(const filter_group_s *group, int index) {
+double bbsyn_filter_get_volume_compensation_mult(const filter_group_s *group, int index) {
     const double freq = group->freq_idx[index];
     const double gain = group->gain_idx[index];
     const uint8_t type = group->type[index];
@@ -103,7 +103,7 @@ double filter_get_volume_compensation_mult(const filter_group_s *group, int inde
 }
 
 // low-pass 2nd-order butterworth
-void filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain) {
+void bbsyn_filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain) {
     // This is Butterworth if peakLinearGain=1/√2 according to:
     // http://web.archive.org/web/20191213120120/https://crypto.stanford.edu/~blynn/sound/analog.html
     // An interesting property is that if peakLinearGain=1/16 then the
@@ -122,7 +122,7 @@ void filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
 }
 
 // high-pass 2nd-order butterworth
-void filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain) {
+void bbsyn_filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain) {
     const double alpha = sin(corner_radians_per_sample) / (2.0 * peak_linear_gain);
     const double cosv = cos(corner_radians_per_sample);
     const double a0 = 1.0 + alpha;
@@ -136,7 +136,7 @@ void filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
 }
 
 // peak 2nd-order
-void filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain, double bw_scale) {
+void bbsyn_filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, double peak_linear_gain, double bw_scale) {
     const double sqrt_gain = sqrt(peak_linear_gain);
     const double bandwidth = bw_scale * corner_radians_per_sample / (sqrt_gain >= 1.0 ? sqrt_gain : 1.0 / sqrt_gain);
     const double alpha = tan(bandwidth * 0.5);
@@ -151,7 +151,7 @@ void filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample, doubl
 }
 
 // high-shelf 1st order
-void filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sample, double shelf_linear_gain) {
+void bbsyn_filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sample, double shelf_linear_gain) {
     const double vtan = tan(corner_radians_per_sample * 0.5);
     const double sqrt_gain = sqrt(shelf_linear_gain);
     const double g = (vtan * sqrt_gain - 1) / (vtan * sqrt_gain + 1.0);
@@ -164,12 +164,12 @@ void filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sample, dou
     // coefs->order = 1;
 }
 
-void dyn_biquad_reset_output(dyn_biquad_s *self) {
+void bbsyn_dyn_biquad_reset_output(dyn_biquad_s *self) {
     self->output1 = 0.0;
     self->output2 = 0.0;
 }
 
-void dyn_biquad_load(
+void bbsyn_dyn_biquad_load(
     dyn_biquad_s *self, filter_coefs_s start, filter_coefs_s end,
     double delta_rate, uint8_t use_multiplicative_input_coefficients)
 {
@@ -195,7 +195,7 @@ void dyn_biquad_load(
 }
 
 // compute group of 2nd-order filters
-double apply_filters(double sample, double input1, double input2, dyn_biquad_s filters[FILTER_GROUP_COUNT]) {
+double bbsyn_apply_filters(double sample, double input1, double input2, dyn_biquad_s filters[FILTER_GROUP_COUNT]) {
     for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
         dyn_biquad_s *filter = &filters[i];
         if (!filter->enabled) continue;
@@ -232,7 +232,7 @@ double apply_filters(double sample, double input1, double input2, dyn_biquad_s f
     return sample;
 }
 
-void sanitize_filters(dyn_biquad_s *filters, int count) {
+void bbsyn_sanitize_filters(dyn_biquad_s *filters, int count) {
     for (int i = 0; i < count; ++i) {
         dyn_biquad_s *const filter = filters + i;
         double out1 = fabs(filter->output1);
@@ -256,7 +256,7 @@ void sanitize_filters(dyn_biquad_s *filters, int count) {
     }
 }
 
-bpbxsyn_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
+bpbxsyn_complex_s bbsyn_filter_analyze_complex(filter_coefs_s coefs, double real, double imag) {
     const double *a = coefs.a;
     const double *b = coefs.b;
     const double real_z1 = real;
@@ -295,6 +295,6 @@ bpbxsyn_complex_s filter_analyze_complex(filter_coefs_s coefs, double real, doub
     };
 }
 
-bpbxsyn_complex_s filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
-    return filter_analyze_complex(coefs, cos(radians_per_sample), sin(radians_per_sample));
+bpbxsyn_complex_s bbsyn_filter_analyze(filter_coefs_s coefs, double radians_per_sample) {
+    return bbsyn_filter_analyze_complex(coefs, cos(radians_per_sample), sin(radians_per_sample));
 }

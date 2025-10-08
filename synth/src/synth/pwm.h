@@ -33,13 +33,15 @@ typedef struct pwm_inst {
 
 void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst);
 
-bpbxsyn_voice_id pulse_note_on(bpbxsyn_synth_s *inst, int key, double velocity,
-                              int32_t length);
-void pulse_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
-void pulse_note_all_off(bpbxsyn_synth_s *inst);
-void pulse_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx);
-void pulse_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count);
+bpbxsyn_voice_id bbsyn_pulse_note_on(bpbxsyn_synth_s *inst, int key,
+                                     double velocity, int32_t length);
+void bbsyn_pulse_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
+void bbsyn_pulse_note_all_off(bpbxsyn_synth_s *inst);
+void bbsyn_pulse_tick(bpbxsyn_synth_s *src_inst,
+                      const bpbxsyn_tick_ctx_s *tick_ctx);
+void bbsyn_pulse_run(bpbxsyn_synth_s *src_inst, float *samples,
+                     size_t frame_count);
 
-extern const inst_vtable_s inst_pwm_vtable;
+extern const inst_vtable_s bbsyn_inst_pwm_vtable;
 
 #endif

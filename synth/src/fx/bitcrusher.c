@@ -18,16 +18,16 @@ void bpbxsyn_effect_init_bitcrusher(bpbxsyn_context_s *ctx, bitcrusher_effect_s 
     };
 }
 
-void bitcrusher_destroy(bpbxsyn_effect_s *inst) {
+void bbsyn_bitcrusher_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void bitcrusher_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_bitcrusher_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     bitcrusher_effect_s *const inst = (bitcrusher_effect_s*)p_inst;
     
     const double samples_per_second = inst->base.sample_rate;
     const double rounded_samples_per_tick =
-        ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
     
     double freq_setting_start = inst->freq_crush[0];
     double freq_setting_end = inst->freq_crush[1];
@@ -62,8 +62,8 @@ void bitcrusher_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->freq_crush[0] = inst->freq_crush[1];
 }
 
-void bitcrusher_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
-                 size_t frame_count)
+void bbsyn_bitcrusher_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
+                          size_t frame_count)
 {
     bitcrusher_effect_s *const inst = (bitcrusher_effect_s*)p_inst;
 
@@ -160,10 +160,10 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(bitcrusher_effect_s, freq_crush[1]),
 };
 
-const effect_vtable_s effect_bitcrusher_vtable = {
+const effect_vtable_s bbsyn_effect_bitcrusher_vtable = {
     .struct_size = sizeof(bitcrusher_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_bitcrusher,
-    .effect_destroy = bitcrusher_destroy,
+    .effect_destroy = bbsyn_bitcrusher_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -172,6 +172,6 @@ const effect_vtable_s effect_bitcrusher_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = bitcrusher_tick,
-    .effect_run = bitcrusher_run
+    .effect_tick = bbsyn_bitcrusher_tick,
+    .effect_run = bbsyn_bitcrusher_run
 };

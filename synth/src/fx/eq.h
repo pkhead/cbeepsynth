@@ -20,12 +20,12 @@ typedef struct {
 } eq_effect_s;
 
 void bpbxsyn_effect_init_eq(bpbxsyn_context_s *ctx, eq_effect_s *inst);
-void eq_destroy(bpbxsyn_effect_s *inst);
-// void panning_sample_rate_changed(bpbxsyn_effect_s *inst,
+void bbsyn_eq_destroy(bpbxsyn_effect_s *inst);
+// void bbsyn_panning_sample_rate_changed(bpbxsyn_effect_s *inst,
 //                                  double old_sr, double new_sr);
-void eq_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void eq_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);
+void bbsyn_eq_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_eq_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);
 
-extern const effect_vtable_s effect_eq_vtable;
+extern const effect_vtable_s bbsyn_effect_eq_vtable;
 
 #endif

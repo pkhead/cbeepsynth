@@ -56,7 +56,7 @@ void chorus_stop(bpbxsyn_effect_s *p_inst) {
     inst->delay_pos = 0;
 }
 
-void chorus_destroy(bpbxsyn_effect_s *p_inst) {
+void bbsyn_chorus_destroy(bpbxsyn_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -66,7 +66,7 @@ void chorus_destroy(bpbxsyn_effect_s *p_inst) {
     inst->delay_line[1] = NULL;
 }
 
-void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
+void bbsyn_chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
                                  double old_sr, double new_sr) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
@@ -75,7 +75,7 @@ void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     // reallocate/resize delay line
     bpbxsyn_free(ctx, inst->delay_line_alloc);
 
-    inst->delay_line_size = fitting_power_of_two((int)(new_sr * chorus_max_delay()));
+    inst->delay_line_size = bbsyn_fitting_power_of_two((int)(new_sr * chorus_max_delay()));
     inst->delay_line_mask = inst->delay_line_size - 1;
 
     inst->delay_line_alloc_size = (size_t)inst->delay_line_size * 2;
@@ -85,7 +85,7 @@ void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     if (!inst->delay_line_alloc) {
         inst->delay_line[0] = NULL;
         inst->delay_line[1] = NULL;
-        logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate chorus delay line");
+        bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate chorus delay line");
         return;
     }
 
@@ -94,11 +94,11 @@ void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     inst->delay_line[1] = inst->delay_line_alloc + inst->delay_line_size;
 }
 
-void chorus_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_chorus_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
-        ceil(calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
     
     double use_chorus_start = inst->param[0];
     double use_chorus_end = inst->param[1];
@@ -118,8 +118,8 @@ void chorus_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->param[0] = inst->param[1];
 }
 
-void chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                 size_t frame_count)
+void bbsyn_chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                      size_t frame_count)
 {
     chorus_effect_s *const inst = (chorus_effect_s*)p_inst;
 
@@ -220,8 +220,8 @@ void chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
         right[frame] = (float)sample_r;
     }
 
-    sanitize_delay_line(delay_line_l, delay_pos, mask);
-    sanitize_delay_line(delay_line_r, delay_pos, mask);
+    bbsyn_sanitize_delay_line(delay_line_l, delay_pos, mask);
+    bbsyn_sanitize_delay_line(delay_line_r, delay_pos, mask);
     inst->phase = phase;
     inst->delay_pos = delay_pos;
     inst->voice_mult = voice_mult;
@@ -249,10 +249,10 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(chorus_effect_s, param[1]),
 };
 
-const effect_vtable_s effect_chorus_vtable = {
+const effect_vtable_s bbsyn_effect_chorus_vtable = {
     .struct_size = sizeof(chorus_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_chorus,
-    .effect_destroy = chorus_destroy,
+    .effect_destroy = bbsyn_chorus_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -262,7 +262,7 @@ const effect_vtable_s effect_chorus_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = chorus_stop,
-    .effect_sample_rate_changed = chorus_sample_rate_changed,
-    .effect_tick = chorus_tick,
-    .effect_run = chorus_run
+    .effect_sample_rate_changed = bbsyn_chorus_sample_rate_changed,
+    .effect_tick = bbsyn_chorus_tick,
+    .effect_run = bbsyn_chorus_run
 };

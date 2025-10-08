@@ -15,10 +15,11 @@ typedef struct {
 } volume_effect_s;
 
 void bpbxsyn_effect_init_volume(bpbxsyn_context_s *ctx, volume_effect_s *inst);
-void volume_destroy(bpbxsyn_effect_s *inst);
-void volume_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void volume_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);
+void bbsyn_volume_destroy(bpbxsyn_effect_s *inst);
+void bbsyn_volume_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_volume_run(bpbxsyn_effect_s *inst, float **buffer,
+                      size_t frame_count);
 
-extern const effect_vtable_s effect_volume_vtable;
+extern const effect_vtable_s bbsyn_effect_volume_vtable;
 
 #endif

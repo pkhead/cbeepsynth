@@ -14,7 +14,7 @@ static inline bpbxsyn_voice_id wave_note_on(
     int key, double velocity, int32_t length
 ) {
     bool continuation;
-    bpbxsyn_voice_id voice_index = trigger_voice(
+    bpbxsyn_voice_id voice_index = bbsyn_trigger_voice(
         inst, GENERIC_LIST(voice_list), key, velocity, length, &continuation);
 
     if (!continuation) {
@@ -28,7 +28,7 @@ static inline bpbxsyn_voice_id wave_note_on(
 }
 
 static inline void wave_note_off(bpbxsyn_synth_s *inst, wave_voice_s *voice_list, bpbxsyn_voice_id id) {
-    release_voice(inst, GENERIC_LIST(voice_list), id);
+    bbsyn_release_voice(inst, GENERIC_LIST(voice_list), id);
 }
 
 static void compute_wave_voice(
@@ -43,7 +43,7 @@ static void compute_wave_voice(
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    const unison_desc_s unison = unison_info[inst->unison_type];
+    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
 
     double settings_expression_mult = base_expression;
     settings_expression_mult *= unison.expression * unison.voices / 2.0;
@@ -162,7 +162,7 @@ static void wave_audio_render_callback(
 
             float final_sample;
             if (voice->base.filters_enabled) {
-                final_sample = (float) apply_filters(x0_sum, x1, x2, voice->base.note_filters);
+                final_sample = (float) bbsyn_apply_filters(x0_sum, x1, x2, voice->base.note_filters);
             } else {
                 final_sample = (float) x0_sum;
             }
@@ -179,7 +179,7 @@ static void wave_audio_render_callback(
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
 
-        sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
 
         for (int i = 0; i < UNISON_MAX_VOICES; i++) {
             voice->phase[i] = phase[i] / wave_length;
@@ -208,7 +208,7 @@ static void wave_audio_render_callback(
 
 void bpbxsyn_synth_init_chip(bpbxsyn_context_s *ctx, chip_inst_s *inst) {
     *inst = (chip_inst_s){0};
-    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_CHIP);
+    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_CHIP);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -218,28 +218,31 @@ void bpbxsyn_synth_init_chip(bpbxsyn_context_s *ctx, chip_inst_s *inst) {
     inst->unison_type = 0;
 }
 
-bpbxsyn_voice_id chip_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
+bpbxsyn_voice_id bbsyn_chip_note_on(bpbxsyn_synth_s *inst, int key,
+                                    double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     return wave_note_on(inst, chip->voices, key, velocity, length);
 }
 
-void chip_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
+void bbsyn_chip_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
     wave_note_off(inst, chip->voices, id);
 }
 
-void chip_note_all_off(bpbxsyn_synth_s *inst) {
+void bbsyn_chip_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s*)inst;
-    release_all_voices(inst, GENERIC_LIST(chip->voices));
+    bbsyn_release_all_voices(inst, GENERIC_LIST(chip->voices));
 }
 
-static void compute_chip_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_chip_voice(const bpbxsyn_synth_s *const base_inst,
+                               inst_base_voice_s *voice,
+                               voice_compute_s *compute_data) {
     const chip_inst_s *const inst = (chip_inst_s*) base_inst;
 
     wavetable_desc_s wavetable = base_inst->ctx->wavetables.chip_wavetables[inst->waveform];
@@ -248,13 +251,14 @@ static void compute_chip_voice(const bpbxsyn_synth_s *const base_inst, inst_base
     compute_wave_voice(base_inst, voice, compute_data, settings_expression_mult);
 }
 
-void chip_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
+void bbsyn_chip_tick(bpbxsyn_synth_s *src_inst,
+                    const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_CHIP);
 
     chip_inst_s *const chip = (chip_inst_s*)src_inst;
 
-    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+    bbsyn_inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
         .voice_list = chip->voices,
         .sizeof_voice = sizeof(*chip->voices),
         .compute_voice = compute_chip_voice,
@@ -262,7 +266,8 @@ void chip_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     });
 }
 
-void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
+void bbsyn_chip_run(bpbxsyn_synth_s *src_inst, float *samples,
+                    size_t frame_count) {
     chip_inst_s *const chip = (chip_inst_s*) src_inst;
     const bool aliases = FALSE;
 
@@ -273,7 +278,7 @@ void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
         wavetable = src_inst->ctx->wavetables.chip_wavetables[chip->waveform];
     }
 
-    unison_desc_s unison = unison_info[chip->unison_type];
+    unison_desc_s unison = bbsyn_unison_info[chip->unison_type];
 
     wave_audio_render_callback(
         samples, frame_count,
@@ -308,9 +313,10 @@ void chip_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
 
 #define HARMONICS_VOICE_BASE_EXPRESSION 0.025
 
-void bpbxsyn_synth_init_harmonics(bpbxsyn_context_s *ctx, harmonics_inst_s *inst) {
+void bpbxsyn_synth_init_harmonics(bpbxsyn_context_s *ctx,
+                                  harmonics_inst_s *inst) {
     *inst = (harmonics_inst_s){0};
-    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_HARMONICS);
+    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_HARMONICS);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -319,12 +325,13 @@ void bpbxsyn_synth_init_harmonics(bpbxsyn_context_s *ctx, harmonics_inst_s *inst
     inst->unison_type = BPBXSYN_UNISON_NONE;
     inst->controls[0] = BPBXSYN_HARMONICS_CONTROL_MAX;
 
-    generate_harmonics(&inst->base.ctx->wavetables, inst->controls, 64, inst->wave);
+    bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->controls, 64, inst->wave);
 
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
 }
 
-bpbxsyn_voice_id harmonics_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
+bpbxsyn_voice_id bbsyn_harmonics_note_on(bpbxsyn_synth_s *inst, int key,
+                                         double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
@@ -332,32 +339,35 @@ bpbxsyn_voice_id harmonics_note_on(bpbxsyn_synth_s *inst, int key, double veloci
     return wave_note_on(inst, harmonics->voices, key, velocity, length);
 }
 
-void harmonics_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
+void bbsyn_harmonics_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
     wave_note_off(inst, harmonics->voices, id);
 }
 
-void harmonics_note_all_off(bpbxsyn_synth_s *inst) {
+void bbsyn_harmonics_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)inst;
 
-    release_all_voices(inst, harmonics->voices, sizeof(*harmonics->voices));
+    bbsyn_release_all_voices(inst, harmonics->voices, sizeof(*harmonics->voices));
 }
 
-static void compute_harmonics_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *voice, voice_compute_s *compute_data) {
+static void compute_harmonics_voice(const bpbxsyn_synth_s *const base_inst,
+                                    inst_base_voice_s *voice,
+                                    voice_compute_s *compute_data) {
     compute_wave_voice(base_inst, voice, compute_data, HARMONICS_VOICE_BASE_EXPRESSION);
 }
 
-void harmonics_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
+void bbsyn_harmonics_tick(bpbxsyn_synth_s *src_inst,
+                          const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_HARMONICS);
 
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
 
-    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+    bbsyn_inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
         .voice_list = harmonics->voices,
         .sizeof_voice = sizeof(*harmonics->voices),
         .compute_voice = compute_harmonics_voice,
@@ -365,16 +375,17 @@ void harmonics_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ct
     });
 }
 
-void harmonics_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
+void bbsyn_harmonics_run(bpbxsyn_synth_s *src_inst, float *samples,
+                         size_t frame_count) {
     harmonics_inst_s *const harmonics = (harmonics_inst_s*)src_inst;
     const bool aliases = FALSE;
 
-    unison_desc_s unison = unison_info[harmonics->unison_type];
+    unison_desc_s unison = bbsyn_unison_info[harmonics->unison_type];
 
     // if harmonic controls changed, rebuild the wave
     if (memcmp(harmonics->controls, harmonics->last_controls, sizeof(harmonics->controls))) {
         memcpy(harmonics->last_controls, harmonics->controls, sizeof(harmonics->controls));
-        generate_harmonics(&src_inst->ctx->wavetables, harmonics->controls, 64, harmonics->wave);
+        bbsyn_generate_harmonics(&src_inst->ctx->wavetables, harmonics->controls, 64, harmonics->wave);
     }
 
     wave_audio_render_callback(
@@ -857,7 +868,7 @@ const size_t harmonics_param_addresses[] = {
 
 
 
-const inst_vtable_s inst_chip_vtable = {
+const inst_vtable_s bbsyn_inst_chip_vtable = {
     .struct_size = sizeof(chip_inst_s),
 
     .param_count = BPBXSYN_CHIP_PARAM_COUNT,
@@ -868,15 +879,15 @@ const inst_vtable_s inst_chip_vtable = {
     .envelope_targets = chip_env_targets,
 
     .inst_init = (inst_init_f)bpbxsyn_synth_init_chip,
-    .inst_note_on = chip_note_on,
-    .inst_note_off = chip_note_off,
-    .inst_note_all_off = chip_note_all_off,
+    .inst_note_on = bbsyn_chip_note_on,
+    .inst_note_off = bbsyn_chip_note_off,
+    .inst_note_all_off = bbsyn_chip_note_all_off,
 
-    .inst_tick = chip_tick,
-    .inst_run = chip_run
+    .inst_tick = bbsyn_chip_tick,
+    .inst_run = bbsyn_chip_run
 };
 
-const inst_vtable_s inst_harmonics_vtable = {
+const inst_vtable_s bbsyn_inst_harmonics_vtable = {
     .struct_size = sizeof(harmonics_inst_s),
 
     .param_count = BPBXSYN_HARMONICS_PARAM_COUNT,
@@ -887,10 +898,10 @@ const inst_vtable_s inst_harmonics_vtable = {
     .envelope_targets = harmonics_env_targets,
 
     .inst_init = (inst_init_f)bpbxsyn_synth_init_harmonics,
-    .inst_note_on = harmonics_note_on,
-    .inst_note_off = harmonics_note_off,
-    .inst_note_all_off = harmonics_note_all_off,
+    .inst_note_on = bbsyn_harmonics_note_on,
+    .inst_note_off = bbsyn_harmonics_note_off,
+    .inst_note_all_off = bbsyn_harmonics_note_all_off,
 
-    .inst_tick = harmonics_tick,
-    .inst_run = harmonics_run
+    .inst_tick = bbsyn_harmonics_tick,
+    .inst_run = bbsyn_harmonics_run
 };

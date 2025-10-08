@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "util.h"
 
-int count_bits(unsigned int n) {
+static int count_bits(unsigned int n) {
     assert(n != 0);
     assert(is_power_of_two(n) && "FFT array length must be a power of 2!");
 
@@ -20,7 +20,7 @@ int count_bits(unsigned int n) {
     return ret;
 }
 
-void fft_scale_array(float *array, size_t length, double factor) {
+void bbsyn_fft_scale_array(float *array, size_t length, double factor) {
 	const float factor_f = (float)factor;
 
     // i wonder if the compiler will vectorize this
@@ -32,7 +32,7 @@ void fft_scale_array(float *array, size_t length, double factor) {
 // Rearranges the elements of the array, swapping the element at an index
 // with an element at an index that is the bitwise reverse of the first
 // index in base 2. Useful for computing the FFT.
-void reverse_index_bits(float *array, unsigned int array_length) {
+static void reverse_index_bits(float *array, unsigned int array_length) {
     const int bit_count = count_bits(array_length);
     assert(bit_count <= 16 && "FFT array length must not be greater than 2^16");
     const unsigned int final_shift = 16 - bit_count;
@@ -52,7 +52,8 @@ void reverse_index_bits(float *array, unsigned int array_length) {
     }
 }
 
-void fft_inverse_real_fourier_transform(float *array, unsigned int array_length) {
+void bbsyn_fft_inverse_real_fourier_transform(float *array,
+											  unsigned int array_length) {
     assert(array_length >= 4 && "FFT array length must be at least 4.");
 	const int total_passes = count_bits(array_length);
 

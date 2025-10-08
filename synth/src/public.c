@@ -30,17 +30,17 @@
 
 static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_CHIP
-    &inst_chip_vtable,
+    &bbsyn_inst_chip_vtable,
     // BPBXSYN_SYNTH_FM
-    &inst_fm_vtable,
+    &bbsyn_inst_fm_vtable,
     // BPBXSYN_SYNTH_NOISE
     NULL,
     // BPBXSYN_SYNTH_PULSE_WIDTH
-    &inst_pwm_vtable,
+    &bbsyn_inst_pwm_vtable,
     // BPBXSYN_SYNTH_HARMONICS
-    &inst_harmonics_vtable,
+    &bbsyn_inst_harmonics_vtable,
     // BPBXSYN_SYNTH_SPECTRUM
-    &inst_spectrum_vtable,
+    &bbsyn_inst_spectrum_vtable,
     // BPBXSYN_SYNTH_PICKED_STRING
     NULL,
     // BPBXSYN_SYNTH_SUPERSAW
@@ -51,23 +51,23 @@ static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
 
 static const effect_vtable_s *effect_vtables[BPBXSYN_EFFECT_COUNT] = {
     // BPBXSYN_EFFECT_PANNING,
-    &effect_panning_vtable,
+    &bbsyn_effect_panning_vtable,
     // BPBXSYN_EFFECT_DISTORTION,
-    &effect_distortion_vtable,
+    &bbsyn_effect_distortion_vtable,
     // BPBXSYN_EFFECT_BITCRUSHER,
-    &effect_bitcrusher_vtable,
+    &bbsyn_effect_bitcrusher_vtable,
     // BPBXSYN_EFFECT_CHORUS,
-    &effect_chorus_vtable,
+    &bbsyn_effect_chorus_vtable,
     // BPBXSYN_EFFECT_ECHO,
-    &effect_echo_vtable,
+    &bbsyn_effect_echo_vtable,
     // BPBXSYN_EFFECT_REVERB,
-    &effect_reverb_vtable,
+    &bbsyn_effect_reverb_vtable,
     // BPBXSYN_EFFECT_EQ,
-    &effect_eq_vtable,
+    &bbsyn_effect_eq_vtable,
     // BPBXSYN_EFFECT_VOLUME,
-    &effect_volume_vtable,
+    &bbsyn_effect_volume_vtable,
     // BPBXSYN_EFFECT_LIMITER
-    &effect_limiter_vtable,
+    &bbsyn_effect_limiter_vtable,
 };
 
 
@@ -107,7 +107,7 @@ bpbxsyn_context_s* bpbxsyn_context_new(
         };
     }
 
-    if (!init_wavetables_for_context(ctx)) {
+    if (!bbsyn_init_wavetables_for_context(ctx)) {
         bpbxsyn_context_destroy(ctx);
         return NULL;
     }
@@ -145,7 +145,7 @@ unsigned int bpbxsyn_synth_param_count(bpbxsyn_synth_type_e type) {
 
 const bpbxsyn_param_info_s* bpbxsyn_synth_param_info(bpbxsyn_synth_type_e type, unsigned int index) {
     if (index < BPBXSYN_BASE_PARAM_COUNT)
-        return &base_param_info[index];
+        return &bbsyn_base_param_info[index];
 
     assert(inst_vtables[type]);
     assert(memcmp(inst_vtables[type]->param_info[index - BPBXSYN_BASE_PARAM_COUNT].id, "\0\0\0\0\0\0\0\0", 8));
@@ -256,13 +256,13 @@ void bpbxsyn_synth_begin_transport(bpbxsyn_synth_s *inst, double beat, double bp
     const double time_secs = bpm / 60.0 * beat;
     inst->vibrato_time_start = time_secs * vibrato_params.speed;
     inst->vibrato_time_end = inst->vibrato_time_start + sec_per_tick;
-    inst->arp_time = beat * inst_calc_arp_speed(inst->arpeggio_speed);
+    inst->arp_time = beat * bbsyn_inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
 static int synth_param_helper(const bpbxsyn_synth_s *inst, uint32_t index, void **addr, bpbxsyn_param_info_s *info) {
     if (index < BPBXSYN_BASE_PARAM_COUNT) {
-        *info = base_param_info[index];
-        *addr = (void*)(((uint8_t*)inst) + base_param_offsets[index]);
+        *info = bbsyn_base_param_info[index];
+        *addr = (void*)(((uint8_t*)inst) + bbsyn_base_param_offsets[index]);
         return 0;
     }
 
@@ -470,12 +470,12 @@ void bpbxsyn_synth_run(bpbxsyn_synth_s* inst, float *out_samples, size_t frame_c
 
 
 double bpbxsyn_calc_samples_per_tick(double bpm, double sample_rate) {
-    return calc_samples_per_tick(bpm, sample_rate);
+    return bbsyn_calc_samples_per_tick(bpm, sample_rate);
 }
 
 
 double bpbxsyn_ticks_fade_out(double setting) {
-    return ticks_fade_out(setting);
+    return bbsyn_ticks_fade_out(setting);
 }
 
 const char *env_index_names[] = {
@@ -528,7 +528,7 @@ const char* bpbxsyn_envelope_index_name(bpbxsyn_envelope_compute_index_e index) 
 
 
 const char** bpbxsyn_envelope_curve_preset_names(void) {
-    return envelope_curve_preset_names;
+    return bbsyn_envelope_curve_preset_names;
 }
 
 
@@ -752,7 +752,7 @@ void bpbxsyn_vibrato_preset_params(bpbxsyn_vibrato_preset_e preset, bpbxsyn_vibr
 
 
 double bpbxsyn_freq_setting_to_hz(double freq_setting) {
-    return get_hz_from_setting_value(freq_setting);
+    return bbsyn_get_hz_from_setting_value(freq_setting);
 }
 
 
@@ -770,7 +770,7 @@ void bpbxsyn_analyze_freq_response(
     temp_group.freq_idx[0] = freq_setting;
     temp_group.gain_idx[0] = gain_setting;
 
-    filter_coefs_s coefs = filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
+    filter_coefs_s coefs = bbsyn_filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
     double corner_rads_per_sample = PI2 * hz / sample_rate;
-    *out = filter_analyze(coefs, corner_rads_per_sample);
+    *out = bbsyn_filter_analyze(coefs, corner_rads_per_sample);
 }

@@ -44,12 +44,12 @@ typedef struct echo_effect {
 } echo_effect_s;
 
 void bpbxsyn_effect_init_echo(bpbxsyn_context_s *ctx, echo_effect_s *inst);
-void echo_destroy(bpbxsyn_effect_s *inst);
-void echo_sample_rate_changed(bpbxsyn_effect_s *inst, double old_sr,
-                              double new_sr);
-void echo_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void echo_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);
+void bbsyn_echo_destroy(bpbxsyn_effect_s *inst);
+void bbsyn_echo_sample_rate_changed(bpbxsyn_effect_s *inst, double old_sr,
+                                    double new_sr);
+void bbsyn_echo_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_echo_run(bpbxsyn_effect_s *inst, float **buffer, size_t frame_count);
 
-extern const effect_vtable_s effect_echo_vtable;
+extern const effect_vtable_s bbsyn_effect_echo_vtable;
 
 #endif

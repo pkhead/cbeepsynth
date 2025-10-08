@@ -29,13 +29,13 @@ typedef struct reverb_effect {
 } reverb_effect_s;
 
 void bpbxsyn_effect_init_reverb(bpbxsyn_context_s *ctx, reverb_effect_s *inst);
-void reverb_destroy(bpbxsyn_effect_s *inst);
-void reverb_sample_rate_changed(bpbxsyn_effect_s *inst,
-                                 double old_sr, double new_sr);
-void reverb_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
-void reverb_run(bpbxsyn_effect_s *inst, float **buffer,
-                 size_t frame_count);
+void bbsyn_reverb_destroy(bpbxsyn_effect_s *inst);
+void bbsyn_reverb_sample_rate_changed(bpbxsyn_effect_s *inst,
+                                      double old_sr, double new_sr);
+void bbsyn_reverb_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx);
+void bbsyn_reverb_run(bpbxsyn_effect_s *inst, float **buffer,
+                      size_t frame_count);
 
-extern const effect_vtable_s effect_reverb_vtable;
+extern const effect_vtable_s bbsyn_effect_reverb_vtable;
 
 #endif

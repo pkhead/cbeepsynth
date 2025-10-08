@@ -101,7 +101,7 @@ static void setup_algorithm(fm_inst_s *inst) {
 
 void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst) {
     *inst = (fm_inst_s){0};
-    inst_init(ctx, &inst->base, BPBXSYN_SYNTH_FM);
+    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_FM);
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -122,13 +122,14 @@ void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst) {
     inst->feedback = 0;
 }
 
-bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
+bpbxsyn_voice_id bbsyn_fm_note_on(bpbxsyn_synth_s *inst, int key,
+                                  double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
     bool continuation;
-    bpbxsyn_voice_id voice_id = trigger_voice(
+    bpbxsyn_voice_id voice_id = bbsyn_trigger_voice(
         inst, GENERIC_LIST(fm->voices), key, velocity, length, &continuation);
     
     if (!continuation) {
@@ -149,20 +150,20 @@ bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key, double velocity, int
     return voice_id;
 }
 
-void fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
+void bbsyn_fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
-    release_voice(inst, GENERIC_LIST(fm->voices), id);
+    bbsyn_release_voice(inst, GENERIC_LIST(fm->voices), id);
 }
 
-void fm_note_all_off(bpbxsyn_synth_s *inst) {
+void bbsyn_fm_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
 
-    release_all_voices(inst, GENERIC_LIST(fm->voices));
+    bbsyn_release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
 static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *const voice, voice_compute_s *compute_data) {
@@ -262,7 +263,8 @@ typedef struct {
     fm_inst_s *fm;
 } audio_process_fm_userdata_s;
 
-void fm_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
+void bbsyn_fm_tick(bpbxsyn_synth_s *src_inst,
+                   const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
@@ -271,7 +273,7 @@ void fm_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
         .fm = fm,
     };
 
-    inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
+    bbsyn_inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
         .voice_list = fm->voices,
         .sizeof_voice = sizeof(*fm->voices),
 
@@ -281,7 +283,8 @@ void fm_tick(bpbxsyn_synth_s *src_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
     });
 }
 
-void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
+void bbsyn_fm_run(bpbxsyn_synth_s *src_inst, float *samples,
+                  size_t frame_count) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     
@@ -289,7 +292,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
     const bpbxsyn_context_s *ctx = src_inst->ctx;
     setup_algorithm(fm);
 
-    fm_algo_f algo_func = fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
 
     memset(samples, 0, frame_count * sizeof(float));
     
@@ -319,7 +322,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
             
             float sample;
             if (voice->base.filters_enabled) {
-                sample = (float) apply_filters(x0, x1, x2, voice->base.note_filters);
+                sample = (float) bbsyn_apply_filters(x0, x1, x2, voice->base.note_filters);
             } else {
                 sample = (float) x0;
             }
@@ -351,7 +354,7 @@ void fm_run(bpbxsyn_synth_s *src_inst, float *samples, size_t frame_count) {
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
 
-        sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         
         // convert from operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -684,7 +687,7 @@ static const double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
 
 
 
-const inst_vtable_s inst_fm_vtable = {
+const inst_vtable_s bbsyn_inst_fm_vtable = {
     .struct_size = sizeof(fm_inst_s),
 
     .param_count = BPBXSYN_FM_PARAM_COUNT,
@@ -695,10 +698,10 @@ const inst_vtable_s inst_fm_vtable = {
     .envelope_targets = fm_env_targets,
 
     .inst_init = (inst_init_f)bpbxsyn_synth_init_fm,
-    .inst_note_on = fm_note_on,
-    .inst_note_off = fm_note_off,
-    .inst_note_all_off = fm_note_all_off,
+    .inst_note_on = bbsyn_fm_note_on,
+    .inst_note_off = bbsyn_fm_note_off,
+    .inst_note_all_off = bbsyn_fm_note_all_off,
 
-    .inst_tick = fm_tick,
-    .inst_run = fm_run
+    .inst_tick = bbsyn_fm_tick,
+    .inst_run = bbsyn_fm_run
 };

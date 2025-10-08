@@ -21,9 +21,8 @@ void bpbxsyn_free(const bpbxsyn_context_s *ctx, void *ptr) {
         ctx->alloc.free(ptr, ctx->alloc.userdata);
 }
 
-void logmsgf(const bpbxsyn_context_s *ctx, bpbxsyn_log_severity_e severity,
-             const char *msg, ...)
-{
+void bbsyn_logmsgf(const bpbxsyn_context_s *ctx,
+                   bpbxsyn_log_severity_e severity, const char *msg, ...) {
     if (ctx->log_func == NULL) return;
 
     char msg_buf[256];

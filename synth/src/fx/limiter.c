@@ -22,16 +22,17 @@ void bpbxsyn_effect_init_limiter(bpbxsyn_context_s *ctx,
     };
 }
 
-void limiter_destroy(bpbxsyn_effect_s *inst) {
+void bbsyn_limiter_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void limiter_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_limiter_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx) {
     (void)inst;
     (void)ctx;
 }
 
-void limiter_run(bpbxsyn_effect_s *p_inst, float **buffer, size_t frame_count) {
+void bbsyn_limiter_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                       size_t frame_count) {
     limiter_effect_s *const inst = (limiter_effect_s*)p_inst;
 
     const double decay = 1.0 - pow(0.5, inst->decay / inst->base.sample_rate);
@@ -155,10 +156,10 @@ static const size_t param_addresses[BPBXSYN_LIMITER_PARAM_COUNT] = {
     offsetof(limiter_effect_s, limit_ratio),
 };
 
-const effect_vtable_s effect_limiter_vtable = {
+const effect_vtable_s bbsyn_effect_limiter_vtable = {
     .struct_size = sizeof(limiter_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_limiter,
-    .effect_destroy = limiter_destroy,
+    .effect_destroy = bbsyn_limiter_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -167,6 +168,6 @@ const effect_vtable_s effect_limiter_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = limiter_tick,
-    .effect_run = limiter_run
+    .effect_tick = bbsyn_limiter_tick,
+    .effect_run = bbsyn_limiter_run
 };

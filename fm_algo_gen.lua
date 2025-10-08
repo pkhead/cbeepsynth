@@ -259,7 +259,7 @@ do
     end
 
     lines[#lines+1] = "typedef double (*fm_algo_f)(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp);"
-    lines[#lines+1] = "extern fm_algo_f fm_algorithm_table["..func_count.."];"
+    lines[#lines+1] = "extern fm_algo_f bbsyn_fm_algorithm_table["..func_count.."];"
 
     lines[#lines+1] = "#endif"
 
@@ -302,7 +302,7 @@ do
         end
     end
 
-    lines[#lines+1] = "fm_algo_f fm_algorithm_table["..(func_count).."] = {"
+    lines[#lines+1] = "fm_algo_f bbsyn_fm_algorithm_table["..(func_count).."] = {"
 
     for algo_index, algo_data in ipairs(algorithms) do
         for fdb_index, fdb_data in ipairs(feedback_types) do

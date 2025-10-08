@@ -4,14 +4,14 @@
 #include "util.h"
 #include "synth/synth.h"
 
-double secs_fade_in(double setting) {
+double bbsyn_secs_fade_in(double setting) {
     return 0.0125 * (0.95 * setting + 0.05 * setting * setting);
 }
 
 // neutral index is at idx4
 static const double fade_out_ticks[] = { -24.0, -12.0, -6.0, -3.0, -1.0, 6.0, 12.0, 24.0, 48.0, 72.0, 96.0 };
 
-double ticks_fade_out(double setting) {
+double bbsyn_ticks_fade_out(double setting) {
     setting += 4.0;
 
     // not possible in normal beepbox; extrapolation
@@ -37,7 +37,7 @@ static double get_lp_cutoff_decay_volume_compensation(const envelope_curve_prese
 
 static double compute_envelope(const envelope_curve_preset_s *curve, double time, double beats, double note_size, double mod_x, double mod_y, double mod_w) {
     switch (curve->curve_type) {
-        case ENV_CURVE_NOTE_SIZE:       return note_size_to_volume_mult(note_size);
+        case ENV_CURVE_NOTE_SIZE:       return bbsyn_note_size_to_volume_mult(note_size);
         case ENV_CURVE_NONE:            return 1.0;
         case ENV_CURVE_TWANG:           return 1.0 / (1.0 + time * curve->speed);
         case ENV_CURVE_SWELL:           return 1.0 - 1.0 / (1.0 + time * curve->speed);
@@ -62,7 +62,8 @@ static double compute_envelope(const envelope_curve_preset_s *curve, double time
     }
 }
 
-void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w) {
+void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
+                                  double mod_x, double mod_y, double mod_w) {
     for (int i = 0; i < BPBXSYN_ENV_INDEX_COUNT; i++) {
         env_computer->envelope_starts[i] = 1.0;
         env_computer->envelope_ends[i] = 1.0;
@@ -79,7 +80,9 @@ void envelope_computer_init(envelope_computer_s *env_computer, double mod_x, dou
     env_computer->mod_wheel[1] = mod_w;
 }
 
-void update_envelope_modulation(envelope_computer_s *env_computer, double mod_x, double mod_y, double mod_w) {
+void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
+                                      double mod_x, double mod_y,
+                                      double mod_w) {
     env_computer->mod_x[0] = env_computer->mod_x[1];
     env_computer->mod_y[0] = env_computer->mod_y[1];
     env_computer->mod_wheel[0] = env_computer->mod_wheel[1];
@@ -124,7 +127,7 @@ static int get_filter_target(bpbxsyn_envelope_compute_index_e index) {
     }
 }
 
-void compute_envelopes(
+void bbsyn_compute_envelopes(
     const bpbxsyn_synth_s *inst, envelope_computer_s *env_computer,
     double beat_start, double tick_time_start, double secs_per_tick
 ) {
@@ -178,7 +181,7 @@ void compute_envelopes(
 
     for (unsigned int i = 0; i < inst->envelope_count; i++) {
         const bpbxsyn_envelope_s *env = &inst->envelopes[i];
-        const envelope_curve_preset_s curve = envelope_curve_presets[env->curve_preset];
+        const envelope_curve_preset_s curve = bbsyn_envelope_curve_presets[env->curve_preset];
 
         double envelope_start = compute_envelope(
             &curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX,
@@ -230,7 +233,7 @@ void compute_envelopes(
 //  DATA  //
 ////////////
 
-const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT] = {
+const envelope_curve_preset_s bbsyn_envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT] = {
     {
         .name = "none",
         .curve_type = ENV_CURVE_NONE,
@@ -359,7 +362,7 @@ const envelope_curve_preset_s envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRES
     },
 };
 
-const char *envelope_curve_preset_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT+1] = {
+const char *bbsyn_envelope_curve_preset_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT+1] = {
     "none",
     "note size",
     "mod x",

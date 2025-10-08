@@ -60,7 +60,7 @@ void echo_stop(bpbxsyn_effect_s *p_inst) {
     inst->echo_shelf_prev_input[1] = 0.0;
 }
 
-void echo_destroy(bpbxsyn_effect_s *p_inst) {
+void bbsyn_echo_destroy(bpbxsyn_effect_s *p_inst) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -72,8 +72,8 @@ void echo_destroy(bpbxsyn_effect_s *p_inst) {
     }
 }
 
-void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
-                                 double old_sr, double new_sr)
+void bbsyn_echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
+                                    double old_sr, double new_sr)
 {
     (void)old_sr;
 
@@ -81,7 +81,7 @@ void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     const bpbxsyn_context_s *ctx = inst->base.ctx;
     
     int delay_line_capacity = (int)ceil(new_sr * ECHO_MAX_DELAY_SECS);
-    delay_line_capacity = fitting_power_of_two(delay_line_capacity);
+    delay_line_capacity = bbsyn_fitting_power_of_two(delay_line_capacity);
     inst->delay_line_capacity = delay_line_capacity;
 
     for (int i = 0; i < 2; ++i) {
@@ -94,10 +94,10 @@ void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
         inst->delay_line_dirty = true;
 
         if (!inst->delay_lines[i][0])
-            logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].L", i);
+            bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].L", i);
     
         if (!inst->delay_lines[i][1])
-            logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].R", i);
+            bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR, "could not allocate echo delay_lines[%i].R", i);
     
         if (!inst->delay_lines[i][0] || !inst->delay_lines[i][1]) {
             bpbxsyn_free(ctx, inst->delay_lines[i][0]);
@@ -118,7 +118,7 @@ static void echo_realloc_buffers_if_necessary(echo_effect_s *inst,
         (int)max((double)(BPBXSYN_ECHO_DELAY_RANGE >> 1), (inst->delay[1] + 1));
     
     int base_echo_delay_buffer_size =
-        fitting_power_of_two((int)(safe_echo_delay_steps * ECHO_DELAY_STEP_TICKS * samples_per_tick));
+        bbsyn_fitting_power_of_two((int)(safe_echo_delay_steps * ECHO_DELAY_STEP_TICKS * samples_per_tick));
     
     // If the tempo or delay changes and we suddenly need a longer delay, make 
     // sure that we have enough sample history to accomodate the longer delay.
@@ -161,13 +161,13 @@ static void echo_realloc_buffers_if_necessary(echo_effect_s *inst,
     }
 }
 
-void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+void bbsyn_echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
 
     if (!inst->delay_lines[inst->delay_line_buffer_idx][0])
         return;
 
-    double samples_per_tick = calc_samples_per_tick(ctx->bpm, inst->base.sample_rate);
+    double samples_per_tick = bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate);
     double rounded_samples_per_tick =
         ceil(samples_per_tick);
     
@@ -210,7 +210,7 @@ void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
 
     filter_coefs_s coefs;
     const double shelf_radins = PI2 * ECHO_SHELF_HZ / inst->base.sample_rate;
-    filter_hshelf1(&coefs, shelf_radins, ECHO_SHELF_GAIN);
+    bbsyn_filter_hshelf1(&coefs, shelf_radins, ECHO_SHELF_GAIN);
 
     inst->echo_shelf_a1 = coefs.a[1];
     inst->echo_shelf_b0 = coefs.b[0];
@@ -220,8 +220,8 @@ void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->delay[0] = inst->delay[1];
 }
 
-void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                 size_t frame_count)
+void bbsyn_echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                    size_t frame_count)
 {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
 
@@ -298,8 +298,8 @@ void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
         right[frame] = (float)sample_r;
     }
 
-    sanitize_delay_line(delay_line[0], delay_pos, mask);
-    sanitize_delay_line(delay_line[1], delay_pos, mask);
+    bbsyn_sanitize_delay_line(delay_line[0], delay_pos, mask);
+    bbsyn_sanitize_delay_line(delay_line[1], delay_pos, mask);
 
     inst->delay_line_pos = delay_pos;
     inst->echo_mult = mult;
@@ -356,10 +356,10 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
     offsetof(echo_effect_s, delay[1]),
 };
 
-const effect_vtable_s effect_echo_vtable = {
+const effect_vtable_s bbsyn_effect_echo_vtable = {
     .struct_size = sizeof(echo_effect_s),
     .effect_init = (effect_init_f)bpbxsyn_effect_init_echo,
-    .effect_destroy = echo_destroy,
+    .effect_destroy = bbsyn_echo_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -369,7 +369,7 @@ const effect_vtable_s effect_echo_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = echo_stop,
-    .effect_sample_rate_changed = echo_sample_rate_changed,
-    .effect_tick = echo_tick,
-    .effect_run = echo_run
+    .effect_sample_rate_changed = bbsyn_echo_sample_rate_changed,
+    .effect_tick = bbsyn_echo_tick,
+    .effect_run = bbsyn_echo_run
 };

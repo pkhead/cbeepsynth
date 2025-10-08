@@ -9,7 +9,7 @@ static int32_t clz32(int32_t x) {
     return 32 - tz;
 }
 
-int fitting_power_of_two(int x) { return 1 << (32 - clz32(x - 1)); }
+int bbsyn_fitting_power_of_two(int x) { return 1 << (32 - clz32(x - 1)); }
 
 prng_state_s bbsyn_random_seeded_state(uint64_t seed) {
     return (prng_state_s) {

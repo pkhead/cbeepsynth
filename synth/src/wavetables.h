@@ -47,16 +47,16 @@ typedef struct wavetables {
     wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 } wavetables_s;
 
-bool init_wavetables_for_context(bpbxsyn_context_s *ctx);
+bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx);
 
-void generate_harmonics(const wavetables_s *wavetables,
-                        uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
-                        int harmonics_rendered,
-                        float out[HARMONICS_WAVE_LENGTH + 1]);
+void bbsyn_generate_harmonics(const wavetables_s *wavetables,
+                              uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
+                              int harmonics_rendered,
+                              float out[HARMONICS_WAVE_LENGTH + 1]);
 
-void generate_spectrum_wave(const wavetables_s *wavetables,
-                            uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
-                            double lowest_octave,
-                            float out[SPECTRUM_WAVE_LENGTH + 1]);
+void bbsyn_generate_spectrum_wave(const wavetables_s *wavetables,
+                                  uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
+                                  double lowest_octave,
+                                  float out[SPECTRUM_WAVE_LENGTH + 1]);
 
 #endif

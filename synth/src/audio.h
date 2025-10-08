@@ -10,12 +10,12 @@
 // For detecting and avoiding float denormals, which have poor performance.
 #define FLUSH_ZERO_EPSILON 1e-23
 
-double calc_samples_per_tick(double bpm, double sample_rate);
+double bbsyn_calc_samples_per_tick(double bpm, double sample_rate);
 
-void sanitize_delay_line(float *buffer, int last_index, int mask);
-void sanitize_delay_line_mod(float *buffer, int last_index, int wrap);
+void bbsyn_sanitize_delay_line(float *buffer, int last_index, int mask);
+void bbsyn_sanitize_delay_line_mod(float *buffer, int last_index, int wrap);
 
-double find_random_zero_crossing(prng_state_s *rng_state, float *wave,
-                                 int wave_length);
+double bbsyn_find_random_zero_crossing(prng_state_s *rng_state, float *wave,
+                                       int wave_length);
 
 #endif

@@ -28,7 +28,8 @@ static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
     8.0 // dummy value in edge case for interpolation
 };
 
-void inst_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst, bpbxsyn_synth_type_e type) {
+void bbsyn_inst_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst,
+                     bpbxsyn_synth_type_e type) {
     *inst = (bpbxsyn_synth_s) {
         .type = type,
         .ctx = ctx,
@@ -52,7 +53,7 @@ void inst_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *inst, bpbxsyn_synth_type
 //     return pow(2.0, -(pitch - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
 // }
 
-double note_size_to_volume_mult(double size) {
+double bbsyn_note_size_to_volume_mult(double size) {
     return pow(max(0.0, size) / NOTE_SIZE_MAX, 1.5);
 }
 
@@ -75,7 +76,8 @@ static const vibrato_type_def_s vibrato_types[2] = {
     }
 };
 
-double get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar) {
+double bbsyn_get_lfo_amplitude(bpbxsyn_vibrato_type_e type,
+                               double secs_into_bar) {
     assert(0 <= type && type <= 1);
 
     double effect = 0.0;
@@ -114,7 +116,7 @@ uint8_t get_chord_list(
     return length;
 }
 
-bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
+bpbxsyn_voice_id bbsyn_trigger_voice(bpbxsyn_synth_s *inst,
                             void *voices, size_t sizeof_voice,
                             int key, double velocity, int32_t length,
                             bool *continuation
@@ -277,16 +279,16 @@ bpbxsyn_voice_id trigger_voice(bpbxsyn_synth_s *inst,
         voice->current_key = (double)voice->key;
 
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-            dyn_biquad_reset_output(voice->note_filters + i);
+            bbsyn_dyn_biquad_reset_output(voice->note_filters + i);
         }
 
-        envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
+        bbsyn_envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
     }
 
     return (bpbxsyn_voice_id) voice_index;
 }
 
-void release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpbxsyn_voice_id id) {
+void bbsyn_release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpbxsyn_voice_id id) {
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
     if (voice_is_triggered(voice) && voice_is_active(voice) && !voice_is_releasedt(voice)) {
         voice->flags |= VOICE_FLAG_RELEASE_TRIGGERED;
@@ -308,11 +310,11 @@ void release_voice(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice, bpb
     }
 }
 
-void release_all_voices(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice) {
+void bbsyn_release_all_voices(bpbxsyn_synth_s *inst, void *voices, size_t sizeof_voice) {
     for (bpbxsyn_voice_id i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if ((voice_is_triggered(voice) || voice_is_active(voice)) && !voice_is_releasedt(voice)) {
-            release_voice(inst, voices, sizeof_voice, i);
+            bbsyn_release_voice(inst, voices, sizeof_voice, i);
         } 
     }
 }
@@ -338,9 +340,9 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     // const double part_time_end = (double)(ticks_into_bar + 1) / TICKS_PER_PART;
 
     // update envelope computer modulation
-    update_envelope_modulation(&voice->env_computer,
+    bbsyn_update_envelope_modulation(&voice->env_computer,
         compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
-    compute_envelopes(inst, &voice->env_computer,
+    bbsyn_compute_envelopes(inst, &voice->env_computer,
         compute_data->cur_beat, voice->time_secs, samples_per_tick * sample_len
     );
 
@@ -362,12 +364,12 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     }
 
     // fade in/out
-    const double fade_in_secs = secs_fade_in(compute_data->fade_in);
+    const double fade_in_secs = bbsyn_secs_fade_in(compute_data->fade_in);
     const uint8_t released = compute_struct->_released = voice->time_secs >= fade_in_secs && voice_is_releasedt(voice);
     if (released) {
-        const double ticks = fabs(ticks_fade_out(compute_data->fade_out));
-        fade_expr_start = note_size_to_volume_mult((1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
-        fade_expr_end = note_size_to_volume_mult((1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
+        const double ticks = fabs(bbsyn_ticks_fade_out(compute_data->fade_out));
+        fade_expr_start = bbsyn_note_size_to_volume_mult((1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
+        fade_expr_end = bbsyn_note_size_to_volume_mult((1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
 
         // code should be voice->ticks_since_release + 1 >= ticks
         // but i decide to end it one tick earlier to mitigate release click.
@@ -419,7 +421,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
         if (voice->flags & VOICE_FLAG_HAS_PREV_VIBRATO) {
             vibrato_start = voice->prev_vibrato;
         } else {
-            double lfo_start = get_lfo_amplitude(vibrato_params.type, vibrato_time_start);
+            double lfo_start = bbsyn_get_lfo_amplitude(vibrato_params.type, vibrato_time_start);
             const double vibrato_depth_envelope_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_VIBRATO_DEPTH];
             vibrato_start = vibrato_params.depth * lfo_start * vibrato_depth_envelope_start;
 
@@ -429,7 +431,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
             }
         }
 
-        double lfo_end = get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
+        double lfo_end = bbsyn_get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
         const double vibrato_depth_envelope_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_VIBRATO_DEPTH];
         double vibrato_end = vibrato_params.depth * lfo_end * vibrato_depth_envelope_end;
         if (delay_ticks > 0.0) {
@@ -480,23 +482,23 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
                 
                 voice->note_filters[i].enabled = TRUE;
 
-                filter_coefs_s start_coefs = filter_to_coefficients(
+                filter_coefs_s start_coefs = bbsyn_filter_to_coefficients(
                     filter_group_start, i,
                     compute_data->sample_rate,
                     note_all_freqs_envelope_start * note_freq_envelope_start,
                     note_peak_envelope_start);
 
-                filter_coefs_s end_coefs = filter_to_coefficients(
+                filter_coefs_s end_coefs = bbsyn_filter_to_coefficients(
                     filter_group_end, i,
                     compute_data->sample_rate,
                     note_all_freqs_envelope_end * note_freq_envelope_end,
                     note_peak_envelope_end);
                 
-                dyn_biquad_load(&voice->note_filters[i],
+                bbsyn_dyn_biquad_load(&voice->note_filters[i],
                     start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
                     filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_LP);
 
-                note_filter_expression *= filter_get_volume_compensation_mult(filter_group_start, i);
+                note_filter_expression *= bbsyn_filter_get_volume_compensation_mult(filter_group_start, i);
             }
         }
     }
@@ -522,13 +524,13 @@ static void compute_voice_post(inst_base_voice_s *const voice, voice_compute_s *
     }
 }
 
-void inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, const audio_compute_s *params)
+void bbsyn_inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, const audio_compute_s *params)
 {
     const double sample_rate = inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
     const double beat = run_ctx->beat;
 
-    const double samples_per_tick = calc_samples_per_tick(run_ctx->bpm, sample_rate);
+    const double samples_per_tick = bbsyn_calc_samples_per_tick(run_ctx->bpm, sample_rate);
     const double fade_in = inst->fade_in;
     const double fade_out = inst->fade_out;
 
@@ -715,10 +717,10 @@ void inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, const a
     inst->last_active_chord_id = inst->active_chord_id;
 
     // update arpeggio time
-    inst->arp_time += inst_calc_arp_speed(inst->arpeggio_speed);
+    inst->arp_time += bbsyn_inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
-double inst_calc_arp_speed(double speed_setting) {
+double bbsyn_inst_calc_arp_speed(double speed_setting) {
     // uses linear interpolation between array elements for non-integer values
     speed_setting = clampd(speed_setting, 0.0, ARPEGGIO_SPEED_SETTING_COUNT - 1);
 
@@ -757,8 +759,8 @@ static const arpeggio_pattern_s normal_two_note_arpeggio = {
     .length = 4, .pitches = {0, 0, 1, 1}
 };
 
-const char *bool_enum_values[2] = {"Off", "On"};
-const char *yes_no_enum_values[2] = {"No", "Yes"};
+const char *bbsyn_bool_enum_values[2] = {"Off", "On"};
+const char *bbsyn_yes_no_enum_values[2] = {"No", "Yes"};
 
 static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};
 static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
@@ -775,7 +777,7 @@ static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
 #define FILTER_MAX_FREQ BPBXSYN_FILTER_FREQ_MAX
 #define FILTER_MAX_GAIN BPBXSYN_FILTER_GAIN_MAX
 
-const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT] = {
+const unison_desc_s bbsyn_unison_info[BPBXSYN_UNISON_COUNT] = {
     // none
     { .voices = 1, .spread = 0.0, .offset = 0.0, .expression = 1.4, .sign = 1.0 },
     // shimmer
@@ -798,7 +800,7 @@ const unison_desc_s unison_info[BPBXSYN_UNISON_COUNT] = {
     { .voices = 2, .spread = 0.25, .offset = 0.05, .expression = 0.9, .sign = -0.8 },
 };
 
-bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
+bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
     {
         .id = "inFadeIn",
@@ -854,7 +856,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inTrnsTy",
@@ -880,7 +882,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inChdTyp",
@@ -916,7 +918,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .max_value = 1,
         .default_value = 0,
 
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inStrmSp",
@@ -940,7 +942,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inPtSfVl",
@@ -964,7 +966,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inCntsVl",
@@ -988,7 +990,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inVibPrs",
@@ -1012,7 +1014,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 2,
         .default_value = 0,
-        .enum_values = bool_enum_values
+        .enum_values = bbsyn_bool_enum_values
     },
     {
         .id = "inVibSpd",
@@ -1101,7 +1103,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
-        .enum_values = bool_enum_values,
+        .enum_values = bbsyn_bool_enum_values,
     },
     {
         .id = "inFlTp01",
@@ -1590,7 +1592,7 @@ bpbxsyn_param_info_s base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
     // },
 };
 
-size_t base_param_offsets[BPBXSYN_BASE_PARAM_COUNT] = {
+size_t bbsyn_base_param_offsets[BPBXSYN_BASE_PARAM_COUNT] = {
     // general
     offsetof(bpbxsyn_synth_s, fade_in),
     offsetof(bpbxsyn_synth_s, fade_out),

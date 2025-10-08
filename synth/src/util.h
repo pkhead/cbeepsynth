@@ -70,7 +70,7 @@ static inline double key_to_hz_d(double key) {
     return pow(2.0, (key - 69) / 12.0) * 440.0;
 }
 
-int fitting_power_of_two(int x);
+int bbsyn_fitting_power_of_two(int x);
 
 static inline bool is_power_of_two(unsigned int n) {
     return (n & (n - 1)) == 0;

@@ -244,9 +244,6 @@ extern bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT];
 extern size_t bbsyn_base_param_offsets[BPBXSYN_BASE_PARAM_COUNT];
 extern const unison_desc_s bbsyn_unison_info[BPBXSYN_UNISON_COUNT];
 
-extern const char *bbsyn_bool_enum_values[2];
-extern const char *bbsyn_yes_no_enum_values[2];
-
 extern const inst_vtable_s bbsyn_inst_fm_vtable;
 extern const inst_vtable_s bbsyn_inst_chip_vtable;
 extern const inst_vtable_s bbsyn_inst_pwm_vtable;

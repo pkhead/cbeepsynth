@@ -2,6 +2,7 @@
 #include <string.h>
 #include "synth.h"
 #include "../util.h"
+#include "../param_util.h"
 
 // It's actually closer to half of this, the synthesized pulse amplitude range
 // is only .5 to -.5, but also note that the fundamental sine partial amplitude

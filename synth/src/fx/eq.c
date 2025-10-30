@@ -4,6 +4,7 @@
 #include "effect.h"
 #include "../audio.h"
 #include "../filtering.h"
+#include "../param_util.h"
 
 typedef struct {
     bpbxsyn_effect_s base;
@@ -162,7 +163,6 @@ local p = assert(io.popen("clip.exe", "w"))
 p:write(str)
 p:close()
 */
-static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
 static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
     {
         .id = "inEqTp01",
@@ -173,7 +173,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz01",
@@ -202,7 +202,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz02",
@@ -231,7 +231,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz03",
@@ -260,7 +260,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz04",
@@ -289,7 +289,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz05",
@@ -318,7 +318,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz06",
@@ -347,7 +347,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz07",
@@ -376,7 +376,7 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inEqHz08",

@@ -5,6 +5,7 @@
 #include "../util.h"
 #include "../context.h"
 #include "../wavetables.h"
+#include "../param_util.h"
 
 // Spectrum can be in pitch or noise
 // channels, the expression is doubled for

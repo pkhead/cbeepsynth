@@ -3,6 +3,7 @@
 #include <time.h>
 #include "synth.h"
 #include "../context.h"
+#include "../param_util.h"
 
 
 // i feel like noise volume should be halved for pitch channels to be consistent
@@ -235,15 +236,15 @@ void noise_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 // DATA //
 //////////
 static const char *noise_enum_values[] = {
-    "Retro",
-    "White",
-    "Clang",
-    "Buzz",
-    "Hollow",
-    "Shine",
-    "Deep",
-    "Cutter",
-    "Metallic",
+    "retro",
+    "white",
+    "clang",
+    "buzz",
+    "hollow",
+    "shine",
+    "deep",
+    "cutter",
+    "metallic",
 };
 
 static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = {

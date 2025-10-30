@@ -29,6 +29,7 @@ set(SOURCES
     src/audio.c
     src/context.c
     src/util.c
+    src/param_util.c
 )
 
 set(TARGET_PROPERTIES

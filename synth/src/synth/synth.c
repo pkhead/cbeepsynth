@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "synth.h"
 #include "../util.h"
+#include "../param_util.h"
 
 #define TICKS_PER_ARPEGGIO 3
 #define GET_VOICE(voice_list, size, idx)                                       \
@@ -758,14 +759,10 @@ static const arpeggio_pattern_s normal_two_note_arpeggio = {
     .length = 4, .pitches = {0, 0, 1, 1}
 };
 
-const char *bbsyn_bool_enum_values[2] = {"Off", "On"};
-const char *bbsyn_yes_no_enum_values[2] = {"No", "Yes"};
-
-static const char *transition_type_values[] = {"Normal", "Interrupt", "Continue", "Slide"};
-static const char *filt_type_enum[] = {"Off", "Low pass", "High pass", "Notch"};
-static const char *chord_type_values[] = {"Simultaneous", "Strum", "Arpeggio", "Custom Interval"};
-static const char *vibrato_preset_values[] = {"None", "Light", "Delayed", "Heavy", "Shaky", "Custom"};
-static const char *vibrato_values[] = {"Normal", "Shaky"};
+static const char *transition_type_values[] = {"normal", "interrupt", "continue", "slide"};
+static const char *chord_type_values[] = {"simultaneous", "strum", "arpeggio", "custom interval"};
+static const char *vibrato_preset_values[] = {"none", "light", "delayed", "heavy", "shaky", "custom"};
+static const char *vibrato_values[] = {"normal", "shaky"};
 static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
     "x0", "x0.0625", "x0.125", "x0.2", "x0.25", "x0.3333", "x0.4", "x0.5", "x0.6666", "x0.75", "x0.8",
     "x0.9", "x1", "x1.1", "x1.2", "x1.3", "x1.4", "x1.5", "x1.6", "x1.7", "x1.8", "x1.9", "x2", "x2.1",
@@ -1113,7 +1110,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz01",
@@ -1142,7 +1139,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz02",
@@ -1171,7 +1168,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz03",
@@ -1200,7 +1197,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz04",
@@ -1229,7 +1226,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz05",
@@ -1258,7 +1255,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz06",
@@ -1287,7 +1284,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz07",
@@ -1316,7 +1313,7 @@ bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT] = {
         .type = BPBXSYN_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = filt_type_enum,
+        .enum_values = bbsyn_filter_type_enum_values,
     },
     {
         .id = "inFlHz08",

@@ -4,14 +4,17 @@
 #include <math.h>
 #include <assert.h>
 
+#include "synth.h"
 #include "fm.h"
 #include "fm_algo.h"
-#include "synth.h"
 #include "../util.h"
 #include "../wavetables.h"
 #include "../envelope.h"
 #include "../filtering.h"
 #include "../context.h"
+
+
+#define VOICE_BASE_EXPRESSION 0.03
 
 /*
 algorithms:
@@ -61,8 +64,6 @@ static const fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT];
 static const int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4];
 static const double carrier_intervals[FM_OP_COUNT];
 
-#define VOICE_BASE_EXPRESSION 0.03
-
 static double operator_amplitude_curve(double amplitude) {
     return (pow(16.0, amplitude / 15.0) - 1.0) / 15.0;
 }
@@ -99,7 +100,8 @@ static void setup_algorithm(fm_inst_s *inst) {
     }
 }
 
-void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst) {
+static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
+    fm_inst_s *inst = (fm_inst_s*)p_inst;
     *inst = (fm_inst_s){0};
     bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_FM);
 
@@ -122,8 +124,8 @@ void bpbxsyn_synth_init_fm(bpbxsyn_context_s *ctx, fm_inst_s *inst) {
     inst->feedback = 0;
 }
 
-bpbxsyn_voice_id bbsyn_fm_note_on(bpbxsyn_synth_s *inst, int key,
-                                  double velocity, int32_t length) {
+static bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key,
+                                   double velocity, int32_t length) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -150,7 +152,7 @@ bpbxsyn_voice_id bbsyn_fm_note_on(bpbxsyn_synth_s *inst, int key,
     return voice_id;
 }
 
-void bbsyn_fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
+static void fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -158,7 +160,7 @@ void bbsyn_fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
     bbsyn_release_voice(inst, GENERIC_LIST(fm->voices), id);
 }
 
-void bbsyn_fm_note_all_off(bpbxsyn_synth_s *inst) {
+static void fm_note_all_off(bpbxsyn_synth_s *inst) {
     assert(inst);
     assert(inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)inst;
@@ -166,7 +168,9 @@ void bbsyn_fm_note_all_off(bpbxsyn_synth_s *inst) {
     bbsyn_release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
-static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *const voice, voice_compute_s *compute_data) {
+static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst,
+                             inst_base_voice_s *const voice,
+                             voice_compute_s *compute_data) {
     const fm_inst_s *const inst = (fm_inst_s*)base_inst;
     fm_voice_s *const fm_voice = (fm_voice_s*)voice;
 
@@ -263,8 +267,8 @@ typedef struct {
     fm_inst_s *fm;
 } audio_process_fm_userdata_s;
 
-void bbsyn_fm_tick(bpbxsyn_synth_s *src_inst,
-                   const bpbxsyn_tick_ctx_s *tick_ctx) {
+static void fm_tick(bpbxsyn_synth_s *src_inst,
+                    const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
@@ -283,8 +287,8 @@ void bbsyn_fm_tick(bpbxsyn_synth_s *src_inst,
     });
 }
 
-void bbsyn_fm_run(bpbxsyn_synth_s *src_inst, float *samples,
-                  size_t frame_count) {
+static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
+                   size_t frame_count) {
     assert(src_inst);
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     
@@ -697,11 +701,11 @@ const inst_vtable_s bbsyn_inst_fm_vtable = {
     .envelope_target_count = FM_MOD_COUNT,
     .envelope_targets = fm_env_targets,
 
-    .inst_init = (inst_init_f)bpbxsyn_synth_init_fm,
-    .inst_note_on = bbsyn_fm_note_on,
-    .inst_note_off = bbsyn_fm_note_off,
-    .inst_note_all_off = bbsyn_fm_note_all_off,
+    .inst_init = fm_init,
+    .inst_note_on = fm_note_on,
+    .inst_note_off = fm_note_off,
+    .inst_note_all_off = fm_note_all_off,
 
-    .inst_tick = bbsyn_fm_tick,
-    .inst_run = bbsyn_fm_run
+    .inst_tick = fm_tick,
+    .inst_run = fm_run
 };

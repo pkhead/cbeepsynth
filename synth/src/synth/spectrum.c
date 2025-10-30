@@ -1,8 +1,7 @@
-#include "spectrum.h"
-
 #include <assert.h>
 #include <string.h>
 #include <time.h> // for seeding the prng
+#include "synth.h"
 #include "../util.h"
 #include "../context.h"
 #include "../wavetables.h"
@@ -12,6 +11,32 @@
 // noise.
 #define SPECTRUM_BASE_EXPRESSION 0.3
 #define SPECTRUM_BASE_PITCH 24
+
+typedef struct spectrum_voice {
+    inst_base_voice_s base;
+
+    double phase;
+    double phase_delta;
+    double phase_delta_scale;
+
+    double noise_sample;
+
+    double prev_pitch_expression;
+    bool has_prev_pitch_expression;
+} spectrum_voice_s;
+
+typedef struct spectrum_inst {
+    bpbxsyn_synth_s base;
+    
+    uint8_t is_noise_channel; // a boolean
+    uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT];
+    int control_hash;
+
+    spectrum_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
+
+    float wave[SPECTRUM_WAVE_LENGTH + 1];
+    prng_state_s prng_state;
+} spectrum_inst_s;
 
 static int hash_spectrum_controls(const uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT]) {
     const int hash_mult =
@@ -25,9 +50,9 @@ static int hash_spectrum_controls(const uint8_t controls[BPBXSYN_SPECTRUM_CONTRO
     return hash;
 }
 
-void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
-                                 spectrum_inst_s *inst)
+static void spectrum_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst)
 {
+    spectrum_inst_s *inst = (spectrum_inst_s*)p_inst;
     *inst = (spectrum_inst_s){0};
     bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_SPECTRUM);
 
@@ -48,8 +73,8 @@ void bpbxsyn_synth_init_spectrum(bpbxsyn_context_s *ctx,
     inst->prng_state = bbsyn_random_seeded_state((uint64_t)clock());
 }
 
-bpbxsyn_voice_id bbsyn_spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,
-                                  double velocity, int32_t length)
+static bpbxsyn_voice_id spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,
+                                         double velocity, int32_t length)
 {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_SPECTRUM);
@@ -71,7 +96,7 @@ bpbxsyn_voice_id bbsyn_spectrum_note_on(bpbxsyn_synth_s *p_inst, int key,
     return voice_id;
 }
 
-void bbsyn_spectrum_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
+static void spectrum_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s*)p_inst;
@@ -79,7 +104,7 @@ void bbsyn_spectrum_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
-void bbsyn_spectrum_note_all_off(bpbxsyn_synth_s *p_inst) {
+static void spectrum_note_all_off(bpbxsyn_synth_s *p_inst) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s*)p_inst;
@@ -137,8 +162,8 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
     voice->base.expression_delta = (expr_end - expr_start) / rounded_samples_per_tick;
 }
 
-void bbsyn_spectrum_tick(bpbxsyn_synth_s *p_inst,
-                   const bpbxsyn_tick_ctx_s *tick_ctx)
+static void spectrum_tick(bpbxsyn_synth_s *p_inst,
+                          const bpbxsyn_tick_ctx_s *tick_ctx)
 {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_SPECTRUM);
@@ -160,8 +185,8 @@ void bbsyn_spectrum_tick(bpbxsyn_synth_s *p_inst,
     }
 }
 
-void bbsyn_spectrum_run(bpbxsyn_synth_s *p_inst, float *samples,
-                        size_t frame_count) {
+static void spectrum_run(bpbxsyn_synth_s *p_inst, float *samples,
+                         size_t frame_count) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s*)p_inst;
@@ -646,11 +671,11 @@ const inst_vtable_s bbsyn_inst_spectrum_vtable = {
     .param_info = spectrum_param_info,
     .param_addresses = spectrum_param_addresses,
 
-    .inst_init = (inst_init_f)bpbxsyn_synth_init_spectrum,
-    .inst_note_on = bbsyn_spectrum_note_on,
-    .inst_note_off = bbsyn_spectrum_note_off,
-    .inst_note_all_off = bbsyn_spectrum_note_all_off,
+    .inst_init = spectrum_init,
+    .inst_note_on = spectrum_note_on,
+    .inst_note_off = spectrum_note_off,
+    .inst_note_all_off = spectrum_note_all_off,
 
-    .inst_tick = bbsyn_spectrum_tick,
-    .inst_run = bbsyn_spectrum_run
+    .inst_tick = spectrum_tick,
+    .inst_run = spectrum_run
 };

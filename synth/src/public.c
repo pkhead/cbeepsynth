@@ -9,16 +9,11 @@
 
 #include "util.h"
 #include "alloc.h"
-#include "synth/synth.h"
 #include "envelope.h"
 #include "filtering.h"
 #include "context.h"
 
-#include "synth/wave.h"
-#include "synth/fm.h"
-#include "synth/pwm.h"
-#include "synth/spectrum.h"
-#include "synth/noise.h"
+#include "synth/synth.h"
 #include "fx/effect.h"
 
 static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {

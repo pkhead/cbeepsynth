@@ -1,18 +1,43 @@
-#include "pwm.h"
-
 #include <assert.h>
 #include <string.h>
+#include "synth.h"
 #include "../util.h"
 
 // It's actually closer to half of this, the synthesized pulse amplitude range
 // is only .5 to -.5, but also note that the fundamental sine partial amplitude
 // of a square wave is 4/π times the measured square wave amplitude.
 #define BASE_EXPRESSION 0.04725
-
+#define PWM_MOD_COUNT 1
 #define pulse_width_ratio(x)                                                   \
     ((double)(x) / (BPBXSYN_PULSE_WIDTH_RANGE * 2))
 
-void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst) {
+typedef struct pwm_voice {
+    inst_base_voice_s base;
+
+    double phase;
+    double phase_delta;
+    double phase_delta_scale;
+
+    double pulse_width;
+    double pulse_width_delta;
+
+    double prev_pitch_expression;
+    bool has_prev_pitch_expression;
+} pwm_voice_s;
+
+typedef struct pwm_inst {
+    bpbxsyn_synth_s base;
+
+    // [0] = prev
+    // [1] = cur
+    double pulse_width_param[2];
+    uint8_t aliases;
+
+    pwm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
+} pwm_inst_s;
+
+static void pwm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
+    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
     *inst = (pwm_inst_s){0};
     bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_PULSE_WIDTH);
 
@@ -20,8 +45,8 @@ void bpbxsyn_synth_init_pwm(bpbxsyn_context_s *ctx, pwm_inst_s *inst) {
     inst->pulse_width_param[1] = inst->pulse_width_param[0];
 }
 
-bpbxsyn_voice_id bbsyn_pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
-                              double velocity, int32_t length) {
+static bpbxsyn_voice_id pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
+                                    double velocity, int32_t length) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -41,7 +66,7 @@ bpbxsyn_voice_id bbsyn_pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
     return id;
 }
 
-void bbsyn_pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
+static void pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -49,7 +74,7 @@ void bbsyn_pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
     bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
-void bbsyn_pwm_note_all_off(bpbxsyn_synth_s *p_inst) {
+static void pwm_note_all_off(bpbxsyn_synth_s *p_inst) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -114,7 +139,8 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
         rounded_samples_per_tick;
 }
 
-void bbsyn_pwm_tick(bpbxsyn_synth_s *p_inst, const bpbxsyn_tick_ctx_s *tick_ctx) {
+static void pwm_tick(bpbxsyn_synth_s *p_inst,
+                     const bpbxsyn_tick_ctx_s *tick_ctx) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -129,7 +155,7 @@ void bbsyn_pwm_tick(bpbxsyn_synth_s *p_inst, const bpbxsyn_tick_ctx_s *tick_ctx)
     inst->pulse_width_param[0] = inst->pulse_width_param[1];
 }
 
-void bbsyn_pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
+static void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
     assert(p_inst);
     assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s*)p_inst;
@@ -262,11 +288,11 @@ const inst_vtable_s bbsyn_inst_pwm_vtable = {
     .envelope_target_count = 1,
     .envelope_targets = pwm_env_targets,
 
-    .inst_init = (inst_init_f)bpbxsyn_synth_init_pwm,
-    .inst_note_on = bbsyn_pwm_note_on,
-    .inst_note_off = bbsyn_pwm_note_off,
-    .inst_note_all_off = bbsyn_pwm_note_all_off,
+    .inst_init = pwm_init,
+    .inst_note_on = pwm_note_on,
+    .inst_note_off = pwm_note_off,
+    .inst_note_all_off = pwm_note_all_off,
 
-    .inst_tick = bbsyn_pwm_tick,
-    .inst_run = bbsyn_pwm_run
+    .inst_tick = pwm_tick,
+    .inst_run = pwm_run
 };

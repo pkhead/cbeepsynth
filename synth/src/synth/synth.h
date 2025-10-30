@@ -247,4 +247,11 @@ extern const unison_desc_s bbsyn_unison_info[BPBXSYN_UNISON_COUNT];
 extern const char *bbsyn_bool_enum_values[2];
 extern const char *bbsyn_yes_no_enum_values[2];
 
+extern const inst_vtable_s bbsyn_inst_fm_vtable;
+extern const inst_vtable_s bbsyn_inst_chip_vtable;
+extern const inst_vtable_s bbsyn_inst_pwm_vtable;
+extern const inst_vtable_s bbsyn_inst_harmonics_vtable;
+extern const inst_vtable_s bbsyn_inst_spectrum_vtable;
+extern const inst_vtable_s bbsyn_inst_noise_vtable;
+
 #endif

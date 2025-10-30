@@ -11,6 +11,7 @@
 // channels, the expression is doubled for
 // noise.
 #define SPECTRUM_BASE_EXPRESSION 0.3
+#define SPECTRUM_BASE_PITCH 24
 
 static int hash_spectrum_controls(const uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT]) {
     const int hash_mult =
@@ -98,6 +99,9 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
+    const double pitch_damping = 28.0;
+    const double ref_pitch = SPECTRUM_BASE_PITCH;
+
     const double interval_start = compute_data->varying.interval_start;
     const double interval_end = compute_data->varying.interval_end;
     const double start_pitch = voice->base.current_key + interval_start;
@@ -108,9 +112,11 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
     if (voice->has_prev_pitch_expression) {
         pitch_expression_start = voice->prev_pitch_expression;
     } else {
-        pitch_expression_start = calc_pitch_expression(start_pitch);
+        pitch_expression_start =
+            calc_pitch_expression_ex(start_pitch, ref_pitch, pitch_damping);
     }
-    const double pitch_expression_end = calc_pitch_expression(end_pitch);
+    const double pitch_expression_end =
+        calc_pitch_expression_ex(end_pitch, ref_pitch, pitch_damping);
     voice->has_prev_pitch_expression = true;
     voice->prev_pitch_expression = pitch_expression_end;
 

@@ -89,7 +89,7 @@ void bbsyn_chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
         return;
     }
 
-    memset(inst->delay_line_alloc, 0, inst->delay_line_alloc_size);
+    memset(inst->delay_line_alloc, 0, inst->delay_line_alloc_size * sizeof(float));
     inst->delay_line[0] = inst->delay_line_alloc;
     inst->delay_line[1] = inst->delay_line_alloc + inst->delay_line_size;
 }

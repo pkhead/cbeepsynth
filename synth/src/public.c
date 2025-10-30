@@ -18,6 +18,7 @@
 #include "synth/fm.h"
 #include "synth/pwm.h"
 #include "synth/spectrum.h"
+#include "synth/noise.h"
 #include "fx/panning.h"
 #include "fx/volume.h"
 #include "fx/distortion.h"
@@ -34,7 +35,7 @@ static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_FM
     &bbsyn_inst_fm_vtable,
     // BPBXSYN_SYNTH_NOISE
-    NULL,
+    &bbsyn_inst_noise_vtable,
     // BPBXSYN_SYNTH_PULSE_WIDTH
     &bbsyn_inst_pwm_vtable,
     // BPBXSYN_SYNTH_HARMONICS

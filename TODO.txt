@@ -6,6 +6,8 @@
 - add a way for the user to notify the synth of a "next note"
   per voice. that way, the slide transition will work as it does in BeepBox,
   where the seam between the note is the halfway point of the slide transition.
+- wavetable init uses custom prng instead of C rand
+- fix spectrum pitch damping and reference pitch
 - code formatting/structure changes:
   - make synth/fx-specific calls static rather than defined in the header.
     (the reason i did this in the first place was because i was thinking i

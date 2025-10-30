@@ -10,6 +10,7 @@ set(SOURCES
     src/synth/wave.c
     src/synth/pwm.c
     src/synth/spectrum.c
+    src/synth/noise.c
 
     src/fx/volume.c
     src/fx/panning.c

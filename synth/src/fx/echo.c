@@ -1,9 +1,8 @@
-#include "echo.h"
-
 #include <assert.h>
 #include <math.h>
 #include <string.h>
 
+#include "effect.h"
 #include "../audio.h"
 #include "../alloc.h"
 #include "../util.h"
@@ -31,7 +30,43 @@ a reasonable maximum. This length will have to depend only on the sample rate.
 #define ECHO_SUSTAIN_DEFAULT 3
 #define ECHO_DELAY_DEFAULT 11
 
-void bpbxsyn_effect_init_echo(bpbxsyn_context_s *ctx, echo_effect_s *inst) {
+typedef struct echo_effect {
+    bpbxsyn_effect_s base;
+
+    // for old and new value
+    double sustain[2];
+    double delay[2];
+
+    // left/right delay lines
+    // there are two buffers in order for the code to handle tempo changes
+    // correctly. it needs to copy the data from the old buffer to the new
+    // buffer, so i use double-buffering for this.
+    int delay_line_buffer_idx;
+    float *delay_lines[2][2];
+
+    int delay_line_capacity;
+    int delay_line_size;
+    
+    bool delay_line_dirty;
+    int delay_line_pos;
+    
+    double delay_offset_start;
+    double delay_offset_end;
+    double delay_offset_ratio;
+    double delay_offset_ratio_delta;
+    double echo_mult;
+    double echo_mult_delta;
+    double echo_shelf_a1;
+    double echo_shelf_b0;
+    double echo_shelf_b1;
+
+    // left/right
+    double echo_shelf_sample[2];
+    double echo_shelf_prev_input[2];
+} echo_effect_s;
+
+static void echo_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    echo_effect_s *inst = (echo_effect_s*)p_inst;
     *inst = (echo_effect_s){
         .base.type = BPBXSYN_EFFECT_ECHO,
         .base.ctx = ctx,
@@ -60,7 +95,7 @@ static void echo_stop(bpbxsyn_effect_s *p_inst) {
     inst->echo_shelf_prev_input[1] = 0.0;
 }
 
-void bbsyn_echo_destroy(bpbxsyn_effect_s *p_inst) {
+static void echo_destroy(bpbxsyn_effect_s *p_inst) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -72,8 +107,8 @@ void bbsyn_echo_destroy(bpbxsyn_effect_s *p_inst) {
     }
 }
 
-void bbsyn_echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
-                                    double old_sr, double new_sr)
+static void echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
+                                     double old_sr, double new_sr)
 {
     (void)old_sr;
 
@@ -164,7 +199,7 @@ static void echo_realloc_buffers_if_necessary(echo_effect_s *inst,
     }
 }
 
-void bbsyn_echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+static void echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
 
     if (!inst->delay_lines[inst->delay_line_buffer_idx][0])
@@ -223,8 +258,8 @@ void bbsyn_echo_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->delay[0] = inst->delay[1];
 }
 
-void bbsyn_echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                    size_t frame_count)
+static void echo_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                     size_t frame_count)
 {
     echo_effect_s *const inst = (echo_effect_s *)p_inst;
 
@@ -361,8 +396,8 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_echo_vtable = {
     .struct_size = sizeof(echo_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_echo,
-    .effect_destroy = bbsyn_echo_destroy,
+    .effect_init = echo_init,
+    .effect_destroy = echo_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -372,7 +407,7 @@ const effect_vtable_s bbsyn_effect_echo_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = echo_stop,
-    .effect_sample_rate_changed = bbsyn_echo_sample_rate_changed,
-    .effect_tick = bbsyn_echo_tick,
-    .effect_run = bbsyn_echo_run
+    .effect_sample_rate_changed = echo_sample_rate_changed,
+    .effect_tick = echo_tick,
+    .effect_run = echo_run
 };

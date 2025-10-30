@@ -34,4 +34,14 @@ typedef struct {
                              size_t frame_count);
 } effect_vtable_s;
 
+extern const effect_vtable_s bbsyn_effect_bitcrusher_vtable;
+extern const effect_vtable_s bbsyn_effect_chorus_vtable;
+extern const effect_vtable_s bbsyn_effect_distortion_vtable;
+extern const effect_vtable_s bbsyn_effect_echo_vtable;
+extern const effect_vtable_s bbsyn_effect_eq_vtable;
+extern const effect_vtable_s bbsyn_effect_limiter_vtable;
+extern const effect_vtable_s bbsyn_effect_panning_vtable;
+extern const effect_vtable_s bbsyn_effect_reverb_vtable;
+extern const effect_vtable_s bbsyn_effect_volume_vtable;
+
 #endif

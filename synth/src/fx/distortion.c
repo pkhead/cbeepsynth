@@ -1,27 +1,43 @@
-#include "distortion.h"
-
 #include <assert.h>
 #include <math.h>
 
+#include "effect.h"
 #include "../util.h"
 #include "../audio.h"
 
 
 #define DISTORTION_BASE_VOLUME 0.011
 
-void bpbxsyn_effect_init_distortion(bpbxsyn_context_s *ctx, distortion_effect_s *inst) {
+typedef struct {
+    bpbxsyn_effect_s base;
+
+    // for old and new value
+    double param[2];
+
+    double distortion;
+    double distortion_delta;
+    double drive;
+    double drive_delta;
+
+    double fractional_input[3];
+    double prev_input;
+    double next_output;
+} distortion_effect_s;
+
+static void distortion_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    distortion_effect_s *inst = (distortion_effect_s*)p_inst;
     *inst = (distortion_effect_s){
         .base.type = BPBXSYN_EFFECT_DISTORTION,
         .base.ctx = ctx
     };
 }
 
-void bbsyn_distortion_destroy(bpbxsyn_effect_s *inst) {
+static void distortion_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void bbsyn_distortion_tick(bpbxsyn_effect_s *p_inst,
-                           const bpbxsyn_tick_ctx_s *ctx) {
+static void distortion_tick(bpbxsyn_effect_s *p_inst,
+                            const bpbxsyn_tick_ctx_s *ctx) {
     distortion_effect_s *const inst = (distortion_effect_s*)p_inst;
 
     double rounded_samples_per_tick = 
@@ -56,8 +72,8 @@ void bbsyn_distortion_tick(bpbxsyn_effect_s *p_inst,
     inst->param[0] = inst->param[1];
 }
 
-void bbsyn_distortion_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
-                          size_t frame_count)
+static void distortion_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
+                           size_t frame_count)
 {
     distortion_effect_s *const inst = (distortion_effect_s*)p_inst;
 
@@ -157,8 +173,8 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_distortion_vtable = {
     .struct_size = sizeof(distortion_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_distortion,
-    .effect_destroy = bbsyn_distortion_destroy,
+    .effect_init = distortion_init,
+    .effect_destroy = distortion_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -167,6 +183,6 @@ const effect_vtable_s bbsyn_effect_distortion_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = bbsyn_distortion_tick,
-    .effect_run = bbsyn_distortion_run
+    .effect_tick = distortion_tick,
+    .effect_run = distortion_run
 };

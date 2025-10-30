@@ -1,8 +1,7 @@
-#include "bitcrusher.h"
-
 #include <assert.h>
 #include <math.h>
 
+#include "effect.h"
 #include "../util.h"
 #include "../audio.h"
 
@@ -11,18 +10,38 @@
 #define BITCRUSHER_BASE_VOLUME 0.010
 #define ZERO_EPSILON 1e-16
 
-void bpbxsyn_effect_init_bitcrusher(bpbxsyn_context_s *ctx, bitcrusher_effect_s *inst) {
+typedef struct {
+    bpbxsyn_effect_s base;
+
+    // for old and new value
+    double bit_crush[2];
+    double freq_crush[2];
+
+    double prev_input;
+    double current_output;
+    double phase;
+    double phase_delta;
+    double phase_delta_scale;
+    double scale;
+    double scale_scale;
+    double fold_level;
+    double fold_level_scale;
+} bitcrusher_effect_s;
+
+static void bitcrusher_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    bitcrusher_effect_s *inst = (bitcrusher_effect_s*)p_inst;
     *inst = (bitcrusher_effect_s){
         .base.type = BPBXSYN_EFFECT_BITCRUSHER,
         .base.ctx = ctx
     };
 }
 
-void bbsyn_bitcrusher_destroy(bpbxsyn_effect_s *inst) {
+static void bitcrusher_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void bbsyn_bitcrusher_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+static void bitcrusher_tick(bpbxsyn_effect_s *p_inst,
+                            const bpbxsyn_tick_ctx_s *ctx) {
     bitcrusher_effect_s *const inst = (bitcrusher_effect_s*)p_inst;
     
     const double samples_per_second = inst->base.sample_rate;
@@ -62,8 +81,8 @@ void bbsyn_bitcrusher_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *c
     inst->freq_crush[0] = inst->freq_crush[1];
 }
 
-void bbsyn_bitcrusher_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
-                          size_t frame_count)
+static void bitcrusher_run(bpbxsyn_effect_s *p_inst, float **p_buffer,
+                           size_t frame_count)
 {
     bitcrusher_effect_s *const inst = (bitcrusher_effect_s*)p_inst;
 
@@ -162,8 +181,8 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_bitcrusher_vtable = {
     .struct_size = sizeof(bitcrusher_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_bitcrusher,
-    .effect_destroy = bbsyn_bitcrusher_destroy,
+    .effect_init = bitcrusher_init,
+    .effect_destroy = bitcrusher_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -172,6 +191,6 @@ const effect_vtable_s bbsyn_effect_bitcrusher_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = bbsyn_bitcrusher_tick,
-    .effect_run = bbsyn_bitcrusher_run
+    .effect_tick = bitcrusher_tick,
+    .effect_run = bitcrusher_run
 };

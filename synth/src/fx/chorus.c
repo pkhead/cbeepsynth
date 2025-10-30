@@ -1,7 +1,6 @@
-#include "chorus.h"
-
 #include <assert.h>
 #include <string.h>
+#include "effect.h"
 #include "audio.h"
 #include "alloc.h"
 #include "util.h"
@@ -12,6 +11,27 @@
 
 #define CHORUS_CHANNEL_COUNT 2
 #define CHORUS_VOICE_COUNT 3
+
+typedef struct chorus_effect {
+    bpbxsyn_effect_s base;
+
+    double param[2];
+
+    float *delay_line_alloc;
+    size_t delay_line_alloc_size;
+
+    // left/right delay line
+    float *delay_line[2];
+    int delay_line_size;
+    int delay_line_mask;
+
+    int delay_pos;
+    double phase;
+    double voice_mult;
+    double voice_mult_delta;
+    double combined_mult;
+    double combined_mult_delta;
+} chorus_effect_s;
 
 static const double chorus_delay_offsets[CHORUS_CHANNEL_COUNT][CHORUS_VOICE_COUNT] = {
     {1.51, 2.10, 3.35},
@@ -37,7 +57,8 @@ static double chorus_max_delay(void) {
     return CHORUS_DELAY_RANGE * max;
 }
 
-void bpbxsyn_effect_init_chorus(bpbxsyn_context_s *ctx, chorus_effect_s *inst) {
+static void chorus_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    chorus_effect_s *inst = (chorus_effect_s*)p_inst;
     *inst = (chorus_effect_s){
         .base.ctx = ctx,
         .base.type = BPBXSYN_EFFECT_CHORUS
@@ -56,7 +77,7 @@ static void chorus_stop(bpbxsyn_effect_s *p_inst) {
     inst->delay_pos = 0;
 }
 
-void bbsyn_chorus_destroy(bpbxsyn_effect_s *p_inst) {
+static void chorus_destroy(bpbxsyn_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -66,8 +87,8 @@ void bbsyn_chorus_destroy(bpbxsyn_effect_s *p_inst) {
     inst->delay_line[1] = NULL;
 }
 
-void bbsyn_chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
-                                 double old_sr, double new_sr) {
+static void chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
+                                       double old_sr, double new_sr) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
     if (old_sr == new_sr) return;
@@ -94,7 +115,8 @@ void bbsyn_chorus_sample_rate_changed(bpbxsyn_effect_s *p_inst,
     inst->delay_line[1] = inst->delay_line_alloc + inst->delay_line_size;
 }
 
-void bbsyn_chorus_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+static void chorus_tick(bpbxsyn_effect_s *p_inst,
+                        const bpbxsyn_tick_ctx_s *ctx) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
@@ -118,8 +140,8 @@ void bbsyn_chorus_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) 
     inst->param[0] = inst->param[1];
 }
 
-void bbsyn_chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                      size_t frame_count)
+static void chorus_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                       size_t frame_count)
 {
     chorus_effect_s *const inst = (chorus_effect_s*)p_inst;
 
@@ -251,8 +273,8 @@ static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_chorus_vtable = {
     .struct_size = sizeof(chorus_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_chorus,
-    .effect_destroy = bbsyn_chorus_destroy,
+    .effect_init = chorus_init,
+    .effect_destroy = chorus_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -262,7 +284,7 @@ const effect_vtable_s bbsyn_effect_chorus_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = chorus_stop,
-    .effect_sample_rate_changed = bbsyn_chorus_sample_rate_changed,
-    .effect_tick = bbsyn_chorus_tick,
-    .effect_run = bbsyn_chorus_run
+    .effect_sample_rate_changed = chorus_sample_rate_changed,
+    .effect_tick = chorus_tick,
+    .effect_run = chorus_run
 };

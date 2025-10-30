@@ -1,17 +1,33 @@
-#include "eq.h"
-
 #include <stdbool.h>
 #include <math.h>
-#include "audio.h"
 
-void bpbxsyn_effect_init_eq(bpbxsyn_context_s *ctx, eq_effect_s *inst) {
+#include "effect.h"
+#include "../audio.h"
+#include "../filtering.h"
+
+typedef struct {
+    bpbxsyn_effect_s base;
+    
+    // current state of the note filter
+    filter_group_s params;
+
+    // previous state of the note filter
+    filter_group_s old_params;
+
+    dyn_biquad_s filters[FILTER_GROUP_COUNT];
+    double filter_volume;
+    double filter_input[2];
+} eq_effect_s;
+
+static void eq_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    eq_effect_s *inst = (eq_effect_s*)p_inst;
     *inst = (eq_effect_s) {
         .base.type = BPBXSYN_EFFECT_EQ,
         .base.ctx = ctx
     };
 }
 
-void bbsyn_eq_destroy(bpbxsyn_effect_s *inst) {
+static void eq_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
@@ -21,9 +37,7 @@ static void eq_stop(bpbxsyn_effect_s *p_inst) {
     inst->filter_input[1] = 0.0;
 }
 
-// void bbsyn_panning_sample_rate_changed(bpbxsyn_effect_s *inst,
-//                                  double old_sr, double new_sr);
-void bbsyn_eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
+static void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     eq_effect_s *const inst = (eq_effect_s*)p_inst;
 
     const double sample_rate = inst->base.sample_rate;
@@ -73,8 +87,8 @@ void bbsyn_eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
     inst->filter_volume = eq_filter_volume;
 }
 
-void bbsyn_eq_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                  size_t frame_count) {
+static void eq_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                   size_t frame_count) {
     eq_effect_s *const inst = (eq_effect_s*)p_inst;
 
     float *const audio = buffer[0];
@@ -414,8 +428,8 @@ static const size_t param_addresses[BPBXSYN_EQ_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_eq_vtable = {
     .struct_size = sizeof(eq_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_eq,
-    .effect_destroy = bbsyn_eq_destroy,
+    .effect_init = eq_init,
+    .effect_destroy = eq_destroy,
 
     .input_channel_count = 1,
     .output_channel_count = 1,
@@ -425,6 +439,6 @@ const effect_vtable_s bbsyn_effect_eq_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = eq_stop,
-    .effect_tick = bbsyn_eq_tick,
-    .effect_run = bbsyn_eq_run
+    .effect_tick = eq_tick,
+    .effect_run = eq_run
 };

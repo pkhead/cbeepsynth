@@ -1,8 +1,8 @@
-#include "reverb.h"
-
 #include <assert.h>
 #include <math.h>
 #include <string.h>
+
+#include "effect.h"
 #include "../alloc.h"
 #include "../log.h"
 #include "../util.h"
@@ -13,19 +13,43 @@
 // TODO: think of better/more efficient way of making reverb sample
 // rate-agnostic. i just "scale" the buffer operations and this requires me to
 // use modulo rather than and. Not as performant then, i guess.
+// (p.s.: does it even make a noticeable performance impact?)
 #define REVERB_DELAY_BUFFER_SIZE 16384
 #define REVERB_SHELF_HZ 8000.0 // The cutoff freq of the shelf filter that is
                                // used to decay reverb.
 #define REVERB_SHELF_GAIN (pow(2.0, -1.5))
 
-void bpbxsyn_effect_init_reverb(bpbxsyn_context_s *ctx, reverb_effect_s *inst) {
+typedef struct reverb_effect {
+    bpbxsyn_effect_s base;
+
+    double param[2];
+
+    float *delay_line;
+    int delay_line_size;
+    int delay_line_mask;
+    int delay_pos;
+
+    int delay_offsets[3];
+
+    double mult;
+    double mult_delta;
+
+    double shelf_a1;
+    double shelf_b0;
+    double shelf_b1;
+    double shelf_sample[4];
+    double shelf_prev_input[4];
+} reverb_effect_s;
+
+static void reverb_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    reverb_effect_s *inst = (reverb_effect_s*)p_inst;
     *inst = (reverb_effect_s) {
         .base.type = BPBXSYN_EFFECT_REVERB,
         .base.ctx = ctx
     };
 }
 
-void bbsyn_reverb_destroy(bpbxsyn_effect_s *p_inst) {
+static void reverb_destroy(bpbxsyn_effect_s *p_inst) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
     const bpbxsyn_context_s *ctx = inst->base.ctx;
 
@@ -40,8 +64,8 @@ static void reverb_stop(bpbxsyn_effect_s *p_inst) {
     }
 }
 
-void bbsyn_reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
-                                      double new_sr)
+static void reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
+                                       double new_sr)
 {
     if (new_sr == old_sr)
         return;
@@ -70,8 +94,8 @@ void bbsyn_reverb_sample_rate_changed(bpbxsyn_effect_s *p_inst, double old_sr,
     }
 }
 
-void bbsyn_reverb_tick(bpbxsyn_effect_s *p_inst,
-                       const bpbxsyn_tick_ctx_s *ctx) {
+static void reverb_tick(bpbxsyn_effect_s *p_inst,
+                        const bpbxsyn_tick_ctx_s *ctx) {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
     const double rounded_samples_per_tick =
@@ -98,8 +122,8 @@ void bbsyn_reverb_tick(bpbxsyn_effect_s *p_inst,
     inst->param[0] = inst->param[1];
 }
 
-void bbsyn_reverb_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                      size_t frame_count)
+static void reverb_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                       size_t frame_count)
 {
     reverb_effect_s *const inst = (reverb_effect_s*)p_inst;
 
@@ -227,8 +251,8 @@ static const size_t param_addresses[BPBXSYN_REVERB_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_reverb_vtable = {
     .struct_size = sizeof(reverb_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_reverb,
-    .effect_destroy = bbsyn_reverb_destroy,
+    .effect_init = reverb_init,
+    .effect_destroy = reverb_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -238,7 +262,7 @@ const effect_vtable_s bbsyn_effect_reverb_vtable = {
     .param_addresses = param_addresses,
 
     .effect_stop = reverb_stop,
-    .effect_sample_rate_changed = bbsyn_reverb_sample_rate_changed,
-    .effect_tick = bbsyn_reverb_tick,
-    .effect_run = bbsyn_reverb_run
+    .effect_sample_rate_changed = reverb_sample_rate_changed,
+    .effect_tick = reverb_tick,
+    .effect_run = reverb_run
 };

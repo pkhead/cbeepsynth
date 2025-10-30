@@ -1,11 +1,24 @@
-#include "limiter.h"
-
 #include <assert.h>
 #include <math.h>
 
-void bpbxsyn_effect_init_limiter(bpbxsyn_context_s *ctx,
-                                 limiter_effect_s *inst)
-{
+#include "effect.h"
+
+typedef struct {
+    bpbxsyn_effect_s base;
+    
+    double master_gain;
+    double compression_threshold;
+    double compression_ratio;
+    double limit_threshold;
+    double limit_ratio;
+    double rise;
+    double decay;
+
+    double limit;
+} limiter_effect_s;
+
+static void limiter_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
+    limiter_effect_s *inst = (limiter_effect_s*)p_inst;
     *inst = (limiter_effect_s) {
         .base.type = BPBXSYN_EFFECT_LIMITER,
         .base.ctx = ctx,
@@ -22,17 +35,18 @@ void bpbxsyn_effect_init_limiter(bpbxsyn_context_s *ctx,
     };
 }
 
-void bbsyn_limiter_destroy(bpbxsyn_effect_s *inst) {
+static void limiter_destroy(bpbxsyn_effect_s *inst) {
     (void)inst;
 }
 
-void bbsyn_limiter_tick(bpbxsyn_effect_s *inst, const bpbxsyn_tick_ctx_s *ctx) {
+static void limiter_tick(bpbxsyn_effect_s *inst,
+                         const bpbxsyn_tick_ctx_s *ctx) {
     (void)inst;
     (void)ctx;
 }
 
-void bbsyn_limiter_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                       size_t frame_count) {
+static void limiter_run(bpbxsyn_effect_s *p_inst, float **buffer,
+                        size_t frame_count) {
     limiter_effect_s *const inst = (limiter_effect_s*)p_inst;
 
     const double decay = 1.0 - pow(0.5, inst->decay / inst->base.sample_rate);
@@ -158,8 +172,8 @@ static const size_t param_addresses[BPBXSYN_LIMITER_PARAM_COUNT] = {
 
 const effect_vtable_s bbsyn_effect_limiter_vtable = {
     .struct_size = sizeof(limiter_effect_s),
-    .effect_init = (effect_init_f)bpbxsyn_effect_init_limiter,
-    .effect_destroy = bbsyn_limiter_destroy,
+    .effect_init = limiter_init,
+    .effect_destroy = limiter_destroy,
 
     .input_channel_count = 2,
     .output_channel_count = 2,
@@ -168,6 +182,6 @@ const effect_vtable_s bbsyn_effect_limiter_vtable = {
     .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_tick = bbsyn_limiter_tick,
-    .effect_run = bbsyn_limiter_run
+    .effect_tick = limiter_tick,
+    .effect_run = limiter_run
 };

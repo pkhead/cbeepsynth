@@ -19,15 +19,7 @@
 #include "synth/pwm.h"
 #include "synth/spectrum.h"
 #include "synth/noise.h"
-#include "fx/panning.h"
-#include "fx/volume.h"
-#include "fx/distortion.h"
-#include "fx/bitcrusher.h"
-#include "fx/eq.h"
-#include "fx/chorus.h"
-#include "fx/echo.h"
-#include "fx/reverb.h"
-#include "fx/limiter.h"
+#include "fx/effect.h"
 
 static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_CHIP

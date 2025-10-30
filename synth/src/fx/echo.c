@@ -104,6 +104,9 @@ void bbsyn_echo_sample_rate_changed(bpbxsyn_effect_s *p_inst,
             bpbxsyn_free(ctx, inst->delay_lines[i][1]);
             inst->delay_lines[i][0] = NULL;
             inst->delay_lines[i][1] = NULL;
+        } else {
+            memset(inst->delay_lines[i][0], 0, alloc_size);
+            memset(inst->delay_lines[i][1], 0, alloc_size);
         }
     }
 

@@ -30,6 +30,7 @@ uint64_t bbsyn_random(prng_state_s *state) {
     return result;
 }
 
+#define RAND_PRECISION 0xffffffff
 double bbsyn_frandom(prng_state_s *state) {
-    return (double)(bbsyn_random(state) & UINT32_MAX) / UINT32_MAX;
+    return (double)(bbsyn_random(state) % RAND_PRECISION) / RAND_PRECISION;
 }

@@ -235,8 +235,10 @@ double bbsyn_inst_calc_arp_speed(double arp_speed_setting);
 
 double bbsyn_note_size_to_volume_mult(double size);
 double bbsyn_get_lfo_amplitude(bpbxsyn_vibrato_type_e type, double secs_into_bar);
-// double calc_pitch_expression(double pitch);
-#define calc_pitch_expression(pitch) (pow(2.0, -((pitch) - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING))
+#define calc_pitch_expression_ex(pitch, refpitch, damping) \
+    (pow(2.0, -((pitch) - (refpitch)) / (damping)))
+#define calc_pitch_expression(pitch) \
+    calc_pitch_expression_ex(pitch, EXPRESSION_REFERENCE_PITCH, PITCH_DAMPING)
 
 extern bpbxsyn_param_info_s bbsyn_base_param_info[BPBXSYN_BASE_PARAM_COUNT];
 extern size_t bbsyn_base_param_offsets[BPBXSYN_BASE_PARAM_COUNT];

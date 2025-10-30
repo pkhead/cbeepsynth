@@ -615,14 +615,16 @@ void bpbxsyn_effect_channel_info(bpbxsyn_effect_type_e type, int *input,
 }
 
 void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
-                                                double sample_rate) {
+                                    double sample_rate) {
     const effect_vtable_s *vtable = effect_vtables[effect->type];
     assert(vtable);
 
     double old_sr = effect->sample_rate;
-    effect->sample_rate = sample_rate;
-    if (vtable->effect_sample_rate_changed)
-        vtable->effect_sample_rate_changed(effect, old_sr, sample_rate);
+    if (old_sr != sample_rate) {
+        effect->sample_rate = sample_rate;
+        if (vtable->effect_sample_rate_changed)
+            vtable->effect_sample_rate_changed(effect, old_sr, sample_rate);
+    }
 }
 
 // void bpbxsyn_effect_begin_transport(bpbxsyn_effect_s *effect,

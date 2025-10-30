@@ -6,6 +6,12 @@
 #include "../context.h"
 
 
+// i feel like noise volume should be halved for pitch channels to be consistent
+// with spectrum and the comment "drums tend to be loud but brief" for some
+// drumset config thing. but several mods have implemented noise in pitch
+// channels and the volume level is the same regardless of what type of channel
+// the instrument is in. i should probably value compatibility than what i feel
+// is shaktool's extrapolated intentions.
 #define BASE_EXPRESSION 0.19
 
 static void noise_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
@@ -66,7 +72,10 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    const int base_pitch = inst->wavetable->base_pitch;
+    int base_pitch = inst->wavetable->base_pitch;
+    if (!inst->is_noise_channel)
+        base_pitch -= 12;
+
     const double pitch_damping = inst->wavetable->is_soft ? 24.0 : 60.0;
 
     const double interval_start = compute_data->varying.interval_start;
@@ -184,7 +193,7 @@ void noise_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 
         voice->phase = phase / NOISE_WAVETABLE_LENGTH;
         voice->phase_delta = phase_delta;
-        voice->base.expression_delta = expression;
+        voice->base.expression_delta = expression_delta;
         voice->noise_sample = noise_sample;
 
         bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
@@ -220,6 +229,17 @@ static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = 
     {
         .type = BPBXSYN_PARAM_UINT8,
         .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .id = "noiseChn",
+        .group = "Basic Noise",
+        .name = "Is Noise Channel?",
+        .min_value = 0,
+        .max_value = 1,
+        .default_value = 0,
+        .enum_values = bbsyn_yes_no_enum_values
+    },
+    {
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
         .id = "noiseTyp",
         .group = "Basic Noise",
         .name = "Noise Type",
@@ -231,7 +251,8 @@ static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = 
 };
 
 static const size_t noise_param_addresses[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
-    offsetof(noise_inst_s, noise_type)
+    offsetof(noise_inst_s, is_noise_channel),
+    offsetof(noise_inst_s, noise_type),
 };
 
 const inst_vtable_s bbsyn_inst_noise_vtable = {

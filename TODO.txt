@@ -8,6 +8,8 @@
   where the seam between the note is the halfway point of the slide transition.
 - wavetable init uses custom prng instead of C rand
 - fix spectrum pitch damping and reference pitch
+- make enum values lowercase
+- implement more noise types
 - code formatting/structure changes:
   - make synth/fx-specific calls static rather than defined in the header.
     (the reason i did this in the first place was because i was thinking i

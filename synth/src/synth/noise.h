@@ -21,6 +21,7 @@ typedef struct noise_voice {
 typedef struct noise_inst {
     bpbxsyn_synth_s base;
     uint8_t noise_type;
+    bool is_noise_channel;
     const noise_wavetable_s *wavetable;
     noise_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
 

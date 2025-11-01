@@ -6,17 +6,11 @@
 - add a way for the user to notify the synth of a "next note"
   per voice. that way, the slide transition will work as it does in BeepBox,
   where the seam between the note is the halfway point of the slide transition.
-- wavetable init uses custom prng instead of C rand
-- fix spectrum pitch damping and reference pitch
-- make enum values lowercase
-- implement more noise types
 - code formatting/structure changes:
-  - make synth/fx-specific calls static rather than defined in the header.
-    (the reason i did this in the first place was because i was thinking i
-    should at one point make it possible to call these directly so that you
-    wouldn't need to dynamically allocate memory for them. But now i realize
-    such a feat is not possible considering delay lines.)
   - some synth-related stuff are still named "inst"
+- unison toggle for noise type?
+   (because the none unison type makes it 1.4x louder than normal, so there is
+   no "no-op" unison type)
 
 BUGS:
 - vibrato starts from wrong beat in fl studio. Could either clap-wrapper not

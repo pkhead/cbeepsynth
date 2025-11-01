@@ -136,11 +136,12 @@ typedef enum {
 ////////////////
 // Noise data //
 ////////////////
-#define BPBXSYN_NOISE_PARAM_COUNT 2
+#define BPBXSYN_NOISE_PARAM_COUNT 3
 
 typedef enum {
     BPBXSYN_NOISE_PARAM_IS_NOISE_CHANNEL = BPBXSYN_BASE_PARAM_COUNT,
-    BPBXSYN_NOISE_PARAM_TYPE
+    BPBXSYN_NOISE_PARAM_TYPE,
+    BPBXSYN_NOISE_PARAM_UNISON
 } bpbxsyn_noise_param_e;
 
 //////////////////////

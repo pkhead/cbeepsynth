@@ -2,11 +2,14 @@
 #include <string.h>
 #include "synth.h"
 #include "../util.h"
+#include "../param_util.h"
 #include "../context.h"
 
 
 #define CHIP_MOD_COUNT 1
 #define HARMONICS_MOD_COUNT 1
+
+static_assert(UNISON_MAX_VOICES == 2, "UNISON_MAX_VOICES must be 2");
 
 typedef struct {
     inst_base_voice_s base;
@@ -448,11 +451,6 @@ static const char *waveform_enum_values[BPBXSYN_CHIP_WAVE_COUNT] = {
     "trumpet", "electric guitar", "organ", "pan flute", "glitch"
 };
 
-static const char *unison_enum_values[BPBXSYN_UNISON_COUNT] = {
-    "none", "shimmer", "hum", "honky tonk", "dissonant",
-    "fifth", "octave", "bowed", "piano", "warbled"
-};
-
 static const bpbxsyn_param_info_s chip_param_info[BPBXSYN_CHIP_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
@@ -479,7 +477,7 @@ static const bpbxsyn_param_info_s chip_param_info[BPBXSYN_CHIP_PARAM_COUNT] = {
         .max_value = BPBXSYN_UNISON_COUNT - 1,
         .default_value = BPBXSYN_UNISON_NONE,
 
-        .enum_values = unison_enum_values
+        .enum_values = bbsyn_unison_enum_values
     },
 };
 
@@ -536,7 +534,7 @@ static const bpbxsyn_param_info_s harmonics_param_info[] = {
         .max_value = BPBXSYN_UNISON_COUNT - 1,
         .default_value = BPBXSYN_UNISON_NONE,
 
-        .enum_values = unison_enum_values
+        .enum_values = bbsyn_unison_enum_values
     },
     
     {

@@ -5,7 +5,6 @@
 #include "../context.h"
 #include "../param_util.h"
 
-
 // i feel like noise volume should be halved for pitch channels to be consistent
 // with spectrum and the comment "drums tend to be loud but brief" for some
 // drumset config thing. but several mods have implemented noise in pitch
@@ -14,13 +13,15 @@
 // is shaktool's extrapolated intentions.
 #define BASE_EXPRESSION 0.19
 
+static_assert(UNISON_MAX_VOICES == 2, "UNISON_MAX_VOICES must be 2");
+
 typedef struct noise_voice {
     inst_base_voice_s base;
 
-    double phase;
-    double phase_delta;
-    double phase_delta_scale;
-    double noise_sample;
+    double phase[UNISON_MAX_VOICES];
+    double phase_delta[UNISON_MAX_VOICES];
+    double phase_delta_scale[UNISON_MAX_VOICES];
+    double noise_sample[UNISON_MAX_VOICES];
 
     double prev_pitch_expression;
     bool has_prev_pitch_expression;
@@ -28,7 +29,10 @@ typedef struct noise_voice {
 
 typedef struct noise_inst {
     bpbxsyn_synth_s base;
+
     uint8_t noise_type;
+    uint8_t unison_type;
+
     bool is_noise_channel;
     const noise_wavetable_s *wavetable;
     noise_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
@@ -93,6 +97,7 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
         compute_data->varying.rounded_samples_per_tick;
 
     voice_compute_varying_s *const varying = &compute_data->varying;
+    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
 
     int base_pitch = inst->wavetable->base_pitch;
     if (!inst->is_noise_channel)
@@ -118,19 +123,39 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
     voice->has_prev_pitch_expression = true;
     voice->prev_pitch_expression = pitch_expression_end;
 
-    const double expr_mult = inst->wavetable->expression;
+    const double expr_mult = inst->wavetable->expression * unison.expression *
+                             unison.voices / 2.0;
 
-    const double expr_start =
-        BASE_EXPRESSION * varying->expr_start * pitch_expression_start * expr_mult;
-    const double expr_end =
-        BASE_EXPRESSION * varying->expr_end * pitch_expression_end * expr_mult;
+    const double expr_start = BASE_EXPRESSION * varying->expr_start *
+                              pitch_expression_start * expr_mult;
+    const double expr_end = BASE_EXPRESSION * varying->expr_end *
+                            pitch_expression_end * expr_mult;
 
+    const double unison_env_start =
+        voice->base.env_computer.envelope_starts[BPBXSYN_ENV_INDEX_UNISON];
+    const double unison_env_end =
+        voice->base.env_computer.envelope_ends[BPBXSYN_ENV_INDEX_UNISON];
+
+    const double freq_end_ratio = pow(2.0, (interval_end - interval_start) * 1.0 / 12.0);
+    const double base_phase_delta_scale = pow(freq_end_ratio, 1.0 / rounded_samples_per_tick);
     const double start_freq = key_to_hz_d(start_pitch);
-    const double end_freq = key_to_hz_d(end_pitch);
 
-    voice->phase_delta = start_freq * sample_len;
-    voice->phase_delta_scale =
-        pow(end_freq / start_freq, 1.0 / rounded_samples_per_tick);
+    // TODO: specialIntervalMult has to do with arpeggios/custom interval
+    // But if there is none it will always be 1.0
+    assert(UNISON_MAX_VOICES == 2);
+    double unison_starts[UNISON_MAX_VOICES];
+    double unison_ends[UNISON_MAX_VOICES];
+
+    unison_starts[0] = pow(2.0, (unison.offset + unison.spread) * unison_env_start / 12.0);
+    unison_ends[0] = pow(2.0, (unison.offset + unison.spread) * unison_env_end / 12.0);
+    unison_starts[1] = pow(2.0, (unison.offset - unison.spread) * unison_env_start / 12.0)/* * specialIntervalMult*/;
+    unison_ends[1] = pow(2.0, (unison.offset - unison.spread) * unison_env_end / 12.0)/* * specialIntervalMult*/;
+
+    for (int i = 0; i < UNISON_MAX_VOICES; ++i) {
+        voice->phase_delta[i] = start_freq * sample_len * unison_starts[i];
+        voice->phase_delta_scale[i] = base_phase_delta_scale *
+            pow(unison_ends[i] / unison_starts[i], 1.0 / rounded_samples_per_tick);
+    }
     
     voice->base.expression = expr_start;
     voice->base.expression_delta =
@@ -165,47 +190,70 @@ void noise_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 
     const float *wave = inst->wavetable->samples;
     const double pitch_filter_mult = inst->wavetable->pitch_filter_mult;
+    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
 
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
         noise_voice_s *voice = &inst->voices[i];
         if (!voice_is_computing(&voice->base)) continue;
-        
-        double phase_delta = voice->phase_delta;
-        const double phase_delta_scale = voice->phase_delta_scale;
+
+        double phase[UNISON_MAX_VOICES];
+        double phase_delta[UNISON_MAX_VOICES];
+        double phase_delta_scale[UNISON_MAX_VOICES];
+        double noise_sample[UNISON_MAX_VOICES];
+        double pitch_relfilter[UNISON_MAX_VOICES];
+
         double expression = voice->base.expression;
         const double expression_delta = voice->base.expression_delta;
-        double phase = fmod(voice->phase, 1.0) * NOISE_WAVETABLE_LENGTH;
-        if (phase == 0.0) {
-            // Zero phase means the tone was reset, just give noise a random
-            // start phase instead.
-            phase = bbsyn_frandom(&inst->prng_state) * NOISE_WAVETABLE_LENGTH;
-        }
-        const int phase_mask = NOISE_WAVETABLE_LENGTH - 1;
-        double noise_sample = voice->noise_sample;
 
+        const bool phase_sync = unison.voices == 1 && unison.spread == 0; /*TODO: && customInterval*/
+
+        // compiler pls unroll this loop?
+        for (int v = 0; v < UNISON_MAX_VOICES; ++v) {
+            phase_delta[v] = voice->phase_delta[v];
+            phase_delta_scale[v] = voice->phase_delta_scale[v];
+            phase[v] = fmod(voice->phase[v], 1.0) * NOISE_WAVETABLE_LENGTH;
+
+            if (v > 0 && phase_sync) {
+                phase[v] = phase[0];
+            } else if (phase[v] == 0.0) {
+                // Zero phase means the tone was reset, just give noise a random
+                // start phase instead.
+                phase[v] = bbsyn_frandom(&inst->prng_state) * NOISE_WAVETABLE_LENGTH;
+            }
+
+            noise_sample[v] = voice->noise_sample[v];
+
+            // This is for a "legacy" style simplified 1st order lowpass filter
+            // with a cutoff frequency that is relative to the tone's
+            // fundamental frequency.
+            pitch_relfilter[v] = min(1.0, phase_delta[v] * pitch_filter_mult);
+        }
+        
+        const int phase_mask = NOISE_WAVETABLE_LENGTH - 1;
         double x0 = voice->base.note_filter_input[0];
         double x1 = voice->base.note_filter_input[1];
 
-        // This is for a "legacy" style simplified 1st order lowpass filter with
-        // a cutoff frequency that is relative to the tone's fundamental
-        // frequency.
-        const double pitch_relfilter =
-            min(1.0, phase_delta * pitch_filter_mult);
-
         for (size_t smp = 0; smp < frame_count; ++smp) {
-            const double wave_sample = wave[(int)phase & phase_mask];
+            // compiler pls unroll this loop?
+            for (int v = 0; v < UNISON_MAX_VOICES; ++v) {
+                const double wave_sample = wave[(int)phase[v] & phase_mask];
+                noise_sample[v] += (wave_sample - noise_sample[v]) *
+                                   pitch_relfilter[v];
+            }
 
-            noise_sample += (wave_sample - noise_sample) * pitch_relfilter;
-
-            const double input_sample = noise_sample;
+            const double input_sample = noise_sample[0] +
+                                        noise_sample[1] * unison.sign;
             const double sample = bbsyn_apply_filters(
                 input_sample, x0, x1,
                 voice->base.note_filters);
             x1 = x0;
             x0 = input_sample;
 
-            phase += phase_delta;
-            phase_delta *= phase_delta_scale;
+            // compiler pls unroll this loop?
+            for (int v = 0; v < UNISON_MAX_VOICES; ++v) {
+                phase[v] += phase_delta[v];
+                phase_delta[v] *= phase_delta_scale[v];
+            }
 
             const double output = sample * expression;
             expression += expression_delta;
@@ -213,10 +261,14 @@ void noise_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
             samples[smp] += (float)output;
         }
 
-        voice->phase = phase / NOISE_WAVETABLE_LENGTH;
-        voice->phase_delta = phase_delta;
+        // compiler pls unroll this loop?
+        for (int v = 0; v < UNISON_MAX_VOICES; ++v) {
+            voice->phase[v] = phase[v] / NOISE_WAVETABLE_LENGTH;
+            voice->phase_delta[v] = phase_delta[v];
+            voice->noise_sample[v] = noise_sample[v];
+        }
+
         voice->base.expression_delta = expression_delta;
-        voice->noise_sample = noise_sample;
 
         bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x0;
@@ -269,12 +321,24 @@ static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = 
         .max_value = BPBXSYN_NOISE_COUNT - 1,
         .default_value = BPBXSYN_NOISE_RETRO,
         .enum_values = noise_enum_values
+    },
+    {
+        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .id = "noiseUni",
+        .group = "Basic Noise",
+        .name = "Unison",
+        .min_value = 0,
+        .max_value = BPBXSYN_UNISON_COUNT - 1,
+        .default_value = BPBXSYN_UNISON_NONE,
+        .enum_values = bbsyn_unison_enum_values
     }
 };
 
-static const size_t noise_param_addresses[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
+static const size_t noise_param_addresses[BPBXSYN_NOISE_PARAM_COUNT] = {
     offsetof(noise_inst_s, is_noise_channel),
     offsetof(noise_inst_s, noise_type),
+    offsetof(noise_inst_s, unison_type),
 };
 
 const inst_vtable_s bbsyn_inst_noise_vtable = {

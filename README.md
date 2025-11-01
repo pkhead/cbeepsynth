@@ -20,6 +20,10 @@ This project is structured such that the synth library can be used independently
 - Song playback
 
 ## Building/Usage
+Prerequisites:
+- C99-compliant compiler
+- CMake
+
 Clone or get this repository as a Git submodule
 ```bash
 git clone https://github.com/pkhead/cbeepsynth

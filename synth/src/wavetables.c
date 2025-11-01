@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include "util.h"
 #include "fft.h"
@@ -225,8 +226,6 @@ void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
 #define INIT_WAVETABLE_N(INDEX, EXPR, ...) \
     INIT_WAVETABLE_GENERIC(INDEX, EXPR, center_and_normalize_wave, __VA_ARGS__)
 
-#define RANDOM() ((float)rand() / RAND_MAX)
-
 static void center_wave(float *wave, size_t length) {
     length--;
 
@@ -405,11 +404,13 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
 #endif
 
     // generate noise wavetables
+    prng_state_s prng_state = bbsyn_random_seeded_state((uint64_t)clock());
+    #define RANDOM() (float)(bbsyn_frandom(&prng_state))
 
     // there is an extra 0 at the end of each wavetable.
     // This is just for interpolation purposes.
     for (int i = 0; i < BPBXSYN_NOISE_COUNT; i++) {
-        wavetables->noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0;
+        wavetables->noise_wavetables[i].samples[NOISE_WAVETABLE_LENGTH] = 0.0f;
     }
 
     // The "retro" drum uses a "Linear Feedback Shift Register" similar to the
@@ -493,7 +494,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         }
     }
 
-    // TODO: hollow drums
     // "hollow" drums, designed in frequency space and then converted via FFT:
     {
         noise_wavetable_s *wavetable =
@@ -503,7 +503,17 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         wavetable->pitch_filter_mult = 1.0;
         wavetable->is_soft = true;
         
-        // TODO: generation
+        float *wave = wavetable->samples;
+        memset(wave, 0, NOISE_WAVETABLE_LENGTH * sizeof(float));
+        draw_noise_spectrum(
+            wavetables, wave, NOISE_WAVETABLE_LENGTH,
+            10.0, 11.0, 1.0, 1.0, 0.0);
+        draw_noise_spectrum(
+            wavetables, wave, NOISE_WAVETABLE_LENGTH,
+            11.0, 14.0, 0.6578, 0.6578, 0.0);
+        bbsyn_fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
+        bbsyn_fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
+                              1.0 / sqrt(NOISE_WAVETABLE_LENGTH));
     }
 
     // "Shine" drums from modbox!
@@ -516,7 +526,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         wavetable->pitch_filter_mult = 1024.0;
         wavetable->is_soft = false;
         
-        // TODO: generation
         float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
@@ -529,7 +538,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         }
     }
 
-    // TODO: deep drums
     // "Deep" drums from modbox!
     {
         noise_wavetable_s *wavetable =
@@ -539,7 +547,17 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
         wavetable->pitch_filter_mult = 1024.0;
         wavetable->is_soft = true;
         
-        // TODO: generation
+        float *wave = wavetable->samples;
+        memset(wave, 0, NOISE_WAVETABLE_LENGTH * sizeof(float));
+        draw_noise_spectrum(
+            wavetables, wave, NOISE_WAVETABLE_LENGTH,
+            1.0, 10.0, 1.0, 1.0, 0.0);
+        draw_noise_spectrum(
+            wavetables, wave, NOISE_WAVETABLE_LENGTH,
+            20.0, 14.0, -2.0, -2.0, 0.0);
+        bbsyn_fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
+        bbsyn_fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
+                              1.0 / sqrt(NOISE_WAVETABLE_LENGTH));
     }
 
     // "Cutter" drums from modbox!
@@ -585,4 +603,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
     }
 
     return true;
+
+    #undef RANDOM
 }

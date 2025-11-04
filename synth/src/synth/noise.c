@@ -13,7 +13,9 @@
 // is shaktool's extrapolated intentions.
 #define BASE_EXPRESSION 0.19
 
-static_assert(UNISON_MAX_VOICES == 2, "UNISON_MAX_VOICES must be 2");
+#if UNISON_MAX_VOICES != 2
+#error UNSION_MAX_VOICES must be 2; code in this file assumes that fact
+#endif
 
 typedef struct noise_voice {
     inst_base_voice_s base;

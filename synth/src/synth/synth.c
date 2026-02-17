@@ -263,8 +263,6 @@ bpbxsyn_voice_id bbsyn_trigger_voice(bpbxsyn_synth_s *inst,
             }
         
     } else {
-        memset(voice, 0, sizeof_voice);
-
         *voice = (inst_base_voice_s) {
             .flags = VOICE_FLAG_ACTIVE | VOICE_FLAG_TRIGGERED,
 

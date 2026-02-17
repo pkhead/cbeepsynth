@@ -11,8 +11,7 @@ This project is structured such that the synth library can be used independently
 - Instruments:
     - Custom chip
     - FM6 (from mods)
-    - Noise
-    - Picked string
+    - Picked string (wip)
     - Supersaw
 
 ### Song

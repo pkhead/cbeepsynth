@@ -105,7 +105,7 @@ typedef struct picked_inst {
     picked_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
     float *delay_line_alloc; // a continguous list of delay lines, of size
                              // delay_line_size
-    size_t delay_line_size;
+    int delay_line_size;
 } picked_inst_s;
 
 static void pstring_reset(pstring_s *self)
@@ -364,8 +364,8 @@ static void picked_note_all_off(bpbxsyn_synth_s *p_inst) {
     bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
-static void picked_set_sample_rate(bpbxsyn_synth_s *p_inst, double old,
-                                   double new)
+static void picked_sample_rate_changed(bpbxsyn_synth_s *p_inst, double old,
+                                       double new)
 {
     if (new == old) return;
 
@@ -380,7 +380,7 @@ static void picked_set_sample_rate(bpbxsyn_synth_s *p_inst, double old,
     // The delay line buffer will get reused for other tones so might as well
     // start off with a buffer size that is big enough for most notes.
     const int likely_maximum_length = (int) ceil(4 * new / key_to_hz_d(12.0));
-    size_t dl_size = bbsyn_fitting_power_of_two(likely_maximum_length);
+    int dl_size = bbsyn_fitting_power_of_two(likely_maximum_length);
 
     float *dl_alloc = bpbxsyn_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
     if (!dl_alloc)
@@ -396,7 +396,7 @@ static void picked_set_sample_rate(bpbxsyn_synth_s *p_inst, double old,
 
     bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG,
                   "allocated %llu bytes of delay line buffers",
-                  DELAY_LINE_COUNT * dl_size * sizeof(float));
+                  (size_t)dl_size * DELAY_LINE_COUNT * sizeof(float));
 
     inst->delay_line_size = dl_size;
     inst->delay_line_alloc = dl_alloc;
@@ -1005,6 +1005,7 @@ const inst_vtable_s bbsyn_inst_picked_vtable = {
     .inst_note_on = picked_note_on,
     .inst_note_off = picked_note_off,
     .inst_note_all_off = picked_note_all_off,
+    .inst_sample_rate_changed = picked_sample_rate_changed,
 
     .inst_tick = picked_tick,
     .inst_run = picked_run

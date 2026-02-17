@@ -11,6 +11,7 @@ set(SOURCES
     src/synth/pwm.c
     src/synth/spectrum.c
     src/synth/noise.c
+    src/synth/picked.c
 
     src/fx/volume.c
     src/fx/panning.c

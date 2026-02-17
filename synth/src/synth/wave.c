@@ -1,3 +1,11 @@
+/**
+    This implements all the wavetable-type instruments, which is comprised of
+    these instruments:
+    - Chip
+    - Custom chip
+    - Harmonics (this dynamically generates a wavetable to be used)
+**/
+
 #include <assert.h>
 #include <string.h>
 #include "synth.h"

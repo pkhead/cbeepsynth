@@ -325,6 +325,23 @@ static void picked_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
 
     inst->sustain[0] = BPBXSYN_PICKED_STRING_SUSTAIN_MAX;
     inst->sustain[1] = inst->sustain[0];
+
+    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i)
+    {
+        for (int j = 0; j < UNISON_MAX_VOICES; ++j)
+        {
+            pstring_reset(&inst->voices[i].strings[j]);
+        }
+    }
+}
+
+static void picked_destroy(bpbxsyn_synth_s *p_inst)
+{
+    assert(p_inst);
+    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s*)p_inst;
+
+    bpbxsyn_free(inst->base.ctx, inst->delay_line_alloc);
 }
 
 static bpbxsyn_voice_id picked_note_on(bpbxsyn_synth_s *p_inst, int key,
@@ -340,9 +357,21 @@ static bpbxsyn_voice_id picked_note_on(bpbxsyn_synth_s *p_inst, int key,
 
     if (!continuation) {
         picked_voice_s *voice = &inst->voices[id];
+
+        // i want to preserve picked string properties, and call reset, instead
+        // of simply setting them to zero...
+        pstring_s temp_strings[UNISON_MAX_VOICES];
+        assert(sizeof(voice->strings) == sizeof(temp_strings));
+
+        memcpy(temp_strings, voice->strings, sizeof(voice->strings));
+
         *voice = (picked_voice_s) {
             .base = voice->base
         };
+
+        memcpy(voice->strings, temp_strings, sizeof(voice->strings));
+        for (int i = 0; i < UNISON_MAX_VOICES; ++i)
+            pstring_reset(&voice->strings[i]);
     }
 
     return id;
@@ -1002,6 +1031,7 @@ const inst_vtable_s bbsyn_inst_picked_vtable = {
     .envelope_targets = picked_env_targets,
 
     .inst_init = picked_init,
+    .inst_destroy = picked_destroy,
     .inst_note_on = picked_note_on,
     .inst_note_off = picked_note_off,
     .inst_note_all_off = picked_note_all_off,

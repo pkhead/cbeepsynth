@@ -164,6 +164,40 @@ void bbsyn_filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sampl
     // coefs->order = 1;
 }
 
+// high-shelf 2nd order
+void bbsyn_filter_hshelf2(filter_coefs_s *coefs,
+                          double corner_radians_per_sample,
+                          double shelf_linear_gain, double slope)
+{
+    const double A = sqrt(shelf_linear_gain);
+    const double c = cos(corner_radians_per_sample);
+    const double Aplus = A + 1.0;
+    const double Aminus = A - 1.0;
+    const double alpha = sin(corner_radians_per_sample) * 0.5 * sqrt((Aplus / A) * (1.0 / slope - 1.0) + 2.0);
+    const double sqrtA2Alpha = 2.0 * sqrt(A) * alpha;
+    const double a0 =    (Aplus  - Aminus * c + sqrtA2Alpha);
+
+    coefs->a[0] =  1.0;
+    coefs->a[1] =  2 *     (Aminus - Aplus  * c              ) / a0;
+    coefs->a[2] =          (Aplus  - Aminus * c - sqrtA2Alpha) / a0;
+    coefs->b[0] =      A * (Aplus  + Aminus * c + sqrtA2Alpha) / a0;
+    coefs->b[1] = -2 * A * (Aminus + Aplus  * c              ) / a0;
+    coefs->b[2] =      A * (Aplus  + Aminus * c - sqrtA2Alpha) / a0;
+    // coefs->order = 2;
+}
+
+// all-pass 1st order invert phase above
+void bbsyn_filter_ap1ipa(filter_coefs_s *coefs,
+                         double corner_radians_per_sample)
+{
+    const double g = (sin(corner_radians_per_sample) - 1.0) / cos(corner_radians_per_sample);
+    coefs->a[0] = 1.0;
+    coefs->a[1] = g;
+    coefs->b[0] = g;
+    coefs->b[1] = 1.0;
+    // coefs->order = 1;
+}
+
 void bbsyn_dyn_biquad_reset_output(dyn_biquad_s *self) {
     self->output1 = 0.0;
     self->output2 = 0.0;

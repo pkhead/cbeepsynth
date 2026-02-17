@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
 #include "../include/beepbox_synth.h"
 
 #define FILTER_GROUP_COUNT 8
@@ -67,6 +68,15 @@ void bbsyn_filter_hshelf1(filter_coefs_s *coefs,
                           double corner_radians_per_sample,
                           double shelf_linear_gain);
 
+// high-shelf 2nd order
+void bbsyn_filter_hshelf2(filter_coefs_s *coefs,
+                          double corner_radians_per_sample,
+                          double shelf_linear_gain, double slope);
+
+// all-pass 1st order invert phase above
+void bbsyn_filter_ap1ipa(filter_coefs_s *coefs,
+                         double corner_radians_per_sample);
+
 void bbsyn_dyn_biquad_reset_output(dyn_biquad_s *self);
 // loadCoefficientsWithGradient
 void bbsyn_dyn_biquad_load(
@@ -88,5 +98,21 @@ bpbxsyn_complex_s bbsyn_filter_analyze_complex(filter_coefs_s coefs, double real
                                                double imag);
 bpbxsyn_complex_s bbsyn_filter_analyze(filter_coefs_s coefs,
                                        double radians_per_sample);
+
+
+// Filters are typically designed as analog filters first, then converted to
+// digital filters using one of two methods: the "matched z-transform" or the
+// "bilinear transform". The "bilinear transform" does a better job of
+// preserving the magnitudes of the frequency response, but warps the frequency
+// range such that the nyquist frequency of the digital filter (π) maps to the
+// infinity frequency of the analog filter. You can use the below functions to
+// manually perform this warping in either direction.
+static inline double bbsyn_warp_nyquist_to_inf(double radians) {
+	return 2.0 * tan(radians * 0.5);
+}
+
+static inline double bbsyn_warp_inf_to_nyquist(double radians) {
+	return 2.0 * atan(radians * 0.5);
+}
 
 #endif

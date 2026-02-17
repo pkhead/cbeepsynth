@@ -1,16 +1,5 @@
 #include "util.h"
 
-// count leading zeroes
-static int32_t clz32(int32_t x) {
-    // TODO: intrinstic?
-    int tz = 0;
-    for (; x != 0; x >>= 1)
-        ++tz;
-    return 32 - tz;
-}
-
-int bbsyn_fitting_power_of_two(int x) { return 1 << (32 - clz32(x - 1)); }
-
 prng_state_s bbsyn_random_seeded_state(uint64_t seed) {
     return (prng_state_s) {
         .s[0] = seed,

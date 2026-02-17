@@ -70,7 +70,18 @@ static inline double key_to_hz_d(double key) {
     return pow(2.0, (key - 69) / 12.0) * 440.0;
 }
 
-int bbsyn_fitting_power_of_two(int x);
+// count leading zeroes
+static inline int32_t bbsyn_clz32(int32_t x) {
+    // TODO: intrinstic?
+    int tz = 0;
+    for (; x != 0; x >>= 1)
+        ++tz;
+    return 32 - tz;
+}
+
+static inline int bbsyn_fitting_power_of_two(int x) {
+    return 1 << (32 - bbsyn_clz32(x - 1));
+}
 
 static inline bool is_power_of_two(unsigned int n) {
     return (n & (n - 1)) == 0;

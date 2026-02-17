@@ -93,6 +93,9 @@ typedef struct {
                                      double value);
     void (*const inst_note_all_off)(bpbxsyn_synth_s *inst);
 
+    void (*const inst_sample_rate_changed)(bpbxsyn_synth_s *inst, double old,
+                                           double new);
+
     void (*const inst_tick)(bpbxsyn_synth_s *inst,
                             const bpbxsyn_tick_ctx_s *tick_ctx);
     void (*const inst_run)(bpbxsyn_synth_s *inst, float *samples,

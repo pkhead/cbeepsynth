@@ -208,7 +208,15 @@ void bpbxsyn_synth_destroy(bpbxsyn_synth_s *inst) {
 
 
 void bpbxsyn_synth_set_sample_rate(bpbxsyn_synth_s *inst, double sample_rate) {
-    inst->sample_rate = sample_rate;
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    double old_sr = inst->sample_rate;
+    if (old_sr != sample_rate) {
+        inst->sample_rate = sample_rate;
+        if (vtable->inst_sample_rate_changed)
+            vtable->inst_sample_rate_changed(inst, old_sr, sample_rate);
+    }
 }
 
 

@@ -497,7 +497,8 @@ BPBXSYN_API void bpbxsyn_synth_set_userdata(bpbxsyn_synth_s *inst,
                                             void *userdata);
 
 /**
- * @brief Set the sample rate of an instrument.
+ * @brief Set or change the sample rate of a synthesizer instance. May cause
+ *        allocation.
  *
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
@@ -814,7 +815,8 @@ BPBXSYN_API void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
                                              void *userdata);
 
 /**
- * @brief Set the sample rate of an effect instance.
+ * @brief Set or change the sample rate of an effect instance. May cause
+ *        allocation.
  *
  * @param effect      Pointer to the effect instance.
  * @param sample_rate The sample rate in Hz.

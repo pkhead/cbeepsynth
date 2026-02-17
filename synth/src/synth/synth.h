@@ -253,5 +253,6 @@ extern const inst_vtable_s bbsyn_inst_pwm_vtable;
 extern const inst_vtable_s bbsyn_inst_harmonics_vtable;
 extern const inst_vtable_s bbsyn_inst_spectrum_vtable;
 extern const inst_vtable_s bbsyn_inst_noise_vtable;
+extern const inst_vtable_s bbsyn_inst_picked_vtable;
 
 #endif

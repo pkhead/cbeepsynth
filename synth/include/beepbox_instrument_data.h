@@ -176,6 +176,9 @@ typedef enum {
 ////////////////////////
 // Picked String data //
 ////////////////////////
+#define BPBXSYN_PICKED_STRING_SUSTAIN_RANGE 15
+#define BPBXSYN_PICKED_STRING_SUSTAIN_MAX                                      \
+    ((BPBXSYN_PICKED_STRING_SUSTAIN_RANGE - 1))
 #define BPBXSYN_PICKED_STRING_PARAM_COUNT                                      \
     ((2 + BPBXSYN_HARMONICS_CONTROL_COUNT))
 

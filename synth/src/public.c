@@ -30,7 +30,7 @@ static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_SPECTRUM
     &bbsyn_inst_spectrum_vtable,
     // BPBXSYN_SYNTH_PICKED_STRING
-    NULL,
+    &bbsyn_inst_picked_vtable,
     // BPBXSYN_SYNTH_SUPERSAW
     NULL,
     // BPBXSYN_SYNTH_CUSTOM_CHIP

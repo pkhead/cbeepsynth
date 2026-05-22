@@ -9,6 +9,10 @@
 
 #include "synth.h"
 
+#if UNISON_MAX_VOICES != 2
+#error picked.c assumes unison max voices to be 2
+#endif
+
 #define PICKED_BASE_EXPRESSION 0.025 // Same as harmonics.
 #define STRING_DECAY_RATE 0.12
 #define IMPULSE_WAVE_LENGTH ((HARMONICS_WAVE_LENGTH + 1))
@@ -57,6 +61,7 @@ typedef struct pstring {
 
     double all_pass_g;
     double all_pass_g_delta;
+    double sustain_filter_a0_delta;
     double sustain_filter_a1;
 	double sustain_filter_a1_delta;
 	double sustain_filter_a2;
@@ -268,6 +273,8 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     const int delayBufferMask = (inst->delay_line_size - 1);
     assert(((delayBufferMask + 1) & delayBufferMask) == 0);
 
+    if (!delayLine) return;
+
     if (reinitializeImpulse) {
         // -1 delay index means the tone was reset.
         // Also, if the pitch changed suddenly (e.g. from seamless or arpeggio) then reset the wave.
@@ -333,6 +340,9 @@ static void picked_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
             pstring_reset(&inst->voices[i].strings[j]);
         }
     }
+
+    bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics, 64, inst->impulse_wave);
+    memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
 }
 
 static void picked_destroy(bpbxsyn_synth_s *p_inst)
@@ -366,12 +376,14 @@ static bpbxsyn_voice_id picked_note_on(bpbxsyn_synth_s *p_inst, int key,
         memcpy(temp_strings, voice->strings, sizeof(voice->strings));
 
         *voice = (picked_voice_s) {
-            .base = voice->base
+            .base = voice->base,
         };
 
         memcpy(voice->strings, temp_strings, sizeof(voice->strings));
         for (int i = 0; i < UNISON_MAX_VOICES; ++i)
             pstring_reset(&voice->strings[i]);
+        
+        voice->at_note_start = true;
     }
 
     return id;
@@ -426,6 +438,8 @@ static void picked_sample_rate_changed(bpbxsyn_synth_s *p_inst, double old,
     bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG,
                   "allocated %llu bytes of delay line buffers",
                   (size_t)dl_size * DELAY_LINE_COUNT * sizeof(float));
+    
+    memset(dl_alloc, 0, DELAY_LINE_COUNT * dl_size * sizeof(float));
 
     inst->delay_line_size = dl_size;
     inst->delay_line_alloc = dl_alloc;
@@ -541,6 +555,8 @@ static void compute_voice(
                        rounded_samples_per_tick, string_decay_start,
                        string_decay_end, STRING_SUSTAIN_BRIGHT);
     }
+
+    voice->at_note_start = false;
 }
 
 static void picked_tick(bpbxsyn_synth_s *p_inst,
@@ -566,6 +582,195 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_cou
     (void)inst;
 
     memset(samples, 0, frame_count * sizeof(float));
+
+    // if harmonic controls changed, rebuild the wave
+    if (memcmp(inst->harmonics, inst->last_harmonics, sizeof(inst->harmonics))) {
+        memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
+        bbsyn_generate_harmonics(&inst->base.ctx->wavetables,
+                                 inst->harmonics, 64, inst->impulse_wave);
+    }
+
+    const int delayLineLength = inst->delay_line_size;
+
+    // This algorithm is similar to the Karpluss-Strong algorithm in principle,
+    // but with an all-pass filter for dispersion and with more control over the
+    // impulse harmonics.
+    for (int vi = 0; vi < BPBXSYN_SYNTH_MAX_VOICES; ++vi) {
+        picked_voice_s *voice = &inst->voices[vi];
+        if (!voice_is_computing(&voice->base)) continue;
+
+        double expression = voice->base.expression;
+		const double expressionDelta = voice->base.expression_delta;
+		
+        // const unisonSign = tone.specialIntervalExpressionMult * instrumentState.unison.sign;
+        const double unisonSign = 1.0;
+
+        // const dyn_biquad_s *filters = voice->base.note_filters
+        // const filterCount = NOTE_FILTER
+
+        double initialFilterInput1 = voice->base.note_filter_input[0];
+        double initialFilterInput2 = voice->base.note_filter_input[1];
+
+        typedef struct voice_data {
+            double allPassSample;
+            double allPassPrevInput;
+            double sustainFilterSample;
+            double sustainFilterPrevOutput2;
+            double sustainFilterPrevInput1;
+            double sustainFilterPrevInput2;
+            double fractionalDelaySample;
+            float *delayLine;
+            int delayBufferMask;
+            int delayIndex;
+            double delayLength;
+            double delayLengthDelta;
+            double allPassG;
+            double sustainFilterA1;
+            double sustainFilterA2;
+            double sustainFilterB0;
+            double sustainFilterB1;
+            double sustainFilterB2;
+            double allPassGDelta;
+            double sustainFilterA1Delta;
+            double sustainFilterA2Delta;
+            double sustainFilterB0Delta;
+            double sustainFilterB1Delta;
+            double sustainFilterB2Delta;
+            int delayResetOffset;
+        } voice_data_s;
+        voice_data_s voice_data[UNISON_MAX_VOICES];
+
+        for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
+            pstring_s *pickedString = &voice->strings[ui];
+            voice_data_s *vd = voice_data + ui;
+
+            vd->allPassSample = pickedString->all_pass_sample;
+            vd->allPassPrevInput = pickedString->all_pass_prev_input;
+            vd->sustainFilterSample = pickedString->sustain_filter_sample;
+            vd->sustainFilterPrevOutput2 = pickedString->sustain_filter_prev_output_2;
+            vd->sustainFilterPrevInput1 = pickedString->sustain_filter_prev_input_1;
+            vd->sustainFilterPrevInput2 = pickedString->sustain_filter_prev_input_2;
+            vd->fractionalDelaySample = pickedString->fractional_delay_sample;
+            vd->delayLine = pickedString->delay_line;
+            vd->delayBufferMask = delayLineLength - 1;
+            vd->delayIndex = pickedString->delay_index;
+            vd->delayIndex = (vd->delayIndex & vd->delayBufferMask) + delayLineLength;
+            vd->delayLength = pickedString->prev_delay_length;
+            vd->delayLengthDelta = pickedString->delay_length_delta;
+            vd->allPassG = pickedString->all_pass_g;
+            vd->sustainFilterA1 = pickedString->sustain_filter_a1;
+            vd->sustainFilterA2 = pickedString->sustain_filter_a2;
+            vd->sustainFilterB0 = pickedString->sustain_filter_b0;
+            vd->sustainFilterB1 = pickedString->sustain_filter_b1;
+            vd->sustainFilterB2 = pickedString->sustain_filter_b2;
+            vd->allPassGDelta = pickedString->all_pass_g_delta;
+            vd->sustainFilterA1Delta = pickedString->sustain_filter_a1_delta;
+            vd->sustainFilterA2Delta = pickedString->sustain_filter_a2_delta;
+            vd->sustainFilterB0Delta = pickedString->sustain_filter_a0_delta;
+            vd->sustainFilterB1Delta = pickedString->sustain_filter_a1_delta;
+            vd->sustainFilterB2Delta = pickedString->sustain_filter_a2_delta;
+
+            vd->delayResetOffset = pickedString->delay_reset_offset;
+
+            if (!vd->delayLine) return;
+        }
+
+        for (size_t frame = 0; frame < frame_count; ++frame) {
+            for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
+                voice_data_s *vd = voice_data + ui;
+
+                const double targetSampleTime = vd->delayIndex - vd->delayLength;
+                const int lowerIndex = (int)(targetSampleTime + 0.125); // Offset to improve stability of all-pass filter.
+                const int upperIndex = lowerIndex + 1;
+                const double fractionalDelay = upperIndex - targetSampleTime;
+                const double fractionalDelayG = (1.0 - fractionalDelay) / (1.0 + fractionalDelay); // Inlined version of FilterCoefficients.prototype.allPass1stOrderFractionalDelay
+                const double prevInput = vd->delayLine[lowerIndex & vd->delayBufferMask];
+                const double input = vd->delayLine[upperIndex & vd->delayBufferMask];
+                vd->fractionalDelaySample = fractionalDelayG * input + prevInput - fractionalDelayG * vd->fractionalDelaySample;
+                
+                vd->allPassSample = vd->fractionalDelaySample * vd->allPassG + vd->allPassPrevInput - vd->allPassG * vd->allPassSample;
+                vd->allPassPrevInput = vd->fractionalDelaySample;
+                
+                const double sustainFilterPrevOutput1 = vd->sustainFilterSample;
+                vd->sustainFilterSample = vd->sustainFilterB0 * vd->allPassSample + vd->sustainFilterB1 * vd->sustainFilterPrevInput1 + vd->sustainFilterB2 * vd->sustainFilterPrevInput2 - vd->sustainFilterA1 * vd->sustainFilterSample - vd->sustainFilterA2 * vd->sustainFilterPrevOutput2;
+                vd->sustainFilterPrevOutput2 = sustainFilterPrevOutput1;
+                vd->sustainFilterPrevInput2 = vd->sustainFilterPrevInput1;
+                vd->sustainFilterPrevInput1 = vd->allPassSample;
+                
+                vd->delayLine[vd->delayIndex & vd->delayBufferMask] += (float) vd->sustainFilterSample;
+                vd->delayLine[(vd->delayIndex + vd->delayResetOffset) & vd->delayBufferMask] = 0.0f;
+                ++vd->delayIndex;
+            }
+
+            // calculate sample here
+            const double inputSample =
+                (voice_data[0].fractionalDelaySample + voice_data[1].fractionalDelaySample * unisonSign) * expression;
+            const double sample =
+                bbsyn_apply_filters(inputSample, initialFilterInput1,
+                                    initialFilterInput2,
+                                    voice->base.note_filters);
+            initialFilterInput2 = initialFilterInput1;
+            initialFilterInput1 = inputSample;
+            samples[frame] += (float) sample;
+
+            expression += expressionDelta;
+            
+            for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
+                voice_data_s *vd = voice_data + ui;
+
+                vd->delayLength += vd->delayLengthDelta;
+                vd->allPassG += vd->allPassGDelta;
+                vd->sustainFilterA1 += vd->sustainFilterA1Delta;
+                vd->sustainFilterA2 += vd->sustainFilterA2Delta;
+                vd->sustainFilterB0 += vd->sustainFilterB0Delta;
+                vd->sustainFilterB1 += vd->sustainFilterB1Delta;
+                vd->sustainFilterB2 += vd->sustainFilterB2Delta;
+            }
+        }
+
+        for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
+            voice_data_s *vd = voice_data + ui;
+            pstring_s *pickedString = &voice->strings[ui];
+            
+            // Avoid persistent denormal or NaN values in the delay buffers and filter history.
+            const double epsilon = 1.0e-24; // okay what why is this difference than the other epsilons?
+            if (!isfinite(vd->allPassSample) || fabs(vd->allPassSample) < epsilon)
+                vd->allPassSample = 0.0;
+            if (!isfinite(vd->allPassPrevInput) || fabs(vd->allPassPrevInput) < epsilon)
+                vd->allPassPrevInput = 0.0;
+            if (!isfinite(vd->sustainFilterSample) || fabs(vd->sustainFilterSample) < epsilon)
+                vd->sustainFilterSample = 0.0;
+            if (!isfinite(vd->sustainFilterPrevOutput2) || fabs(vd->sustainFilterPrevOutput2) < epsilon)
+                vd->sustainFilterPrevOutput2 = 0.0;
+            if (!isfinite(vd->sustainFilterPrevInput1) || fabs(vd->sustainFilterPrevInput1) < epsilon)
+                vd->sustainFilterPrevInput1 = 0.0;
+            if (!isfinite(vd->sustainFilterPrevInput2) || fabs(vd->sustainFilterPrevInput2) < epsilon)
+                vd->sustainFilterPrevInput2 = 0.0;
+            if (!isfinite(vd->fractionalDelaySample) || fabs(vd->fractionalDelaySample) < epsilon)
+                vd->fractionalDelaySample = 0.0;
+
+            pickedString->all_pass_sample = vd->allPassSample;
+            pickedString->all_pass_prev_input = vd->allPassPrevInput;
+            pickedString->sustain_filter_sample = vd->sustainFilterSample;
+            pickedString->sustain_filter_prev_output_2 = vd->sustainFilterPrevOutput2;
+            pickedString->sustain_filter_prev_input_1 = vd->sustainFilterPrevInput1;
+            pickedString->sustain_filter_prev_input_2 = vd->sustainFilterPrevInput2;
+            pickedString->fractional_delay_sample = vd->fractionalDelaySample;
+            pickedString->delay_index = vd->delayIndex;
+            pickedString->prev_delay_length = vd->delayLength;
+            pickedString->all_pass_g = vd->allPassG;
+            pickedString->sustain_filter_a1 = vd->sustainFilterA1;
+            pickedString->sustain_filter_a2 = vd->sustainFilterA2;
+            pickedString->sustain_filter_b0 = vd->sustainFilterB0;
+            pickedString->sustain_filter_b1 = vd->sustainFilterB1;
+            pickedString->sustain_filter_b2 = vd->sustainFilterB2;
+        }
+
+        voice->base.expression = expression;
+        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        voice->base.note_filter_input[0] = initialFilterInput1;
+        voice->base.note_filter_input[1] = initialFilterInput2;
+    }
 
     // for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
     //     pwm_voice_s *voice = &inst->voices[i];
@@ -1023,7 +1228,7 @@ static const bpbxsyn_envelope_compute_index_e picked_env_targets[] = {
 const inst_vtable_s bbsyn_inst_picked_vtable = {
     .struct_size = sizeof(picked_inst_s),
 
-    .param_count = BPBXSYN_PULSE_WIDTH_PARAM_COUNT,
+    .param_count = BPBXSYN_PICKED_STRING_PARAM_COUNT,
     .param_info = picked_param_info,
     .param_addresses = picked_param_addresses,
 

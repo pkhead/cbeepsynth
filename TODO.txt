@@ -11,6 +11,12 @@
 - unison toggle for noise type?
    (because the none unison type makes it 1.4x louder than normal, so there is
    no "no-op" unison type)
+- namespace change:
+    bpbx -> bbx
+    bpbxsyn -> bbsyn
+    private symbols have two underscores:
+      bbsyn__logmsgf
+- address volume disparities
 
 BUGS:
 - vibrato starts from wrong beat in fl studio. Could either clap-wrapper not

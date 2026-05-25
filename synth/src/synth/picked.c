@@ -250,6 +250,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     const bool pitchChanged = fabs(log2(delayLength / prevDelayLength)) > 0.01;
 
     const bool reinitializeImpulse = (self->delay_index == -1 || pitchChanged);
+    assert(inst->delay_line_size > minBufferLength);
     // TODO: picked string delay line allocation
     // if (this.delayLine == null || this.delayLine.length <= minBufferLength) {
     //     // The delay line buffer will get reused for other tones so might as well

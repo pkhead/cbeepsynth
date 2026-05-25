@@ -118,7 +118,7 @@ void bbsyn_filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
     coefs->a[2] = (1.0 - alpha) / a0;
     coefs->b[2] = coefs->b[0] = (1.0 - cosv) / (2.0 * a0);
     coefs->b[1] = (1.0 - cosv) / a0;
-    // coefs->order = 2;
+    coefs->order = 2;
 }
 
 // high-pass 2nd-order butterworth
@@ -132,7 +132,7 @@ void bbsyn_filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
     coefs->a[2] = (1.0 - alpha) / a0;
     coefs->b[2] = coefs->b[0] = (1.0 + cosv) / (2.0*a0);
     coefs->b[1] = -(1.0 + cosv) / a0;
-    // coefs->order = 2;
+    coefs->order = 2;
 }
 
 // peak 2nd-order
@@ -147,7 +147,7 @@ void bbsyn_filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample,
     coefs->b[1] = coefs->a[1] = -2.0 * cos(corner_radians_per_sample) / a0;
     coefs->b[2] = (1.0 - alpha * sqrt_gain) / a0;
     coefs->a[2] = (1.0 - alpha / sqrt_gain) / a0;
-    // coefs->order = 2;
+    coefs->order = 2;
 }
 
 // high-shelf 1st order
@@ -161,7 +161,7 @@ void bbsyn_filter_hshelf1(filter_coefs_s *coefs, double corner_radians_per_sampl
     coefs->a[1] = g / a0;
     coefs->b[0] = (1.0 + g + shelf_linear_gain * (1.0 - g)) / (2.0 * a0);
     coefs->b[1] = (1.0 + g - shelf_linear_gain * (1.0 - g)) / (2.0 * a0);
-    // coefs->order = 1;
+    coefs->order = 1;
 }
 
 // high-shelf 2nd order
@@ -183,7 +183,7 @@ void bbsyn_filter_hshelf2(filter_coefs_s *coefs,
     coefs->b[0] =      A * (Aplus  + Aminus * c + sqrtA2Alpha) / a0;
     coefs->b[1] = -2 * A * (Aminus + Aplus  * c              ) / a0;
     coefs->b[2] =      A * (Aplus  + Aminus * c - sqrtA2Alpha) / a0;
-    // coefs->order = 2;
+    coefs->order = 2;
 }
 
 // all-pass 1st order invert phase above
@@ -195,7 +195,7 @@ void bbsyn_filter_ap1ipa(filter_coefs_s *coefs,
     coefs->a[1] = g;
     coefs->b[0] = g;
     coefs->b[1] = 1.0;
-    // coefs->order = 1;
+    coefs->order = 1;
 }
 
 void bbsyn_dyn_biquad_reset_output(dyn_biquad_s *self) {
@@ -301,7 +301,7 @@ bpbxsyn_complex_s bbsyn_filter_analyze_complex(filter_coefs_s coefs, double real
     double imag_denom = a[1] * imag_z1;
     double real_z = real_z1;
     double imag_z = imag_z1;
-    for (int i = 2; i <= 2; i++) {
+    for (int i = 2; i <= coefs.order; i++) {
         const double real_temp = real_z * real_z1 - imag_z * imag_z1;
         const double imag_temp = real_z * imag_z1 + imag_z * real_z1;
         real_z = real_temp;

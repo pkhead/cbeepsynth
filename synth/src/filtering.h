@@ -25,6 +25,7 @@ typedef struct {
 typedef struct {
     double a[3];
     double b[3];
+    int order;
 } filter_coefs_s;
 
 typedef struct {

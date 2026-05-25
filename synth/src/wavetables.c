@@ -1,10 +1,8 @@
 #include "wavetables.h"
 
 #include <math.h>
-#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
 
 #include "util.h"
 #include "fft.h"
@@ -270,7 +268,7 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
+bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed) {
     wavetables_s *const wavetables = &ctx->wavetables;
 
     // init sine wavetable
@@ -404,7 +402,7 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx) {
 #endif
 
     // generate noise wavetables
-    prng_state_s prng_state = bbsyn_random_seeded_state((uint64_t)clock());
+    prng_state_s prng_state = bbsyn_random_seeded_state(seed);
     #define RANDOM() (float)(bbsyn_frandom(&prng_state))
 
     // there is an extra 0 at the end of each wavetable.

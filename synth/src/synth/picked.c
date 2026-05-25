@@ -250,7 +250,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     
     const double period_length_start = 1.0 / phase_delta_start;
     const double period_length_end = 1.0 / phase_delta_end;
-    // const double min_buffer_length = ceil(max(period_length_start, period_length_end) * 2);
+    const double min_buffer_length = ceil(max(period_length_start, period_length_end) * 2);
     const double delay_length = period_length_start - all_pass_phase_delay_start - sustain_filter_phase_delay_start;
     const double delay_length_end = period_length_end - all_pass_phase_delay_end - sustain_filter_phase_delay_end;
     
@@ -273,6 +273,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
 
     const bool reinit_impulse = (self->delay_index == -1 || pitch_changed);
     assert(inst->delay_line_size > min_buffer_length);
+    (void)min_buffer_length;
     // TODO: picked string delay line allocation
     // if (this.delay_line == null || this.delay_line.length <= min_buffer_length) {
     //     // The delay line buffer will get reused for other tones so might as well

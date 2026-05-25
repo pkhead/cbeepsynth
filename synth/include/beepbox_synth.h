@@ -388,10 +388,11 @@ BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
  *   - bpbxsyn_effect_set_sample_rate
  *
  * @param alloc Pointer to the allocator.
+ * @param wavetable_init_seed Seed for the noise wavetable PRNG.
  * @return Pointer to the newly created bpbxsyn_context struct.
  * */
 BPBXSYN_API bpbxsyn_context_s* bpbxsyn_context_new(
-    const bpbxsyn_allocator_s *alloc);
+    const bpbxsyn_allocator_s *alloc, uint64_t wavetable_init_seed);
 
 /**
  * @brief Destroy a context.

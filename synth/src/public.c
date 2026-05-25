@@ -2,10 +2,13 @@
 
 #include <limits.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+
+#ifndef BPBXSYN_NO_STD_ALLOC
+#include <stdlib.h>
+#endif
 
 #include "util.h"
 #include "alloc.h"
@@ -65,6 +68,7 @@ void bpbxsyn_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
     *revision = BPBXSYN_VERSION_REVISION;
 }
 
+#ifndef BPBXSYN_NO_STD_ALLOC
 static void* std_alloc(size_t size, void *ud) {
     (void)ud;
     return malloc(size);
@@ -74,9 +78,10 @@ static void std_free(void *ptr, void *ud) {
     (void)ud;
     free(ptr);
 }
+#endif
 
 bpbxsyn_context_s* bpbxsyn_context_new(
-    const bpbxsyn_allocator_s *alloc)
+    const bpbxsyn_allocator_s *alloc, uint64_t wavetable_init_seed)
 {
     bpbxsyn_context_s *ctx = NULL;
 
@@ -86,6 +91,7 @@ bpbxsyn_context_s* bpbxsyn_context_new(
 
         ctx->alloc = *alloc;
     } else {
+#ifndef BPBXSYN_NO_STD_ALLOC
         ctx = malloc(sizeof(bpbxsyn_context_s));
         if (!ctx) return NULL;
 
@@ -93,9 +99,12 @@ bpbxsyn_context_s* bpbxsyn_context_new(
             .alloc = std_alloc,
             .free = std_free,
         };
+#else
+        return NULL;
+#endif
     }
 
-    if (!bbsyn_init_wavetables_for_context(ctx)) {
+    if (!bbsyn_init_wavetables_for_context(ctx, wavetable_init_seed)) {
         bpbxsyn_context_destroy(ctx);
         return NULL;
     }

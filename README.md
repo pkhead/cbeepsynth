@@ -10,8 +10,7 @@ This project is structured such that the synth library can be used independently
 ### Synth
 - Instruments:
     - Custom chip
-    - FM6 (from mods)
-    - Picked string (wip)
+    - FM6
     - Supersaw
 
 ### Song
@@ -95,3 +94,4 @@ cmake --build .
     - [JummBox](https://jummb.us/), which includes expanded instrument configuration and a "custom chip" instrument type.
     - [GoldBox](https://aurysystem.github.io/), which includes a 6-operator FM.
     - [UltraBox](https://ultraabox.github.io/) and [Slarmoo's Box](https://slarmoo.github.io/slarmoosbox), which includes more FM frequency ratios.
+    - Slarmoo's Box, again, for the expanded envelope system.

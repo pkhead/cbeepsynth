@@ -463,8 +463,13 @@ static void picked_sample_rate_changed(bpbxsyn_synth_s *p_inst, double old,
 
     // The delay line buffer will get reused for other tones so might as well
     // start off with a buffer size that is big enough for most notes.
-    const int likely_maximum_length = (int) ceil(4 * new / key_to_hz_d(12.0));
-    int dl_size = bbsyn_fitting_power_of_two(likely_maximum_length);
+    // const int likely_maximum_length = (int) ceil(4 * new / key_to_hz_d(12.0));
+    // int dl_size = bbsyn_fitting_power_of_two(likely_maximum_length);
+
+    // the min_buffer_length of MIDI E(-1) is 4660; i think the intended value
+    // of likelyMaximumLength (16,384) is higher than reasonable. and I should
+    // prefer conserving memory.
+    int dl_size = 8192;
 
     float *dl_alloc =
         bpbxsyn_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));

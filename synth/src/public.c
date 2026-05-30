@@ -81,28 +81,32 @@ static void std_free(void *ptr, void *ud) {
 #endif
 
 bpbxsyn_context_s* bpbxsyn_context_new(
-    const bpbxsyn_allocator_s *alloc, uint64_t wavetable_init_seed)
+    const bpbxsyn_allocator_s *p_alloc, uint64_t wavetable_init_seed)
 {
     bpbxsyn_context_s *ctx = NULL;
+    bpbxsyn_allocator_s alloc;
 
-    if (alloc) {
-        ctx = alloc->alloc(sizeof(bpbxsyn_context_s), alloc->userdata);
-        if (!ctx) return NULL;
-
-        ctx->alloc = *alloc;
+    if (p_alloc) {
+        alloc = *p_alloc;
     } else {
-#ifndef BPBXSYN_NO_STD_ALLOC
-        ctx = malloc(sizeof(bpbxsyn_context_s));
-        if (!ctx) return NULL;
-
-        ctx->alloc = (bpbxsyn_allocator_s) {
-            .alloc = std_alloc,
-            .free = std_free,
-        };
-#else
-        return NULL;
-#endif
+        alloc = (bpbxsyn_allocator_s){0};
     }
+
+    // override both .alloc and .free with libc allocators if any of them are
+    // null.
+#ifndef BPBXSYN_NO_STD_ALLOC
+    if (!(alloc.alloc && alloc.free)) {
+        alloc.alloc = std_alloc;
+        alloc.free = std_free;
+    }
+#endif
+
+    if (!alloc.alloc || !alloc.free) return NULL;
+    
+    ctx = alloc.alloc(sizeof(bpbxsyn_context_s), alloc.userdata);
+    if (!ctx) return NULL;
+
+    ctx->alloc = alloc;
 
     if (!bbsyn_init_wavetables_for_context(ctx, wavetable_init_seed)) {
         bpbxsyn_context_destroy(ctx);

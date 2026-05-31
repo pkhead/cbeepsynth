@@ -1,6 +1,5 @@
 #include <assert.h>
 
-#include "../mcalloc.h"
 #include "mcode_page.h"
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -29,6 +28,10 @@ typedef struct arena_header {
     block_header_s *next_free;
 } arena_header_s;
 
+static bpbxsyn_mcalloc_id bbsyn_default_mcalloc(size_t size, void *userdata,
+                                         void **write, const void **exec);
+static void bbsyn_default_mcfree(bpbxsyn_mcalloc_id id, void *userdata);
+
 static inline block_header_s *next_block(const arena_header_s *arena,
                                          const block_header_s *block) {
     uintptr_t next = (uintptr_t)block + block->size;
@@ -37,16 +40,25 @@ static inline block_header_s *next_block(const arena_header_s *arena,
     return (void *)next;
 }
 
-void *bbsyn_init_mcalloc(void) {
+bpbxsyn_mcalloc_status_e bpbxsyn_mcode_allocator_new(
+    size_t arena_size, bpbxsyn_mcode_allocator_s *alloc)
+{
     uint8_t *rw;
     const void *exec;
-    void *page_handle =
-        bbsyn_mcode_page_alloc((void **)&rw, &exec);
+    void *page_handle;
+
+    size_t arena_size_bytes = arena_size * 1024;
+
+    bpbxsyn_mcalloc_status_e status =
+        bbsyn_mcode_page_alloc(arena_size_bytes, &page_handle, (void **)&rw,
+                               &exec);
     
-    if (!page_handle) return NULL;
+    if (status != BPBXSYN_MCALLOC_OK)
+        return status;
 
     arena_header_s *arena_header = (void *)rw;
-    uintptr_t arena_end = ALIGN(ARENA_SIZE, BLOCK_ALIGNMENT) - BLOCK_ALIGNMENT;
+    uintptr_t arena_end = ALIGN(arena_size_bytes, BLOCK_ALIGNMENT)
+                          - BLOCK_ALIGNMENT;
     
     const size_t first_block_ofs =
         ALIGN(sizeof(arena_header_s), BLOCK_ALIGNMENT);
@@ -61,11 +73,19 @@ void *bbsyn_init_mcalloc(void) {
     arena_header->exec = exec;
     arena_header->page_handle = page_handle;
 
-    return arena_header;
+    *alloc = (bpbxsyn_mcode_allocator_s) {
+        .alloc = bbsyn_default_mcalloc,
+        .free = bbsyn_default_mcfree,
+        .userdata = arena_header
+    };
+
+    return BPBXSYN_MCALLOC_OK;
 }
 
-void bbsyn_destroy_mcalloc(void *allocator) {
-    arena_header_s *arena = (void *)allocator;
+void bpbxsyn_mcode_allocator_destroy(void *alloc) {
+    if (!alloc) return;
+    
+    arena_header_s *arena = (void *)alloc;
     bbsyn_mcode_page_free(arena->page_handle);
 }
 

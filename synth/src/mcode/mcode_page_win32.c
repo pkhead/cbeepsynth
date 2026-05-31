@@ -8,14 +8,16 @@
 
 // TODO: use mutexes for tlock and tunlock
 
-void *bbsyn_mcode_page_alloc(void **rw, const void **exec) {
-    uint8_t *page = VirtualAlloc(NULL, BPBXSYN_MCODE_PAGE_SIZE, MEM_COMMIT,
+bpbxsyn_mcalloc_status_e bbsyn_mcode_page_alloc(size_t size, void **handle,
+                                                void **rw, const void **exec) {
+    uint8_t *page = VirtualAlloc(NULL, size, MEM_COMMIT,
                                  PAGE_EXECUTE_READWRITE);
-    if (!page) return NULL;
+    if (!page) return BPBXSYN_MCALLOC_ERR_IO;
 
     *rw = page;
     *exec = page;
-    return page;
+    *handle = page;
+    return BPBXSYN_MCALLOC_OK;
 }
 
 void bbsyn_mcode_page_free(void *page) {

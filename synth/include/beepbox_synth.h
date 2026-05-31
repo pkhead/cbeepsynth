@@ -251,6 +251,24 @@ typedef enum {
     BPBXSYN_LOG_FATAL,
 } bpbxsyn_log_severity_e;
 
+typedef enum {
+    /**
+     * Operation completed as expected.
+     */
+    BPBXSYN_MCALLOC_OK,
+
+    /**
+     * The operating system had a problem fulfilling the page allocation
+     * request.
+     */
+    BPBXSYN_MCALLOC_ERR_IO,
+
+    /**
+     * This operation is not supported on this platform.
+     */
+    BPBXSYN_MCALLOC_ERR_PLATFORM,
+} bpbxsyn_mcalloc_status_e;
+
 /**
  * Opaque identifier for an allocation of machine code. May possibly be a
  * pointer to the allocation, pointer to a structure representing the
@@ -399,6 +417,24 @@ typedef struct {
      */
     void (*voice_end)(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
 } bpbxsyn_synth_callbacks_s;
+
+typedef struct bpbxsyn_mcode_allocator {
+    /**
+     * Virtual function to allocate a block of writable/executable code.
+     */
+    bpbxsyn_mcalloc_f alloc;
+
+    /**
+     * Virtual function free a previously allocated block of writable/executable
+     * code.
+     */
+    bpbxsyn_mcfree_f free;
+
+    /**
+     * Opaque pointer containing allocator data.
+     */
+    void *userdata;
+} bpbxsyn_mcode_allocator_s;
 
 /**
  * @brief Obtain the version of the synth library.
@@ -1101,6 +1137,28 @@ BPBXSYN_API double bpbxsyn_linear_gain_to_setting(double gain);
 BPBXSYN_API void bpbxsyn_analyze_freq_response(
     bpbxsyn_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbxsyn_complex_s *out);
+
+/**
+ * Instantiates a new built-in machine code allocator.
+ *
+ * @param arena_size   The size of the allocation arena, in KiB.
+ * @param [out] alloc  An opaque pointer containing the descriptor of a machine
+ *                     code allocator to be passed to fields in a
+ *                     @ref bpbxsyn_allocator_s struct.
+ * @return Status code as a @ref bpbxsyn_mcalloc_status_e
+ */
+BPBXSYN_API bpbxsyn_mcalloc_status_e bpbxsyn_mcode_allocator_new(
+    size_t arena_size, bpbxsyn_mcode_allocator_s *alloc);
+
+/**
+ * Destroys a machine code allocator created with
+ * @ref bpbxsyn_mcode_allocator_new.
+ *
+ * @param alloc An opaque pointer holding the allocator structure, taken from
+ *              the `userdata` field of a @ref bpbxsyn_mcode_allocator_s
+ *              returned from @ref bpbxsyn_mcode_allocator_new.
+ * */
+BPBXSYN_API void bpbxsyn_mcode_allocator_destroy(void *alloc);
 
 #ifdef __cplusplus
 }

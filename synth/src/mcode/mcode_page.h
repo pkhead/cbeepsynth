@@ -3,10 +3,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include "../../include/beepbox_synth.h"
 
-#define BPBXSYN_MCODE_PAGE_SIZE 4096
-
-void *bbsyn_mcode_page_alloc(void **rw, const void **exec);
+bpbxsyn_mcalloc_status_e bbsyn_mcode_page_alloc(size_t size, void **handle,
+                                                void **rw, const void **exec);
 void bbsyn_mcode_page_free(void *page);
 
 // mutexes

@@ -35,8 +35,11 @@ set(SOURCES
     src/param_util.c
 )
 
+# machine code allocator implementation
 if (WIN32)
     set(SOURCES ${SOURCES} src/mcode/mcode_page_win32.c)
+else()
+    set(SOURCES ${SOURCES} src/mcode/mcode_page_stub.c)
 endif ()
 
 set(TARGET_PROPERTIES
@@ -51,7 +54,7 @@ set(TARGET_INCLUDES
     PUBLIC include
 )
 
-set(TARGET_DEFINITIONS
+set(TARGET_DEFINITIONS ${TARGET_DEFINITIONS}
     BPBXSYN_VERSION_REVISION=${PROJECT_VERSION_PATCH}
 )
 

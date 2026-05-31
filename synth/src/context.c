@@ -21,6 +21,23 @@ void bpbxsyn_free(const bpbxsyn_context_s *ctx, void *ptr) {
         ctx->alloc.free(ptr, ctx->alloc.userdata);
 }
 
+bpbxsyn_mcalloc_id bpbxsyn_mc_alloc(const bpbxsyn_context_s *ctx, size_t size,
+                                    void **rw, const void **exec)
+{
+    if (!ctx->alloc.mc_alloc) {
+        *rw = NULL;
+        *exec = NULL;
+        return BPBXSYN_MCALLOC_INVALID_ID;
+    }
+
+    return ctx->alloc.mc_alloc(size, ctx->alloc.mc_userdata, rw, exec);
+}
+
+void bpbxsyn_mcfree(const bpbxsyn_context_s *ctx, bpbxsyn_mcalloc_id handle) {
+    if (!ctx->alloc.mc_free) return;
+    ctx->alloc.mc_free(handle, ctx->alloc.mc_userdata);
+}
+
 void bbsyn_logmsgf(const bpbxsyn_context_s *ctx,
                    bpbxsyn_log_severity_e severity, const char *msg, ...) {
     if (ctx->log_func == NULL) return;

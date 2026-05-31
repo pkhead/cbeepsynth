@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <math.h>
-#include "../include/beepbox_synth.h"
+#include "../../include/beepbox_synth.h"
 #include "../envelope.h"
 #include "../filtering.h"
 #include "../audio.h"

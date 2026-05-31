@@ -12,6 +12,8 @@
 #include "../envelope.h"
 #include "../filtering.h"
 #include "../context.h"
+#include "../alloc.h"
+#include "../log.h"
 
 
 #define VOICE_BASE_EXPRESSION 0.03
@@ -122,6 +124,29 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
     inst->freq_ratios[3] = 4;
     
     inst->feedback = 0;
+
+#if defined(__x86_64__) || defined(_M_X64)
+    inst->mcalloc_id =
+        bpbxsyn_mc_alloc(ctx, 512, &inst->mcode_rw, &inst->mcode_x);
+    
+    if (inst->mcalloc_id != BPBXSYN_MCALLOC_INVALID_ID) {
+        static const uint8_t data[] = {
+            0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
+            0xc3,                   // ret
+        };
+        memcpy(inst->mcode_rw, data, sizeof(data));
+
+        double (*test_func)(double a, double b) = (void *)inst->mcode_x;
+        bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG, "result: %f", test_func(1.2, 1.4));
+    }
+#else
+    inst->mcalloc_id = BPBXSYN_MCALLOC_INVALID_ID;
+#endif
+}
+
+static void fm_destroy(bpbxsyn_synth_s *p_inst) {
+    fm_inst_s *inst = (fm_inst_s*)p_inst;
+    bpbxsyn_mc_free(inst->base.ctx, inst->mcalloc_id);
 }
 
 static bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key,
@@ -702,6 +727,7 @@ const inst_vtable_s bbsyn_inst_fm_vtable = {
     .envelope_targets = fm_env_targets,
 
     .inst_init = fm_init,
+    .inst_destroy = fm_destroy,
     .inst_note_on = fm_note_on,
     .inst_note_off = fm_note_off,
     .inst_note_all_off = fm_note_all_off,

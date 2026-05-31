@@ -44,6 +44,10 @@ typedef struct {
 
     int carrier_count;
     fm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
+
+    bpbxsyn_mcalloc_id mcalloc_id;
+    void *mcode_rw;
+    const void *mcode_x;
 } fm_inst_s;
 
 static inline double fm_calc_op(const float sine_wave[SINE_WAVE_LENGTH+1],

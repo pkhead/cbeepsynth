@@ -15,6 +15,7 @@
 #include "envelope.h"
 #include "filtering.h"
 #include "context.h"
+#include "mcalloc.h"
 
 #include "synth/synth.h"
 #include "fx/effect.h"
@@ -102,6 +103,18 @@ bpbxsyn_context_s* bpbxsyn_context_new(
 #endif
 
     if (!alloc.alloc || !alloc.free) return NULL;
+
+    if (!alloc.mc_alloc || !alloc.mc_free) {
+#ifdef BPBXSYN_HAS_DEFAULT_MCALLOC
+        alloc.mc_userdata = bbsyn_init_mcalloc();
+        alloc.mc_alloc = bbsyn_default_mcalloc;
+        alloc.mc_free = bbsyn_default_mcfree;
+#else
+        alloc.mc_alloc = NULL;
+        alloc.mc_free = NULL;
+        alloc.mc_userdata = NULL;
+#endif
+    }
     
     ctx = alloc.alloc(sizeof(bpbxsyn_context_s), alloc.userdata);
     if (!ctx) return NULL;
@@ -123,6 +136,14 @@ void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx) {
         bpbxsyn_free(ctx, ctx->wavetables.raw_chip_wavetables[i].samples);
         bpbxsyn_free(ctx, ctx->wavetables.chip_wavetables[i].samples);
     }
+
+#ifdef BPBXSYN_HAS_DEFAULT_MCALLOC
+    if (ctx->alloc.mc_alloc == bbsyn_default_mcalloc &&
+        ctx->alloc.mc_free == bbsyn_default_mcfree)
+    {
+        bbsyn_destroy_mcalloc(ctx->alloc.userdata);
+    }
+#endif
 
     bpbxsyn_free(ctx, ctx);
 }

@@ -68,6 +68,7 @@ extern "C" {
 #define BPBXSYN_FILTER_FREQ_MAX ((BPBXSYN_FILTER_FREQ_RANGE - 1))
 #define BPBXSYN_FILTER_GAIN_MAX ((BPBXSYN_FILTER_GAIN_RANGE - 1))
 #define BPBXSYN_NOTE_LENGTH_UNKNOWN -1
+#define BPBXSYN_MCALLOC_INVALID_ID 0
 
 typedef enum {
     BPBXSYN_SYNTH_CHIP,
@@ -242,6 +243,62 @@ typedef enum {
     BPBXSYN_ENV_INDEX_COUNT
 } bpbxsyn_envelope_compute_index_e;
 
+typedef enum {
+    BPBXSYN_LOG_DEBUG,
+    BPBXSYN_LOG_INFO,
+    BPBXSYN_LOG_WARNING,
+    BPBXSYN_LOG_ERROR,
+    BPBXSYN_LOG_FATAL,
+} bpbxsyn_log_severity_e;
+
+/**
+ * Opaque identifier for an allocation of machine code. May possibly be a
+ * pointer to the allocation, pointer to a structure representing the
+ * allocation, or simply an integer ID.
+ *
+ * A value of BPBXSYN_MCALLOC_INVALID_ID indicates an invalid ID.
+ */
+typedef uintptr_t bpbxsyn_mcalloc_id;
+
+typedef int8_t bpbxsyn_voice_id;
+
+typedef void *(*bpbxsyn_malloc_f)(size_t size, void *userdata);
+typedef void (*bpbxsyn_mfree_f)(void *ptr, void *userdata);
+
+/**
+ * Allocates a region of memory which can be used for writing and executing
+ * runtime-generated machine code.
+ *
+ * @param size        The size of the allocation.
+ * @param userdata    Opaque pointer to data needed by the allocator.
+ * @param [out] write Address to alias of the allocation with writable
+ *                    permissions.
+ * @param [out] exec  Address to alias of the allocation with read/exec
+ *                    permissions.
+ * @return            Opaque identifier for the allocation, or
+ *                    @ref BPBXSYN_MCALLOC_INVALID_ID if there was an error.
+ *
+ * @note The `write` and `exec` parameters may point to the same memory address
+ *       assuming that the OS or kernel does not require or implement W^X
+ *       enforcement.
+ */
+typedef bpbxsyn_mcalloc_id (*bpbxsyn_mcalloc_f)(size_t size, void *userdata,
+                                                void **write,
+                                                const void **exec);
+
+/**
+ * Frees a region of memory previously allocated with a @ref bpbxsyn_mcalloc_f
+ * invocation.
+ *
+ * @param id       The identifier for the allocation returned by a previously
+ *                 called @ref bpbxsyn_mcalloc_f invocation.
+ * @param userdata Opaque pointer to data needed by the allocator.
+ */
+typedef void (*bpbxsyn_mcfree_f)(bpbxsyn_mcalloc_id id, void *userdata);
+
+typedef void (*bpbxsyn_log_f)(bpbxsyn_log_severity_e severity, const char *msg,
+                              void *userdata);
+
 typedef struct {
     bpbxsyn_envelope_compute_index_e index;
     uint8_t curve_preset;
@@ -324,27 +381,15 @@ typedef struct bpbxsyn_context bpbxsyn_context_s;
 typedef struct bpbxsyn_synth bpbxsyn_synth_s;
 typedef struct bpbxsyn_effect bpbxsyn_effect_s;
 
-typedef void *(*bpbxsyn_malloc_f)(size_t size, void *userdata);
-typedef void (*bpbxsyn_mfree_f)(void *ptr, void *userdata);
-
-typedef int8_t bpbxsyn_voice_id;
-
 typedef struct bpbxsyn_allocator {
     bpbxsyn_malloc_f alloc;
     bpbxsyn_mfree_f free;
     void *userdata;
+    
+    bpbxsyn_mcalloc_f mc_alloc;
+    bpbxsyn_mcfree_f mc_free;
+    void *mc_userdata;
 } bpbxsyn_allocator_s;
-
-typedef enum {
-    BPBXSYN_LOG_DEBUG,
-    BPBXSYN_LOG_INFO,
-    BPBXSYN_LOG_WARNING,
-    BPBXSYN_LOG_ERROR,
-    BPBXSYN_LOG_FATAL,
-} bpbxsyn_log_severity_e;
-
-typedef void (*bpbxsyn_log_f)(bpbxsyn_log_severity_e severity, const char *msg,
-                              void *userdata);
 
 typedef struct {
     /**

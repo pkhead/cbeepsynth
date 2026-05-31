@@ -22,6 +22,8 @@ set(SOURCES
     src/fx/echo.c
     src/fx/reverb.c
     src/fx/limiter.c
+
+    src/mcode/default_mcalloc.c
     
     src/wavetables.c
     src/envelope.c
@@ -32,6 +34,10 @@ set(SOURCES
     src/util.c
     src/param_util.c
 )
+
+if (WIN32)
+    set(SOURCES ${SOURCES} src/mcode/mcode_page_win32.c)
+endif ()
 
 set(TARGET_PROPERTIES
     LANGUAGE C

@@ -14,6 +14,14 @@
 #define FALSE 0
 #define TRUE 1
 
+// this source code targets C99, so i need to use a compiler extension in order
+// to use alignof.
+#ifdef _MSC_VER
+#define alignof __alignof
+#else
+#define alignof __alignof__
+#endif
+
 static inline float lerpf(float min, float max, float t) {
     return (max - min) * t + min;
 }

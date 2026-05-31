@@ -130,14 +130,17 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
         bpbxsyn_mc_alloc(ctx, 512, &inst->mcode_rw, &inst->mcode_x);
     
     if (inst->mcalloc_id != BPBXSYN_MCALLOC_INVALID_ID) {
-        static const uint8_t data[] = {
-            0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
-            0xc3,                   // ret
-        };
-        memcpy(inst->mcode_rw, data, sizeof(data));
+        fm_desc_s fmdesc;
+        bbsyn_calc_fm_algo(&fmdesc, ctx->wavetables.sine_wave, inst->mcode_rw,
+                           (const void**)inst->mcode_x);
+        // static const uint8_t data[] = {
+        //     0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
+        //     0xc3,                   // ret
+        // };
+        // memcpy(inst->mcode_rw, data, sizeof(data));
 
-        double (*test_func)(double a, double b) = (void *)inst->mcode_x;
-        bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG, "result: %f", test_func(1.2, 1.4));
+        // double (*test_func)(double a, double b) = (void *)inst->mcode_x;
+        // bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG, "result: %f", test_func(1.2, 1.4));
     }
 #else
     inst->mcalloc_id = BPBXSYN_MCALLOC_INVALID_ID;

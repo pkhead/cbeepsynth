@@ -24,6 +24,7 @@ set(SOURCES
     src/fx/limiter.c
 
     src/mcode/default_mcalloc.c
+    src/mcode/fm_algo.c
     
     src/wavetables.c
     src/envelope.c

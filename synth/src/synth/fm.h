@@ -11,6 +11,12 @@
 #define FM_OP_COUNT 4
 #define FM_MOD_COUNT 9
 
+// runtime compilation of FM algorithms is only supported on x86-64 and AArch64
+#if defined(__x86_64__) || defined(_M_X64) \
+    || defined(__aarch64__) || defined(_M_ARM64)
+#define BBSYN_SUPPORT_FMGEN
+#endif
+
 typedef struct {
     double phase;
     double phase_delta;
@@ -49,6 +55,20 @@ typedef struct {
     void *mcode_rw;
     const void *mcode_x;
 } fm_inst_s;
+
+typedef struct fm_desc {
+    uint8_t operator_count;
+    uint8_t carrier_count;
+
+    uint8_t mod[8]; // bitfield of modulation inputs per operator
+    uint8_t fdb[8]; // bitfield of feedback inputs per operator
+} fm_desc_s;
+
+typedef double (*fm_algo2_f)(fm_voice_opstate_s *ops,
+                             const double feedback_amp);
+
+fm_algo2_f bbsyn_calc_fm_algo(const fm_desc_s *desc, const float *sine_wave,
+                              void *code_rw, const void **code_x);
 
 static inline double fm_calc_op(const float sine_wave[SINE_WAVE_LENGTH+1],
                                 const double phase_mix) {

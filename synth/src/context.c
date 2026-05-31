@@ -33,8 +33,10 @@ bpbxsyn_mcalloc_id bpbxsyn_mc_alloc(const bpbxsyn_context_s *ctx, size_t size,
     return ctx->alloc.mc_alloc(size, ctx->alloc.mc_userdata, rw, exec);
 }
 
-void bpbxsyn_mcfree(const bpbxsyn_context_s *ctx, bpbxsyn_mcalloc_id handle) {
+void bpbxsyn_mc_free(const bpbxsyn_context_s *ctx, bpbxsyn_mcalloc_id handle) {
     if (!ctx->alloc.mc_free) return;
+    if (handle == BPBXSYN_MCALLOC_INVALID_ID) return;
+    
     ctx->alloc.mc_free(handle, ctx->alloc.mc_userdata);
 }
 

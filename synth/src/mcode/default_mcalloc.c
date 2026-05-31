@@ -2,6 +2,9 @@
 
 #include "mcode_page.h"
 
+// TODO: more extensive testing
+// TODO: maybe add a way to allocate more pages? idk how that would work though.
+
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -175,7 +178,7 @@ bpbxsyn_mcalloc_id bbsyn_default_mcalloc(size_t size, void *userdata,
 }
 
 void bbsyn_default_mcfree(bpbxsyn_mcalloc_id id, void *userdata) {
-    if (!id) return;
+    if (id == BPBXSYN_MCALLOC_INVALID_ID) return;
 
     block_header_s *block_hdr = (void *)id;
     arena_header_s *arena_hdr = (void *)userdata;

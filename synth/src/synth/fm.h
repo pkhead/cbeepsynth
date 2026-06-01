@@ -6,14 +6,14 @@
 #include "../../include/beepbox_synth.h"
 #include "../../include/beepbox_instrument_data.h"
 #include "../wavetables.h"
+#include "../mcode/arch.h"
 #include "synth.h"
 
 #define FM_OP_COUNT 4
 #define FM_MOD_COUNT 9
 
 // runtime compilation of FM algorithms is only supported on x86-64 and AArch64
-#if defined(__x86_64__) || defined(_M_X64) \
-    || defined(__aarch64__) || defined(_M_ARM64)
+#if defined(BBSYN_ARCH_X64) || defined(BBSYN_ARCH_ARM64)
 #define BBSYN_SUPPORT_FMGEN
 #endif
 

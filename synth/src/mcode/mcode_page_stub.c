@@ -18,3 +18,8 @@ void bbsyn_mcode_page_mlock(void *page) {
 void bbsyn_mcode_page_munlock(void *page) {
     (void)page;
 }
+
+void bbsyn_mcode_flush_icache(const void *page, size_t page_size) {
+    (void)page;
+    (void)page_size;
+}

@@ -269,8 +269,7 @@ static void setup_algorithm(fm_inst_s *inst) {
                                    inst->mcode_rw, inst->mcode_x,
                                    MCODE_ALLOC_SIZE);
     
-#   if !(defined(__x86_64__) || defined(_M_X64))
-        // icache flush not necessary on x86
+#   ifndef BBSYN_ARCH_X64 // icache flush not necessary on x86
         if (inst->compiled_algo) {
             bbsyn_mcode_flush_icache(inst->mcode_x, MCODE_ALLOC_SIZE);
         }
@@ -323,8 +322,11 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
 
 static void fm_destroy(bpbxsyn_synth_s *p_inst) {
     fm_inst_s *inst = (fm_inst_s*)p_inst;
+
+#ifdef BBSYN_SUPPORT_FMGEN
     bpbxsyn_mc_free(inst->base.ctx, inst->mcalloc_id);
     bbsyn_fm_algoc_destroy(inst->algoc);
+#endif
 }
 
 static bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key,

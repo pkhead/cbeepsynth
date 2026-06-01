@@ -5,6 +5,7 @@
 #include "../alloc.h"
 #include "../util.h"
 #include "../log.h"
+#include "../mcode/arch.h"
 #include <umm_malloc/umm_malloc.h>
 
 #define DASM_MEMPOOL_SIZE 1024
@@ -29,14 +30,14 @@
 
 #include <dynasm/dasm_proto.h>
 |.arch x64
-|.globals lbl_
 |.actionlist fm_actions
 
 struct fm_algoc {
     dasm_State *state;
     const bpbxsyn_context_s *ctx;
-    void *labels[lbl__MAX == 0 ? 1 : 0];
 
+    // use custom heap with embedded memory allocator, because the compilation
+    // code will run in the audio thread, which ought not to use OS facilities.
 #ifdef _MSC_VER
     __declspec(align(8))
 #else
@@ -67,12 +68,12 @@ fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     bbsyn_logmsgf(algoc->ctx, BPBXSYN_LOG_DEBUG, "compile FM algorithm!");
 
     dasm_init(algoc, 1);
-    dasm_setupglobal(algoc, algoc->labels, lbl__MAX);
+    dasm_setupglobal(algoc, NULL, 0);
     dasm_setup(algoc, fm_actions);
 
     int opcount = desc->operator_count;
 
-    #define Dst algoc
+#define Dst algoc
     | .type opst, fm_voice_opstate_s
     |
     | .macro sample_sine_wave
@@ -91,27 +92,48 @@ fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     |     addsd xmm0, xmm2
     | .endmacro
 
-    // function parameters:
-    // rcx: fm_opstate_s *opstates
-    // xmm1: double feedback amp
-
     // initiate prologue
+    
+    // arguments/data are first moved to the following registers:
+    // r8: float *sine_wave
+    // r9: fm_opstate_s *opstates;
+    // xmm5: double feedback_amp
+
+    // TODO: test SYSV calling convention!!!
+#ifdef BBSYN_CCONV_WIN64
+    // uses xmm8-15 as scratch registers, which are all non-volatile.
     const int frame_size = ALIGN(opcount * 8, 16);
     | sub rsp, frame_size;
     for (int i = 0; i < opcount; ++i) {
         | movsd qword [rsp + (i*8)], xmm(8+i)
         | pxor xmm(8+i), xmm(8+i)
     }
-    | pxor xmm2, xmm2
+
     | pxor xmm0, xmm0
+    | pxor xmm2, xmm2
     | pxor xmm3, xmm3
 
-    | // r8: float *sine_wave
-    | // r9: fm_opstate_s *opstates;
-    | // xmm5: double feedback_amp
-    | mov64 r8, ((uintptr_t)sine_wave)
+    // function parameters:
+    // rcx: fm_opstate_s *opstates
+    // xmm1: double feedback_amp
     | mov r9, rcx
     | movsd xmm5, xmm1
+#else
+    for (int i = 0; i < opcount; ++i) {
+        | pxor xmm(8+i), xmm(8+i)
+    }
+
+    | pxor xmm1, xmm1
+    | pxor xmm2, xmm2
+    | pxor xmm3, xmm3
+
+    // function parameters:
+    // rdi: fm_opstate_s *opstates
+    // xmm0: double feedback_amp (i hope)
+    | mov r9, rdi
+    | movsd xmm5, xmm0
+#endif
+    | mov64 r8, ((uintptr_t)sine_wave)
     
     // destroys rax, rdx, and xmm0-3
     for (int i = opcount - 1; i >= 0; --i) {
@@ -144,12 +166,14 @@ fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     }
 
     // initiate epilogue
+#ifdef BBSYN_CCONV_WIN64
     for (int i = 0; i < opcount; ++i) {
         | movsd xmm(8+i), qword [rsp + (i * 8)]
     }
     | add rsp, frame_size
+#endif
     | ret
-    #undef Dst
+#undef Dst
 
     size_t szp;
     if (!dasm_link(algoc, &szp))
@@ -161,10 +185,6 @@ fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
 
     if (!dasm_encode(algoc, code_rw))
         goto error;
-
-    // double const (*func)(double a, double b) = code_x;
-    // double val = func(1.0, 2.0);
-    // assert(val == 3.0);
 
     dasm_free(algoc);
     return (fm_algo_f) code_x;

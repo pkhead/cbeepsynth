@@ -3,6 +3,8 @@
 
 #include "../synth/fm.h"
 #include "../alloc.h"
+#include "../util.h"
+#include "../log.h"
 #include <umm_malloc/umm_malloc.h>
 
 #define DASM_MEMPOOL_SIZE 1024
@@ -62,9 +64,13 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
                                   const float *sine_wave, void *code_rw,
                                   const void *code_x)
 {
+    bbsyn_logmsgf(algoc->ctx, BPBXSYN_LOG_DEBUG, "compile FM algorithm!");
+
     dasm_init(algoc, 1);
     dasm_setupglobal(algoc, algoc->labels, lbl__MAX);
     dasm_setup(algoc, fm_actions);
+
+    int opcount = desc->operator_count;
 
     #define Dst algoc
     | .type opst, fm_voice_opstate_s
@@ -94,49 +100,64 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     |     mulsd xmm0, qword opst:r9[opidx].expression
     |     movsd out, xmm0
     | .endmacro
-    |
-    |
-    | // function parameters:
-    | // rcx: fm_opstate_s *opstates
-    | // xmm1: double feedback amp
-    | sub rsp, 40
-    | movsd qword [rsp],      xmm8
-    | movsd qword [rsp + 8],  xmm9
-    | movsd qword [rsp + 16], xmm10
-    | movsd qword [rsp + 24], xmm11
-    |
+
+    // function parameters:
+    // rcx: fm_opstate_s *opstates
+    // xmm1: double feedback amp
+
+    // initiate prologue
+    const int frame_size = ALIGN(opcount * 8, 16);
+    | sub rsp, frame_size;
+    for (int i = 0; i < opcount; ++i) {
+        | movsd qword [rsp + (i*8)], xmm(8+i)
+        | pxor xmm(8+i), xmm(8+i)
+    }
     | pxor xmm2, xmm2
     | pxor xmm0, xmm0
     | pxor xmm3, xmm3
-    | pxor xmm8, xmm8
-    | pxor xmm9, xmm9
-    | pxor xmm10, xmm10
-    | pxor xmm11, xmm11
-    |
+
     | // r8: float *sine_wave
     | // r9: fm_opstate_s *opstates;
     | // xmm5: double feedback_amp
     | mov64 r8, ((uintptr_t)sine_wave)
     | mov r9, rcx
     | movsd xmm5, xmm1
-    |
-    | calc_fm_op 3, xmm11
-    | calc_fm_op 2, xmm10
-    | calc_fm_op 1, xmm9
-    | calc_fm_op 1, xmm8
-    |
-    | // return the sum of all the operator outputs
-    | movsd xmm0, xmm8
-    | addsd xmm0, xmm9
-    | addsd xmm0, xmm10
-    | addsd xmm0, xmm11
-    |
-    | // epilogue
-    | movsd xmm8,  qword [rsp]
-    | movsd xmm9,  qword [rsp + 8]
-    | movsd xmm10, qword [rsp + 16]
-    | movsd xmm11, qword [rsp + 24]
-    | add rsp, 40
+    
+    // destroys rax, rdx, and xmm0-3
+    for (int i = opcount - 1; i >= 0; --i) {
+        int modf = desc->mod[i];
+        int fdbf = desc->fdb[i];
+        | movsd xmm1, qword opst:r9[i].phase
+
+        // add modulation and feedback
+        for (int j = 0; j < opcount; ++j) {
+            if (modf & (1 << j))
+                | addsd xmm1, xmm(8+j)
+
+            if (fdbf & (1 << j)) {
+                | movsd xmm2, qword opst:r9[j].output
+                | mulsd xmm2, xmm5
+                | addsd xmm1, xmm2
+            }
+        }
+
+        | sample_sine_wave
+        | movsd qword opst:r9[i].output, xmm0
+        | mulsd xmm0, qword opst:r9[i].expression
+        | movsd xmm(8+i), xmm0
+    }
+
+    // return the sum of all the carrier outputs
+    | pxor xmm0, xmm0
+    for (int i = 0; i < desc->carrier_count; ++i) {
+        | addsd xmm0, xmm(8+i)
+    }
+
+    // initiate epilogue
+    for (int i = 0; i < opcount; ++i) {
+        | movsd xmm(8+i), qword [rsp + (i * 8)]
+    }
+    | add rsp, frame_size
     | ret
     #undef Dst
 

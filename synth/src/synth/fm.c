@@ -71,35 +71,201 @@ static double operator_amplitude_curve(double amplitude) {
 }
 
 static void setup_algorithm(fm_inst_s *inst) {
+    if (inst->prev_algorithm == inst->algorithm
+        && inst->prev_feedback_type == inst->feedback_type)
+    {
+        return;
+    }
+
+    inst->prev_algorithm = inst->algorithm;
+    inst->prev_feedback_type = inst->feedback_type;
+
+    fm_desc_s desc = (fm_desc_s) {
+        .operator_count = 4
+    };
+
+    int carriers;
+
     switch (inst->algorithm) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-            inst->carrier_count = 1;
+        case 0: // 1 <- (2 3 4)
+            carriers = 1;
+            desc.mod[0] = 0xe;
             break;
 
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-            inst->carrier_count = 2;
+        case 1: // 1 <- (2 3 <- 4)
+            carriers = 1;
+            desc.mod[0] = 0x6;
+            desc.mod[2] = 0x8;
             break;
 
-        case 10:
-        case 11:
-            inst->carrier_count = 3;
+        case 2: // 1 <- 2 <- (3 4)
+            carriers = 1;
+            desc.mod[0] = 0x2;
+            desc.mod[1] = 0xc;
             break;
 
-        case 12:
-            inst->carrier_count = 4;
+        case 3: // 1 <- (2 3) <- 4
+            carriers = 1;
+            desc.mod[0] = 0x6;
+            desc.mod[1] = 0x8;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 4: // 1 <- 2 <- 3 <- 4
+            carriers = 1;
+            desc.mod[0] = 0x2;
+            desc.mod[1] = 0x4;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 5: // 1 <- 3  2 <- 4
+            carriers = 2;
+            desc.mod[0] = 0x4;
+            desc.mod[1] = 0x8;
+            break;
+
+        case 6: // 1  2 <- (3 4)
+            carriers = 2;
+            desc.mod[1] = 0xc;
+            break;
+
+        case 7: // 1  2 <- 3 <- 4
+            carriers = 2;
+            desc.mod[1] = 0x4;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 8: // (1 2) <- 3 <- 4
+            carriers = 2;
+            desc.mod[0] = 0x4;
+            desc.mod[1] = 0x4;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 9: // (1 2) <- (3 4)
+            carriers = 2;
+            desc.mod[0] = 0xc;
+            desc.mod[1] = 0xc;
+            break;
+
+        case 10: // 1  2  3 <- 4
+            carriers = 3;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 11: // (1 2 3) <- 4
+            carriers = 3;
+            desc.mod[0] = 0x8;
+            desc.mod[1] = 0x8;
+            desc.mod[2] = 0x8;
+            break;
+
+        case 12: // 1  2  3  4
+            carriers = 4;
             break;
 
         default:
-            inst->carrier_count = 0;
+            carriers = 0;
+            break;
     }
+
+    switch (inst->feedback_type) {
+        case 0: // 1 G
+            desc.fdb[0] = 0x1;
+            break;
+
+        case 1: // 2 G
+            desc.fdb[1] = 0x2;
+            break;
+
+        case 2: // 3 G
+            desc.fdb[2] = 0x4;
+            break;
+
+        case 3: // 4 G
+            desc.fdb[3] = 0x8;
+            break;
+
+        case 4: // 1 G  2 G
+            desc.fdb[0] = 0x1;
+            desc.fdb[1] = 0x2;
+            break;
+
+        case 5: // 3 G  4 G
+            desc.fdb[2] = 0x4;
+            desc.fdb[3] = 0x8;
+            break;
+
+        case 6: // 1 G  2 G  3 G
+            desc.fdb[0] = 0x1;
+            desc.fdb[1] = 0x2;
+            desc.fdb[2] = 0x4;
+            break;
+
+        case 7: // 2 G  3 G  4 G
+            desc.fdb[1] = 0x2;
+            desc.fdb[2] = 0x4;
+            desc.fdb[3] = 0x8;
+            break;
+
+        case 8: // 1 G  2 G  3 G  4 G
+            desc.fdb[0] = 0x1;
+            desc.fdb[1] = 0x2;
+            desc.fdb[2] = 0x4;
+            desc.fdb[3] = 0x8;
+            break;
+
+        case 9: // 1 -> 2
+            desc.fdb[1] = 0x1;
+            break;
+
+        case 10: // 1 -> 3
+            desc.fdb[2] = 0x1;
+            break;
+
+        case 11: // 1 -> 4
+            desc.fdb[3] = 0x1;
+            break;
+
+        case 12: // 2 -> 3
+            desc.fdb[2] = 0x2;
+            break;
+
+        case 13: // 2 -> 4
+            desc.fdb[3] = 0x2;
+            break;
+
+        case 14: // 3 -> 4
+            desc.fdb[3] = 0x4;
+            break;
+
+        case 15: // 1 -> 3  2 -> 4
+            desc.fdb[2] = 0x1;
+            desc.fdb[3] = 0x2;
+            break;
+
+        case 16: // 1 -> 4  2 -> 3
+            desc.fdb[2] = 0x2;
+            desc.fdb[3] = 0x1;
+            break;
+
+        case 17: // 1 -> 2 -> 3 -> 4
+            desc.fdb[1] = 0x1;
+            desc.fdb[2] = 0x2;
+            desc.fdb[3] = 0x4;
+            break;
+    }
+
+    inst->carrier_count = carriers;
+    desc.carrier_count = carriers;
+
+#ifdef BBSYN_SUPPORT_FMGEN
+    bbsyn_fm_algoc_compile(inst->algoc, &desc,
+                           inst->base.ctx->wavetables.sine_wave,
+                           inst->mcode_rw, inst->mcode_x);
+#else
+    (void)desc;
+#endif
 }
 
 static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
@@ -112,6 +278,7 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
     }
 
     inst->algorithm = 0;
+    inst->prev_algorithm = UINT8_MAX;
 
     inst->amplitudes[0] = 15.0;
     inst->amplitudes[1] = 0.0;
@@ -123,27 +290,16 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
     inst->freq_ratios[2] = 4;
     inst->freq_ratios[3] = 4;
     
+    inst->prev_feedback_type = UINT8_MAX;
     inst->feedback = 0;
 
-#if defined(__x86_64__) || defined(_M_X64)
+#ifdef BBSYN_SUPPORT_FMGEN
     inst->mcalloc_id =
         bpbxsyn_mc_alloc(ctx, 512, &inst->mcode_rw, &inst->mcode_x);
     
     if (inst->mcalloc_id != BPBXSYN_MCALLOC_INVALID_ID) {
         inst->algoc = bbsyn_fm_algoc_new(ctx);
         assert(inst->algoc);
-
-        fm_desc_s fmdesc;
-        bbsyn_fm_algoc_compile(inst->algoc, &fmdesc, ctx->wavetables.sine_wave,
-                               inst->mcode_rw, inst->mcode_x);
-        // static const uint8_t data[] = {
-        //     0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
-        //     0xc3,                   // ret
-        // };
-        // memcpy(inst->mcode_rw, data, sizeof(data));
-
-        // double (*test_func)(double a, double b) = (void *)inst->mcode_x;
-        // bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG, "result: %f", test_func(1.2, 1.4));
     }
 #else
     inst->mcalloc_id = BPBXSYN_MCALLOC_INVALID_ID;
@@ -305,6 +461,8 @@ static void fm_tick(bpbxsyn_synth_s *src_inst,
     assert(src_inst->type == BPBXSYN_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
 
+    setup_algorithm(fm);
+
     audio_process_fm_userdata_s userdata = (audio_process_fm_userdata_s) {
         .fm = fm,
     };
@@ -326,7 +484,6 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
     
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
     const bpbxsyn_context_s *ctx = src_inst->ctx;
-    setup_algorithm(fm);
 
     fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
     fm_algo2_f algo2_func = fm->mcode_x;
@@ -358,7 +515,6 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
             //     voice->base.expression * voice->base.volume;
             double x0 = algo2_func(voice->op_states, voice->feedback_mult) *
                 voice->base.expression * voice->base.volume;
-            assert(x0 >= -1.0 && x0 <= 1.0);
             
             float sample;
             if (voice->base.filters_enabled) {

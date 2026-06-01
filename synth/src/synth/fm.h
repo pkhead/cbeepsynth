@@ -43,10 +43,12 @@ typedef struct {
 typedef struct {
     bpbxsyn_synth_s base;
 
+    uint8_t prev_algorithm;
     uint8_t algorithm;
     uint8_t freq_ratios[FM_OP_COUNT];
     double amplitudes[FM_OP_COUNT];
 
+    uint8_t prev_feedback_type;
     uint8_t feedback_type;
     double feedback;
 

@@ -130,9 +130,14 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
         bpbxsyn_mc_alloc(ctx, 512, &inst->mcode_rw, &inst->mcode_x);
     
     if (inst->mcalloc_id != BPBXSYN_MCALLOC_INVALID_ID) {
+        inst->algoc = bbsyn_fm_algoc_new(ctx);
+        assert(inst->algoc);
+
         fm_desc_s fmdesc;
-        bbsyn_calc_fm_algo(&fmdesc, ctx->wavetables.sine_wave, inst->mcode_rw,
-                           (const void**)inst->mcode_x);
+        for (int i = 0; i < 100; ++i) {
+        bbsyn_fm_algoc_compile(inst->algoc, &fmdesc, ctx->wavetables.sine_wave,
+                               inst->mcode_rw, inst->mcode_x);
+        }
         // static const uint8_t data[] = {
         //     0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
         //     0xc3,                   // ret
@@ -150,6 +155,7 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
 static void fm_destroy(bpbxsyn_synth_s *p_inst) {
     fm_inst_s *inst = (fm_inst_s*)p_inst;
     bpbxsyn_mc_free(inst->base.ctx, inst->mcalloc_id);
+    bbsyn_fm_algoc_destroy(inst->algoc);
 }
 
 static bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key,

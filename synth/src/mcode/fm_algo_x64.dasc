@@ -1,11 +1,3 @@
-/*
-** This file has been pre-processed with DynASM.
-** https://luajit.org/dynasm.html
-** DynASM version 1.5.0, DynASM x64 version 1.5.0
-** DO NOT EDIT! The original file is in "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc".
-*/
-
-#line 1 "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc"
 #include <assert.h>
 #include <stdint.h>
 
@@ -34,22 +26,9 @@
     umm_multi_free(&((CTX)->dasm_heap), (p))
 
 #include <dynasm/dasm_proto.h>
-//|.arch x64
-#if DASM_VERSION != 10500
-#error "Version mismatch between DynASM and included encoding engine"
-#endif
-#line 30 "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc"
-//|.globals lbl_
-enum {
-  lbl__MAX
-};
-#line 31 "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc"
-//|.actionlist fm_actions
-static const unsigned char fm_actions[7] = {
-  252,242,15,88,193,195,255
-};
-
-#line 32 "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc"
+|.arch x64
+|.globals lbl_
+|.actionlist fm_actions
 
 struct fm_algoc {
     dasm_State *state;
@@ -91,10 +70,8 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     dasm_setup(algoc, fm_actions);
     
     #define Dst algoc
-    //| addsd xmm0, xmm1
-    //| ret
-    dasm_put(Dst, 0);
-#line 75 "C:/Users/nabca/Documents/src/misc/beepboxvst/src/cbeepsynth/synth/src/mcode/fm_algo_x64.dasc"
+    | addsd xmm0, xmm1
+    | ret
     #undef Dst
 
     size_t szp;

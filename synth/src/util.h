@@ -10,6 +10,9 @@
 #define PI2 (2.0 * PI)
 #define PI2f (float)(2.f * 3.14159265358979323846f)
 
+#define ALIGN(ptr, alignment) \
+    (((uintptr_t)(ptr) + (alignment) - 1) / (alignment) * (alignment))
+
 // I didn't know C99+ had a bool type I guess?
 #define FALSE 0
 #define TRUE 1

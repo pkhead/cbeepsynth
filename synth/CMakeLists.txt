@@ -34,6 +34,11 @@ set(SOURCES
     src/context.c
     src/util.c
     src/param_util.c
+
+    third_party/umm_malloc/umm_info.c
+    third_party/umm_malloc/umm_integrity.c
+    third_party/umm_malloc/umm_malloc.c
+    third_party/umm_malloc/umm_poison.c
 )
 
 # machine code allocator implementation
@@ -51,7 +56,7 @@ set(TARGET_PROPERTIES
 )
 
 set(TARGET_INCLUDES
-    PRIVATE src
+    PRIVATE src third_party
     PUBLIC include
 )
 

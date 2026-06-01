@@ -95,3 +95,5 @@ cmake --build .
     - [GoldBox](https://aurysystem.github.io/), which includes a 6-operator FM.
     - [UltraBox](https://ultraabox.github.io/) and [Slarmoo's Box](https://slarmoo.github.io/slarmoosbox), which includes more FM frequency ratios.
     - Slarmoo's Box, again, for the expanded envelope system.
+- [umm_malloc](https://github.com/rhempel/umm_malloc), MIT
+- [DynAsm](https://luajit.org/dynasm.html), MIT

@@ -13,4 +13,6 @@ void bbsyn_mcode_page_free(void *page);
 void bbsyn_mcode_page_mlock(void *page);
 void bbsyn_mcode_page_munlock(void *page);
 
+// TODO: bbsyn_mcode_flush_icache(void);
+
 #endif

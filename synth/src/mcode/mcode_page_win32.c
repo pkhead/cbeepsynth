@@ -20,7 +20,7 @@ bpbxsyn_mcalloc_status_e bbsyn_mcode_page_alloc(size_t size, void **handle,
     HANDLE mutex = NULL;
 
     page = VirtualAlloc(NULL, size, MEM_COMMIT,
-                                 PAGE_EXECUTE_READWRITE);
+                        PAGE_EXECUTE_READWRITE);
     if (!page) goto error;
 
     meta = malloc(sizeof(page_meta_s));

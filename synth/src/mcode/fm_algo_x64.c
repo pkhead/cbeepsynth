@@ -144,6 +144,9 @@ static bool encode_operands(uint8_t **buf, uint8_t opcode[3], int opcode_size,
             use_sib = true;
             sib_idx = 4;
             sib_base = opb.indirect.base & 15;
+
+            use_disp32 = true;
+            disp32 = opb.indirect.disp;
         } else {
             if (x64_regadr(opb.indirect.index) != 1)
                 return true;
@@ -168,14 +171,15 @@ static bool encode_operands(uint8_t **buf, uint8_t opcode[3], int opcode_size,
 
     // need to use either an extended register, or 64-bit addressing mode; add
     // REX prefix
-    if (modrm_reg > 7 || modrm_rm > 7 || p_64) {
+    uint8_t rex_b = use_sib ? sib_base : modrm_rm;
+    if (modrm_reg > 7 || sib_idx > 7 || rex_b > 7 || p_64) {
         // modrm.reg = dst
         // modrm.rm  = src
         *((*buf)++) = 0x40
                       | (p_64 << 3) // W bit
                       | ((modrm_reg & 8) >> 1) // R bit
                       | ((sib_idx & 8) >> 2)   // X bit
-                      | (((use_sib ? sib_base : modrm_rm) & 8) >> 3); // B bit
+                      | ((rex_b & 8) >> 3); // B bit
     }
 
     // write opcode
@@ -204,6 +208,47 @@ static bool encode_operands(uint8_t **buf, uint8_t opcode[3], int opcode_size,
     return false;
 }
 
+#define DEFINE_MNEMONIC(MNE, OPCODE_REG, OPCODE_IND)                           \
+    static bool x64_##MNE(uint8_t **buf, x64_operand_s dst, x64_operand_s src) {\
+        if (dst.type == X64_OPTYPE_REG) {                                      \
+            int dst_regadr = x64_regadr(dst.reg);                              \
+            if (dst_regadr == 2) return true;                                  \
+            bool is64 = dst_regadr == 1;                                       \
+                                                                               \
+            if (src.type == X64_OPTYPE_REG) {                                  \
+                int src_regadr = x64_regadr(src.reg);                          \
+                if (src_regadr == 2 || dst_regadr != src_regadr) return true;  \
+                                                                               \
+                uint8_t opcode[1] = { OPCODE_REG };                            \
+                return encode_operands(buf, opcode, 1, dst, src, is64);        \
+            } else if (src.type == X64_OPTYPE_INDIRECT) {                      \
+                uint8_t opcode[1] = { OPCODE_IND };                            \
+                return encode_operands(buf, opcode, 1, dst, src, is64);        \
+            }                                                                  \
+        }                                                                      \
+        return true;                                                           \
+    }
+
+#define DEFINE_SIMD_MNEMONIC(MNE, OPCODE) \
+    static bool x64_##MNE(uint8_t **buf, x64_operand_s dst, x64_operand_s src) {\
+        if (dst.type == X64_OPTYPE_REG) {                                      \
+            if (x64_regadr(dst.reg) != 2) return true;                         \
+                                                                               \
+            if (src.type == X64_OPTYPE_REG) {                                  \
+                if (x64_regadr(src.reg) != 2) return true;                     \
+                                                                               \
+                *((*buf)++) = 0xf2; /* SIMD prefix */                          \
+                uint8_t opcode[2] = { 0x0f, OPCODE };                          \
+                return encode_operands(buf, opcode, 2, dst, src, false);       \
+            } else if (src.type == X64_OPTYPE_INDIRECT) {                      \
+                *((*buf)++) = 0xf2; /* SIMD prefix */                          \
+                uint8_t opcode[2] = { 0x0f, OPCODE };                          \
+                return encode_operands(buf, opcode, 2, dst, src, false);       \
+            }                                                                  \
+        }                                                                      \
+        return true;                                                           \
+    }
+
 static bool x64_movsd(uint8_t **buf, x64_operand_s dst, x64_operand_s src) {
     if (dst.type == X64_OPTYPE_REG) {
         if (x64_regadr(dst.reg) != 2) return true;
@@ -219,33 +264,45 @@ static bool x64_movsd(uint8_t **buf, x64_operand_s dst, x64_operand_s src) {
             uint8_t opcode[2] = { 0x0f, 0x10 };
             return encode_operands(buf, opcode, 2, dst, src, false);
         }
-    }
-    // TODO: write to indirect
-
-    return true;
-}
-
-static bool x64_addsd(uint8_t **buf, x64_operand_s dst, x64_operand_s src) {
-    if (dst.type == X64_OPTYPE_REG) {
-        if (x64_regadr(dst.reg) != 2) return true;
-
+    } else if (dst.type == X64_OPTYPE_INDIRECT) {
         if (src.type == X64_OPTYPE_REG) {
             if (x64_regadr(src.reg) != 2) return true;
-            
+
             *((*buf)++) = 0xf2; // SIMD prefix
-            uint8_t opcode[2] = { 0x0f, 0x58 };
-            return encode_operands(buf, opcode, 2, dst, src, false);
-        } else if (src.type == X64_OPTYPE_INDIRECT) {
-            *((*buf)++) = 0xf2; // SIMD prefix
-            uint8_t opcode[2] = { 0x0f, 0x58 };
-            return encode_operands(buf, opcode, 2, dst, src, false);
+            uint8_t opcode[2] = { 0x0f, 0x11 };
+            return encode_operands(buf, opcode, 2, src, dst, false);
         }
     }
 
     return true;
 }
 
+// DEFINE_MNEMONIC(add, OPCODE)
+DEFINE_SIMD_MNEMONIC(addsd, 0x58)
+DEFINE_SIMD_MNEMONIC(subsd, 0x5c)
+DEFINE_SIMD_MNEMONIC(mulsd, 0x59)
+DEFINE_SIMD_MNEMONIC(divsd, 0x5e)
+
 inline static bool x64_ret(uint8_t **buf) { *((*buf)++) = 0xc3; return false; }
+
+static const uint8_t macro_fm_calc_op[] = {
+    // [in]  xmm1: register where phase_mix is stored
+    // [out] xmm0
+    // destroys rax, rdx, and xmm0-3
+    // r8 is where the sine wave ptr is stored
+    0xf2, 0x0f, 0x2c, 0xc1,                   // cvttsd2si %xmm1,%eax
+    0x0f, 0xb6, 0xd0,                         // movzbl %al,%edx
+    0xf2, 0x0f, 0x2a, 0xd8,                   // cvtsi2sd %eax,%xmm3
+    0xf2, 0x0f, 0x5c, 0xcb,                   // subsd  %xmm3,%xmm1
+    0xf3, 0x41, 0x0f, 0x5a, 0x14, 0x90,       // cvtss2sd (%r8,%rdx,4),%xmm2
+    0xf3, 0x41, 0x0f, 0x5a, 0x44, 0x90, 0x04, // cvtss2sd 0x4(%r8,%rdx,4),%xmm0
+    0xf2, 0x0f, 0x5c, 0xc2,                   // subsd  %xmm2,%xmm0
+    0xf2, 0x0f, 0x59, 0xc1,                   // mulsd  %xmm1,%xmm0
+    0xf2, 0x0f, 0x58, 0xc2,                   // addsd  %xmm2,%xmm0
+};
+
+#include <stdio.h>
+#include <windows.h>
 
 fm_algo2_f bbsyn_calc_fm_algo(const fm_desc_s *desc, const float *sine_wave,
                               void *p_code_rw, const void **code_x)
@@ -253,21 +310,52 @@ fm_algo2_f bbsyn_calc_fm_algo(const fm_desc_s *desc, const float *sine_wave,
     uint8_t *code_rw = p_code_rw;
     bool fail = false;
 
-    #define ASM(mnemonic, ...) fail |= x64_##mnemonic(&code_rw, ## __VA_ARGS__)
+    uint8_t *code_wp = code_rw;
 
-    ASM( addsd, X64_REG(XMM0), X64_REG(XMM1) );
+    #define ASM(mnemonic, ...) fail |= x64_##mnemonic(&code_wp, ## __VA_ARGS__)
+    #define EMIT(...) \
+        do { \
+            const uint8_t data[] = { __VA_ARGS__ }; \
+            memcpy(code_wp, data, sizeof(data)); \
+            code_wp += sizeof(data); \
+        } while (false);
+    #define op_s fm_voice_opstate_s
+    #define MACRO(macro) \
+        do { memcpy(code_wp, macro, sizeof(macro)); code_wp += sizeof(macro); }\
+        while (false);
+
+    EMIT(0x48, 0x83, 0xec, 0x08); // sub rsp, 8
+    EMIT(0xf2, 0x0f, 0x11, 0x34, 0x24); // movsd [rsp], xmm6
+    
+    ASM( movsd, X64_REG(XMM1), X64_INDIRECT_C(R9, sizeof(op_s) * 3
+                                                  + offsetof(op_s, phase)) );
+    ASM( movsd, X64_INDIRECT_C(R9, sizeof(op_s)*3 + offsetof(op_s, output)),
+                X64_REG(XMM0) );
+    ASM( mulsd, X64_REG(XMM0), X64_REG(XMM1) );
+    ASM( movsd, X64_REG(XMM6), X64_REG(XMM0) );
     ASM( ret );
 
     // ASM(movsd, X64_REG(XMM0), X64_REG(XMM1));
     // ASM(movsd, X64_REG(XMM0), X64_INDIRECT_ISC(RAX, RDX, 0, 64));
 
+    #undef op_s
+    #undef MACRO
     #undef ASM
 
     if (fail) return NULL;
 
-    double (*testfunc)(double a, double b) = (void *)code_x;
-    double val = testfunc(1.0, 3.0);
-    assert(val == 4.0);
+    char dbgstrbuf[256];
+    char *dbgstrwp = dbgstrbuf;
+
+    for (uint8_t *b = code_rw; b != code_wp; ++b) {
+        dbgstrwp += sprintf(dbgstrwp, "0x%.2x, ", *b);
+    }
+    
+    OutputDebugString(dbgstrbuf);
+
+    // double (*testfunc)(double a, double b) = (void *)code_x;
+    // double val = testfunc(1.0, 3.0);
+    // assert(val == 4.0);
 
     return (fm_algo2_f) code_x;
 

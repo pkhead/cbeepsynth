@@ -1,65 +1,10 @@
-#include <assert.h>
-#include <stdint.h>
+#include "../mcode/fm_algo.h"
 
-#include "../synth/fm.h"
-#include "../alloc.h"
-#include "../util.h"
 #include "../log.h"
-#include "../mcode/arch.h"
-#include <umm_malloc/umm_malloc.h>
-
-#define DASM_MEMPOOL_SIZE 1024
-
-#define Dst_DECL	fm_algoc_s *Dst
-#define Dst_REF		((Dst)->state)
-
-#define DASM_M_GROW(CTX, t, p, sz, need) \
-  do { \
-    size_t _sz = (sz), _need = (need); \
-    if (_sz < _need) { \
-      if (_sz < 16) _sz = 16; \
-      while (_sz < _need) _sz += _sz; \
-      (p) = (t *)umm_multi_realloc(&((CTX)->dasm_heap), (p), _sz); \
-      if ((p) == NULL) exit(1); \
-      (sz) = _sz; \
-    } \
-  } while(0)
-
-#define DASM_M_FREE(CTX, p, sz) \
-    umm_multi_free(&((CTX)->dasm_heap), (p))
-
-#include <dynasm/dasm_proto.h>
 |.arch x64
 |.actionlist fm_actions
 
-struct fm_algoc {
-    dasm_State *state;
-    const bpbxsyn_context_s *ctx;
-
-    // use custom heap with embedded memory allocator, because the compilation
-    // code will run in the audio thread, which ought not to use OS facilities.
-#ifdef _MSC_VER
-    __declspec(align(8))
-#else
-    __attribute__((aligned(8)))
-#endif
-    uint8_t dasm_mempool[DASM_MEMPOOL_SIZE];
-    umm_heap dasm_heap;
-};
-
 #include <dynasm/dasm_x86.h>
-
-fm_algoc_s *bbsyn_fm_algoc_new(const bpbxsyn_context_s *ctx) {
-    fm_algoc_s *self = bpbxsyn_malloc(ctx, sizeof(fm_algoc_s));
-    *self = (fm_algoc_s) { .ctx = ctx };
-    umm_multi_init_heap(&self->dasm_heap, self->dasm_mempool,
-                        DASM_MEMPOOL_SIZE);
-    return self;
-}
-
-void bbsyn_fm_algoc_destroy(fm_algoc_s *algoc) {
-    if (!algoc) return;
-}
 
 fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
                                  const float *sine_wave, void *code_rw,

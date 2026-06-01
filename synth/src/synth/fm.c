@@ -134,10 +134,8 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
         assert(inst->algoc);
 
         fm_desc_s fmdesc;
-        for (int i = 0; i < 100; ++i) {
         bbsyn_fm_algoc_compile(inst->algoc, &fmdesc, ctx->wavetables.sine_wave,
                                inst->mcode_rw, inst->mcode_x);
-        }
         // static const uint8_t data[] = {
         //     0xf2, 0x0f, 0x58, 0xc1, // addsd %xmm1,%xmm0
         //     0xc3,                   // ret
@@ -330,7 +328,8 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
     const bpbxsyn_context_s *ctx = src_inst->ctx;
     setup_algorithm(fm);
 
-    fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    // fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    fm_algo2_f algo_func = fm->mcode_x;
 
     memset(samples, 0, frame_count * sizeof(float));
     
@@ -355,7 +354,9 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
         
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
+            // double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
+            //     voice->base.expression * voice->base.volume;
+            double x0 = algo_func(voice->op_states, voice->feedback_mult) *
                 voice->base.expression * voice->base.volume;
             
             float sample;

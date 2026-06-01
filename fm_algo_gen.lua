@@ -295,12 +295,12 @@ do
         algo_signatures[algo_index] = {}
 
         for fdbk_index, _ in ipairs(feedback_types) do
-            table.insert(algo_signatures[algo_index], ("static double fm_algo%02d%02d(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp)"):format(algo_index-1, fdbk_index-1))
+            table.insert(algo_signatures[algo_index], ("static double fm_algo%02d%02d(fm_voice_opstate_s *ops, double feedback_amp, const void *userdata)"):format(algo_index-1, fdbk_index-1))
             func_count = func_count + 1
         end
     end
 
-    lines[#lines+1] = "typedef double (*fm_algo_f)(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp);"
+    -- lines[#lines+1] = "typedef double (*fm_algo_f)(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LENGTH+1], const double feedback_amp);"
     lines[#lines+1] = "extern fm_algo_f bbsyn_fm_algorithm_table["..func_count.."];"
 
     lines[#lines+1] = "#endif"
@@ -310,6 +310,16 @@ end
 
 local function generate_sources()
     local lines = {"#include \"fm_algo.h\""}
+
+    table.insert(lines, [[
+static inline double fm_calc_op(const float sine_wave[SINE_WAVE_LENGTH+1],
+                                const double phase_mix) {
+    const int phase_int = (int) phase_mix;
+    const int index = phase_int & (SINE_WAVE_LENGTH - 1);
+    const double sample = sine_wave[index];
+    return sample + (sine_wave[index+1] - sample) * (phase_mix - phase_int);
+}
+    ]])
 
     for algo_index, algo_data in ipairs(algorithms) do    
         for fdb_index, fdb_data in ipairs(feedback_types) do
@@ -324,13 +334,13 @@ local function generate_sources()
 
                 local fdb_str
                 if fdb_data["op"..op] then
-                    fdb_str = " + feedback_amp * voice->op_states["..(fdb_data["op"..op]-1).."].output"
+                    fdb_str = " + feedback_amp * ops["..(fdb_data["op"..op]-1).."].output"
                 else
                     fdb_str = ""
                 end
 
-                lines[#lines+1] = "    double op"..(op-1).."_scaled = voice->op_states["..(op-1).."].expression * (voice->op_states[" .. (op-1) .. "].output = fm_calc_op("
-                lines[#lines+1] = "        sine_wave, voice->op_states["..(op-1).."].phase" .. mod_gen .. fdb_str
+                lines[#lines+1] = "    double op"..(op-1).."_scaled = ops["..(op-1).."].expression * (ops[" .. (op-1) .. "].output = fm_calc_op("
+                lines[#lines+1] = "        userdata, ops["..(op-1).."].phase" .. mod_gen .. fdb_str
                 lines[#lines+1] = "    ));"
             end
 

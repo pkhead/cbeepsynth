@@ -14,9 +14,11 @@
 #include "../context.h"
 #include "../alloc.h"
 #include "../log.h"
+#include "../mcode/mcode_page.h"
 
 
 #define VOICE_BASE_EXPRESSION 0.03
+#define MCODE_ALLOC_SIZE 512
 
 /*
 algorithms:
@@ -260,11 +262,23 @@ static void setup_algorithm(fm_inst_s *inst) {
     desc.carrier_count = carriers;
 
 #ifdef BBSYN_SUPPORT_FMGEN
-    bbsyn_fm_algoc_compile(inst->algoc, &desc,
-                           inst->base.ctx->wavetables.sine_wave,
-                           inst->mcode_rw, inst->mcode_x);
+    if (inst->algoc) {
+        inst->compiled_algo =
+            bbsyn_fm_algoc_compile(inst->algoc, &desc,
+                                   inst->base.ctx->wavetables.sine_wave,
+                                   inst->mcode_rw, inst->mcode_x,
+                                   MCODE_ALLOC_SIZE);
+    
+#   if !(defined(__x86_64__) || defined(_M_X64))
+        // icache flush not necessary on x86
+        if (inst->compiled_algo) {
+            bbsyn_mcode_flush_icache(inst->mcode_x, MCODE_ALLOC_SIZE);
+        }
+#   endif
+    }
 #else
     (void)desc;
+    inst->compiled_algo = NULL;
 #endif
 }
 
@@ -295,7 +309,8 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
 
 #ifdef BBSYN_SUPPORT_FMGEN
     inst->mcalloc_id =
-        bpbxsyn_mc_alloc(ctx, 512, &inst->mcode_rw, &inst->mcode_x);
+        bpbxsyn_mc_alloc(ctx, MCODE_ALLOC_SIZE, &inst->mcode_rw,
+                         &inst->mcode_x);
     
     if (inst->mcalloc_id != BPBXSYN_MCALLOC_INVALID_ID) {
         inst->algoc = bbsyn_fm_algoc_new(ctx);
@@ -485,8 +500,18 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
     fm_inst_s *const fm = (fm_inst_s*)src_inst;
     const bpbxsyn_context_s *ctx = src_inst->ctx;
 
-    fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
-    fm_algo2_f algo2_func = fm->mcode_x;
+    fm_algo_f algo_func;
+    const void *algo_func_userdata;
+    if (fm->compiled_algo) {
+        algo_func = fm->compiled_algo;
+        algo_func_userdata = NULL;
+    } else {
+        algo_func =
+            bbsyn_fm_algorithm_table[fm->algorithm
+                                     * BPBXSYN_FM_FEEDBACK_TYPE_COUNT
+                                     + fm->feedback_type];
+        algo_func_userdata = ctx->wavetables.sine_wave;
+    }    
 
     memset(samples, 0, frame_count * sizeof(float));
     
@@ -511,10 +536,9 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
         
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            // double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
-            //     voice->base.expression * voice->base.volume;
-            double x0 = algo2_func(voice->op_states, voice->feedback_mult) *
-                voice->base.expression * voice->base.volume;
+            double x0 = algo_func(voice->op_states, voice->feedback_mult,
+                                 algo_func_userdata)
+                        * voice->base.expression * voice->base.volume;
             
             float sample;
             if (voice->base.filters_enabled) {

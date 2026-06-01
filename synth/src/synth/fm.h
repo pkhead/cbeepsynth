@@ -17,9 +17,13 @@
 #define BBSYN_SUPPORT_FMGEN
 #endif
 
+typedef struct fm_voice_opstate fm_voice_opstate_s;
 typedef struct fm_algoc fm_algoc_s;
 
-typedef struct {
+typedef double (*fm_algo_f)(fm_voice_opstate_s *ops, double feedback_amp,
+                            const void *userdata);
+
+typedef struct fm_voice_opstate {
     double phase;
     double phase_delta;
     double phase_delta_scale;
@@ -59,6 +63,7 @@ typedef struct {
     void *mcode_rw;
     const void *mcode_x;
     fm_algoc_s *algoc;
+    fm_algo_f compiled_algo;
 } fm_inst_s;
 
 typedef struct fm_desc {
@@ -69,21 +74,10 @@ typedef struct fm_desc {
     uint8_t fdb[8]; // bitfield of feedback inputs per operator
 } fm_desc_s;
 
-typedef double const (*fm_algo2_f)(fm_voice_opstate_s *ops,
-                                   const double feedback_amp);
-
 fm_algoc_s *bbsyn_fm_algoc_new(const bpbxsyn_context_s *ctx);
 void bbsyn_fm_algoc_destroy(fm_algoc_s *algoc);
-fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
-                                  const float *sine_wave, void *code_rw,
-                                  const void *code_x);
-
-static inline double fm_calc_op(const float sine_wave[SINE_WAVE_LENGTH+1],
-                                const double phase_mix) {
-    const int phase_int = (int) phase_mix;
-    const int index = phase_int & (SINE_WAVE_LENGTH - 1);
-    const double sample = sine_wave[index];
-    return sample + (sine_wave[index+1] - sample) * (phase_mix - phase_int);
-}
+fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
+                                 const float *sine_wave, void *code_rw,
+                                 const void *code_x, size_t max_size);
 
 #endif

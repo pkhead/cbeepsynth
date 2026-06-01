@@ -60,9 +60,9 @@ void bbsyn_fm_algoc_destroy(fm_algoc_s *algoc) {
     if (!algoc) return;
 }
 
-fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
-                                  const float *sine_wave, void *code_rw,
-                                  const void *code_x)
+fm_algo_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
+                                 const float *sine_wave, void *code_rw,
+                                 const void *code_x, size_t max_size)
 {
     bbsyn_logmsgf(algoc->ctx, BPBXSYN_LOG_DEBUG, "compile FM algorithm!");
 
@@ -89,16 +89,6 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     |     subsd xmm0, xmm2
     |     mulsd xmm0, xmm1
     |     addsd xmm0, xmm2
-    | .endmacro
-    |
-    | .macro calc_fm_op, opidx, out
-    |     // [out] out
-    |     // destroys rax, rdx, and xmm0-3
-    |     movsd xmm1, qword opst:r9[opidx].phase
-    |     sample_sine_wave
-    |     movsd qword opst:r9[opidx].output, xmm0
-    |     mulsd xmm0, qword opst:r9[opidx].expression
-    |     movsd out, xmm0
     | .endmacro
 
     // function parameters:
@@ -162,15 +152,24 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     #undef Dst
 
     size_t szp;
-    dasm_link(algoc, &szp);
-    assert(szp < 512);
+    if (!dasm_link(algoc, &szp))
+        goto error;
 
-    dasm_encode(algoc, code_rw);
+    assert(szp <= max_size);
+
+    if (szp > max_size) goto error;
+
+    if (!dasm_encode(algoc, code_rw))
+        goto error;
 
     // double const (*func)(double a, double b) = code_x;
     // double val = func(1.0, 2.0);
     // assert(val == 3.0);
 
     dasm_free(algoc);
-    return code_x;
+    return (fm_algo_f) code_x;
+
+    error:
+        dasm_free(algoc);
+        return NULL;
 }

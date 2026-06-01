@@ -6,7 +6,7 @@
 
 #ifdef BBSYN_SUPPORT_FMGEN
 #   if defined(__x86_64__) || defined(_M_X64)
-#       include "fm_algo_x64.c"
+#       include "../dasm/fm_algo_x64.c"
 #   else
 #       error FM dynamic code generator is not supported on this platform!
 #   endif

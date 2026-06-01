@@ -46,9 +46,6 @@ struct fm_algoc {
 
 #include <dynasm/dasm_x86.h>
 
-#include <stdio.h>
-#include <windows.h>
-
 fm_algoc_s *bbsyn_fm_algoc_new(const bpbxsyn_context_s *ctx) {
     fm_algoc_s *self = bpbxsyn_malloc(ctx, sizeof(fm_algoc_s));
     *self = (fm_algoc_s) { .ctx = ctx };
@@ -69,8 +66,9 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     dasm_setupglobal(algoc, algoc->labels, lbl__MAX);
     dasm_setup(algoc, fm_actions);
 
-    #define opst fm_voice_opstate_s
     #define Dst algoc
+    | .type opst, fm_voice_opstate_s
+    |
     | .macro sample_sine_wave
     |     // [in]  xmm1: register where phase is stored
     |     // [out] xmm0
@@ -90,48 +88,42 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     | .macro calc_fm_op, opidx, out
     |     // [out] out
     |     // destroys rax, rdx, and xmm0-3
-    |     movsd xmm1, qword [r9 + sizeof(opst) * opidx + offsetof(opst, phase)]
+    |     movsd xmm1, qword opst:r9[opidx].phase
     |     sample_sine_wave
-    |     movsd qword [r9 + sizeof(opst) * opidx + offsetof(opst, output)], xmm0
-    |     movsd xmm1, qword [r9 + sizeof(opst) * opidx + offsetof(opst, expression)]
-    |     mulsd xmm0, xmm1
+    |     movsd qword opst:r9[opidx].output, xmm0
+    |     mulsd xmm0, qword opst:r9[opidx].expression
     |     movsd out, xmm0
     | .endmacro
+    |
     |
     | // function parameters:
     | // rcx: fm_opstate_s *opstates
     | // xmm1: double feedback amp
-    | pxor xmm2, xmm2
-    | pxor xmm0, xmm0
-    | pxor xmm3, xmm3
-    // |
-    // | sub rsp, 8
-    // | mov64 r8, ((size_t)sine_wave)
-    // | movsd xmm1, qword [rcx + sizeof(opst) * 0 + offsetof(opst, phase)]
-    // | sample_sine_wave
-    // | movsd xmm1, qword [rcx + sizeof(opst) * 0 + offsetof(opst, expression)]
-    // | mulsd xmm0, xmm1
-    | sub rsp, 32
+    | sub rsp, 40
     | movsd qword [rsp],      xmm8
     | movsd qword [rsp + 8],  xmm9
     | movsd qword [rsp + 16], xmm10
     | movsd qword [rsp + 24], xmm11
     |
+    | pxor xmm2, xmm2
+    | pxor xmm0, xmm0
+    | pxor xmm3, xmm3
+    | pxor xmm8, xmm8
+    | pxor xmm9, xmm9
+    | pxor xmm10, xmm10
+    | pxor xmm11, xmm11
+    |
     | // r8: float *sine_wave
     | // r9: fm_opstate_s *opstates;
     | // xmm5: double feedback_amp
-    | mov64 r8, ((size_t)sine_wave)
+    | mov64 r8, ((uintptr_t)sine_wave)
     | mov r9, rcx
     | movsd xmm5, xmm1
     |
-    | // op3 (xmm8 = op3_scaled)
-    | calc_fm_op 3, xmm8
-    | // op2 (xmm9 = op2_scaled)
-    | calc_fm_op 2, xmm9
-    | // op1 (xmm10 = op1_scaled)
-    | calc_fm_op 1, xmm10
-    | // op0 (xmm11 = op0_scaled)
-    | calc_fm_op 0, xmm11
+    | calc_fm_op 3, xmm11
+    | calc_fm_op 2, xmm10
+    | calc_fm_op 1, xmm9
+    | calc_fm_op 1, xmm8
     |
     | // return the sum of all the operator outputs
     | movsd xmm0, xmm8
@@ -144,9 +136,8 @@ fm_algo2_f bbsyn_fm_algoc_compile(fm_algoc_s *algoc, const fm_desc_s *desc,
     | movsd xmm9,  qword [rsp + 8]
     | movsd xmm10, qword [rsp + 16]
     | movsd xmm11, qword [rsp + 24]
-    | add rsp, 32
+    | add rsp, 40
     | ret
-    #undef opst
     #undef Dst
 
     size_t szp;

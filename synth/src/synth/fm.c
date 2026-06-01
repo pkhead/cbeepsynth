@@ -328,8 +328,8 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
     const bpbxsyn_context_s *ctx = src_inst->ctx;
     setup_algorithm(fm);
 
-    // fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
-    fm_algo2_f algo_func = fm->mcode_x;
+    fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    fm_algo2_f algo2_func = fm->mcode_x;
 
     memset(samples, 0, frame_count * sizeof(float));
     
@@ -356,8 +356,9 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
             // process the frames
             // double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
             //     voice->base.expression * voice->base.volume;
-            double x0 = algo_func(voice->op_states, voice->feedback_mult) *
+            double x0 = algo2_func(voice->op_states, voice->feedback_mult) *
                 voice->base.expression * voice->base.volume;
+            assert(x0 >= -1.0 && x0 <= 1.0);
             
             float sample;
             if (voice->base.filters_enabled) {

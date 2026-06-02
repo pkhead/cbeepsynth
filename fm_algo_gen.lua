@@ -37,13 +37,18 @@ feedback types:
 --]]
 
 -- load BitOp or bit32
-local bit
-do
-    local s
-    s, bit = pcall(require, "bit")
+if not bit then
+    if bit32 then
+        bit = bit32
+    else
+        do
+            local s
+            s, bit = pcall(require, "bit")
 
-    if not s then
-        bit = require("bit32")
+            if not s then
+                bit = require("bit32")
+            end
+        end
     end
 end
 

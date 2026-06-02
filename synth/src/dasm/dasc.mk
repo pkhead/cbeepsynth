@@ -1,4 +1,5 @@
-DYNASM=luajit ../../third_party/dynasm/dynasm.lua
+LUA?=lua
+DYNASM=$(LUA) ../../third_party/dynasm/dynasm.lua
 DASC_SOURCES=$(wildcard *.dasc)
 C_OUTPUTS=$(DASC_SOURCES:.dasc=.c)
 

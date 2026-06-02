@@ -18,6 +18,11 @@
       bbsyn__logmsgf
 - address volume disparities
 
+- fix bug where changing fm algo to one with more carriers than the previous
+  one may cause an explosion while a tone is still playing.
+  probably because operator expression is a lot larger for modulators.
+  does this happen when not using dynamically generated code?
+
 BUGS:
 - vibrato starts from wrong beat in fl studio. Could either clap-wrapper not
   providing playback information (not likely) or my code being faulty. need to

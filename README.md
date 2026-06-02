@@ -21,6 +21,8 @@ This project is structured such that the synth library can be used independently
 Prerequisites:
 - C99-compliant compiler
 - CMake
+- GNU Make (for now)
+- LuaJIT, Lua 5.2+, or [minilua](https://repo.or.cz/luajit-2.0.git/blob_plain/HEAD:/src/host/minilua.c).
 
 Clone or get this repository as a Git submodule
 ```bash
@@ -29,10 +31,18 @@ git clone https://github.com/pkhead/cbeepsynth
 git submodule add https://github.com/pkhead/cbeepsynth
 ```
 
-A Lua 5.1+ interpreter is needed if you wish to regenerate the FM algorithm code. Simply run:
+Run DynASM preprocessor:
+```bash
+LUA=<lua-executable> \
+    make -C synth/src/dasm -f dasc.mk
+```
+
+If you wish to regenerate the pre-generated FM algorithm code, simply run:
 ```bash
 lua fm_algo_gen.lua
 ```
+
+Then, you should be able to compile it with CMake:
 
 ### Synth
 #### Use as a CMake static library
@@ -95,5 +105,5 @@ cmake --build .
     - [GoldBox](https://aurysystem.github.io/), which includes a 6-operator FM.
     - [UltraBox](https://ultraabox.github.io/) and [Slarmoo's Box](https://slarmoo.github.io/slarmoosbox), which includes more FM frequency ratios.
     - Slarmoo's Box, again, for the expanded envelope system.
-- [umm_malloc](https://github.com/rhempel/umm_malloc), MIT
-- [DynAsm](https://luajit.org/dynasm.html), MIT
+- [umm_malloc](https://github.com/rhempel/umm_malloc)
+- [DynASM](https://luajit.org/dynasm.html), for dynamic code generation.

@@ -493,7 +493,7 @@ BPBXSYN_API bpbxsyn_synth_callbacks_s *
 bpbxsyn_synth_get_callback_table(bpbxsyn_synth_s *inst);
 
 /**
- * Obtain the user-set opaque pointer associated with an instrument.
+ * @brief Obtain the user-set opaque pointer associated with an instrument.
  *
  * @param inst Pointer to the instrument.
  * @return The user-set opaque pointer, or NULL if it was not set.
@@ -501,7 +501,7 @@ bpbxsyn_synth_get_callback_table(bpbxsyn_synth_s *inst);
 BPBXSYN_API void *bpbxsyn_synth_get_userdata(bpbxsyn_synth_s *inst);
 
 /**
- * Associate an instrument with an opaque pointer.
+ * @brief Associate an instrument with an opaque pointer.
  *
  * @param inst Pointer to the instrument.
  * @param userdata The pointer to associate with the instrument.
@@ -510,8 +510,11 @@ BPBXSYN_API void bpbxsyn_synth_set_userdata(bpbxsyn_synth_s *inst,
                                             void *userdata);
 
 /**
- * @brief Set or change the sample rate of a synthesizer instance. May cause
- *        allocation.
+ * @brief Set or change the sample rate of a synthesizer instance. May
+ *        cause allocation.
+ *
+ * @note The synth instance should not be modified or examined by another thread
+ *       while this function is running!
  *
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
@@ -525,6 +528,8 @@ BPBXSYN_API void bpbxsyn_synth_set_sample_rate(bpbxsyn_synth_s *inst,
  * This function should be called whenever transport begins. Or in other words,
  * whenever the song's track has started being played.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param inst Pointer to the instrument.
  * @param beat The beat that the transport started on.
  * @param bpm  The tempo of the transport, in beats per minute.
@@ -537,6 +542,8 @@ BPBXSYN_API void bpbxsyn_synth_begin_transport(bpbxsyn_synth_s *inst,
  *
  * Set an instrument's parameter to an integer value. The parameter can have any
  * underlying type.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst  Pointer to the instrument.
  * @param param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
@@ -554,6 +561,8 @@ BPBXSYN_API int bpbxsyn_synth_set_param_int(bpbxsyn_synth_s *inst,
  * the underlying type of the parameter is an integer type, this function will
  * fail.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param inst  Pointer to the instrument.
  * @param param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
  * identifies the parameter.
@@ -570,6 +579,8 @@ BPBXSYN_API int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s *inst,
  * underlying type of the param is a floating-point type, this function will
  * fail.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param      inst  Pointer to the instrument.
  * @param      param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
  *                   identifies the parameter.
@@ -580,10 +591,10 @@ BPBXSYN_API int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s *inst,
                                             uint32_t param, int *value);
 
 /**
- * @brief Get the value of an instrument's parameter as a floating-point value.
+ * @brief Get the value of an instrument's parameter as a double-precision
+ *        floating-point value.
  *
- * Gets the value of an instrument's parameter as a double-precision floating
- * point value.
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param      inst  Pointer to the instrument.
  * @param      param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
@@ -608,7 +619,6 @@ bpbxsyn_synth_effect_toggle_param(bpbxsyn_synthfx_type_e type);
 
 /**
  * @brief Get the list of possible envelope targets for a given instrument type.
- * *
  *
  * @param      type The BPBXSYN_SYNTH_* enum that identifies the instrument
  *                  type.
@@ -634,7 +644,10 @@ BPBXSYN_API uint8_t bpbxsyn_synth_envelope_count(const bpbxsyn_synth_s *inst);
  *
  * This returns the pointer to the data for the configuration of an envelope of
  * an instrument. These are stored contiguously and in order, so it is valid to
- * treat the return value asn array.
+ * treat the return value as an array.
+ *
+ * @note It is not safe to modify the contents of the return value outside of
+ *       the audio thread.
  *
  * @param inst  Pointer to the instrument.
  * @param index The index to the envelope configuration.
@@ -651,6 +664,8 @@ bpbxsyn_synth_get_envelope(bpbxsyn_synth_s *inst, uint8_t index);
  * This function will return a failure notice if the number of envelopes will
  * exceed BPBXSYN_MAX_ENVELOPE_COUNT.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param inst Pointer to the instrument.
  * @return On success, pointer to the envelope configuration structure. NULL on
  * failure.
@@ -664,14 +679,18 @@ bpbxsyn_synth_add_envelope(bpbxsyn_synth_s *inst);
  * This will remove an active envelope for an instrument, and shift the indices
  * of the other active envelopes to fill the spot.
  *
- * @param inst Pointer to the instrument.
- * @param sample_rate The index of the envelope to remove
+ * @note It is only safe to call this function from the audio thread.
+ *
+ * @param inst  Pointer to the instrument.
+ * @param index The index of the envelope to remove
  */
 BPBXSYN_API void bpbxsyn_synth_remove_envelope(bpbxsyn_synth_s *inst,
                                                uint8_t index);
 
 /**
  * @brief Clears all the active envelopes of an instrument.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst Pointer to the instrument.
  */
@@ -722,6 +741,8 @@ BPBXSYN_API void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst,
  * play until @ref bpbxsyn_synth_end_note is called for the given voice id.
  * Otherwise, the note will end automatically based on the given length.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param inst     Pointer to the instrument.
  * @param key      The MIDI key of the note.
  * @param velocity The velocity of the note, from 0-1, or the constant
@@ -736,6 +757,8 @@ BPBXSYN_API bpbxsyn_voice_id bpbxsyn_synth_begin_note(bpbxsyn_synth_s *inst,
 
 /**
  * @brief Send a note off event to an instrument.
+ *
+ * @note It is only safe to call this function from the audio thread.
  * 
  * @param inst Pointer to the instrument.
  * @param id The ID of the note to end.
@@ -746,12 +769,16 @@ BPBXSYN_API void bpbxsyn_synth_end_note(bpbxsyn_synth_s *inst,
 /**
  * @brief Turn off all active notes of an instrument.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param inst Pointer to the instrument.
  */
 BPBXSYN_API void bpbxsyn_synth_end_all_notes(bpbxsyn_synth_s *inst);
 
 /**
  * @brief Choke all active notes.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst Pointer to the instrument.
  */
@@ -765,20 +792,23 @@ BPBXSYN_API void bpbxsyn_synth_stop(bpbxsyn_synth_s *inst);
  * envelope/automation values will be calculated, and interpolated across the
  * frames of an audio render.
  *
- * To get the tick rate, use the bpbxsyn_calc_samples_per_tick function.
+ * To get the tick rate, use the @ref bpbxsyn_calc_samples_per_tick function.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
  */
 BPBXSYN_API void bpbxsyn_synth_tick(bpbxsyn_synth_s *inst,
                                     const bpbxsyn_tick_ctx_s *tick_ctx);
-// mono output
 
 /**
  * @brief Render the audio of an instrument.
  *
  * This renders the audio of an instrument to a mono audio output buffer of a
  * given size.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst        Pointer to the instrument.
  * @param output      The mono audio output buffer.
@@ -870,6 +900,9 @@ BPBXSYN_API void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
  * @brief Set or change the sample rate of an effect instance. May cause
  *        allocation.
  *
+ * @note The synth instance should not be modified or examined by another thread
+ *       while this function is running!
+ *
  * @param effect      Pointer to the effect instance.
  * @param sample_rate The sample rate in Hz.
  */
@@ -895,6 +928,8 @@ BPBXSYN_API void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
  * Set an effect instance's parameter to an integer value. The parameter can
  * have any underlying type.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param effect Pointer to the effect instance.
  * @param param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
  * parameter.
@@ -910,6 +945,8 @@ BPBXSYN_API int bpbxsyn_effect_set_param_int(bpbxsyn_effect_s *effect,
  * Set an effect's parameter to a double-precision floating-point value. If the
  * underlying type of the parameter is an integer type, this function will
  * fail.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param effect Pointer to the effect instance.
  * @param param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
@@ -927,6 +964,8 @@ BPBXSYN_API int bpbxsyn_effect_set_param_double(bpbxsyn_effect_s *inst,
  * underlying type of the param is a floating-point type, this function will
  * fail.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param      effect Pointer to the effect instance.
  * @param      param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
  *                    parameter.
@@ -943,6 +982,8 @@ BPBXSYN_API int bpbxsyn_effect_get_param_int(const bpbxsyn_effect_s *inst,
  * Gets the value of an effect instance's parameter as a double-
  * floating point value.
  *
+ * @note It is only safe to call this function from the audio thread.
+ *
  * @param      effect Pointer to the effect instance.
  * @param      param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
  * parameter.
@@ -958,6 +999,8 @@ BPBXSYN_API int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *effect,
  * Clears any feedback or delay systems the effect is using. It has the
  * effect of removing any potential tail that the effect might produce at
  * the moment of the call.
+ *
+ * @note It is only safe to call this function from the audio thread.
  * 
  * @param inst Pointer to the instrument.
  */
@@ -970,7 +1013,9 @@ BPBXSYN_API void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst);
  * on the tempo of the song. Values will be calculated on each tick and
  * interpolated along the individual frames of an audio render.
  *
- * To get the tick rate, use the bpbxsyn_calc_samples_per_tick function.
+ * To get the tick rate, use the @ref bpbxsyn_calc_samples_per_tick function.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param inst     Pointer to the instrument.
  * @param tick_ctx Pointer to a bpbxsyn_tick_ctx structure.
@@ -982,8 +1027,11 @@ BPBXSYN_API void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
 /**
  * @brief Run an effect instance.
  *
- * This takes in a stereo audio buffer containing the input, and performs audio
- * processing in-place. Each of the two audio channels are independent buffers.
+ * This takes in a mono or stereo audio buffer and performs audio processing
+ * in-place. If it is a mono effect, only the left channel is used. If it is
+ * a stereo effect, both channels are used.
+ *
+ * @note It is only safe to call this function from the audio thread.
  *
  * @param effect      Pointer to the effect instance.
  * @param buffer      Pointer to two audio buffers, for the left and right

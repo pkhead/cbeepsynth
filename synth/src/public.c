@@ -37,7 +37,7 @@ static const inst_vtable_s *inst_vtables[BPBXSYN_SYNTH_COUNT] = {
     // BPBXSYN_SYNTH_SUPERSAW
     NULL,
     // BPBXSYN_SYNTH_CUSTOM_CHIP
-    NULL,
+    &bbsyn_inst_custom_chip_vtable,
 };
 
 static const effect_vtable_s *effect_vtables[BPBXSYN_EFFECT_COUNT] = {

@@ -22,6 +22,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef _beepbox_instrument_data_h_
 #define _beepbox_instrument_data_h_
 
+#ifdef __cplusplus
+#include <cstdint>
+#else
+#include <stdint.h>
+#endif
+
 #define BPBXSYN_SYNTH_MAX_VOICES 16
 
 typedef enum {
@@ -127,11 +133,18 @@ typedef enum {
 // Custom Chip data //
 //////////////////////
 #define BPBXSYN_CUSTOM_CHIP_PARAM_COUNT 2
+#define BPBXSYN_CUSTOM_CHIP_WAVE_LENGTH 64
+#define BPBXSYN_CUSTOM_CHIP_SAMPLE_RANGE 24
 
 typedef enum {
     BPBXSYN_CUSTOM_CHIP_PARAM_UNISON = BPBXSYN_BASE_PARAM_COUNT,
     BPBXSYN_CUSTOM_CHIP_PARAM_ALIASES
 } bpbxsyn_custom_chip_param_e;
+
+typedef struct bpbxsyn_custom_chip_exstate {
+    // each sample in the range [-24, 24]
+    int8_t wave[BPBXSYN_CUSTOM_CHIP_WAVE_LENGTH];
+} bpbxsyn_custom_chip_exstate_s;
 
 ////////////////
 // Noise data //

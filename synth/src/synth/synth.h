@@ -75,6 +75,7 @@ typedef void (*inst_destroy_f)(bpbxsyn_synth_s *inst);
 // this is a really elegant solution i swear!!
 typedef struct {
     const size_t                struct_size;
+    const size_t                exstate_size;
     const inst_init_f           inst_init;
     const inst_destroy_f        inst_destroy;
     const uint32_t              param_count;
@@ -100,6 +101,9 @@ typedef struct {
                             const bpbxsyn_tick_ctx_s *tick_ctx);
     void (*const inst_run)(bpbxsyn_synth_s *inst, float *samples,
                            size_t frame_count);
+    
+    void (*const inst_get_exstate)(bpbxsyn_synth_s *inst, void *out);
+    void (*const inst_set_exstate)(bpbxsyn_synth_s *inst, const void *in);
 } inst_vtable_s;
 // (for c, at least)
 // was using a switch statement cus i was lazy and thought "eh maybe it won't be that bad"

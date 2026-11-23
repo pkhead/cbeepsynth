@@ -436,6 +436,33 @@ void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst) {
     inst->envelope_count = 0;
 }
 
+size_t bpbxsyn_synth_get_exstate_size(bpbxsyn_synth_type_e type) {
+    const inst_vtable_s *vtable = inst_vtables[type];
+    assert(vtable);
+    if (vtable == NULL) return 0;
+
+    return vtable->exstate_size;
+}
+
+size_t bpbxsyn_synth_get_exstate(bpbxsyn_synth_s *inst, void *buffer) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    if (!vtable->inst_get_exstate) return 0;
+    if (buffer)
+        vtable->inst_get_exstate(inst, buffer);
+
+    return vtable->exstate_size;
+}
+
+void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst, const void *buffer) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    if (vtable->inst_set_exstate && buffer)
+        vtable->inst_set_exstate(inst, buffer);
+}
+
 
 bpbxsyn_voice_id bpbxsyn_synth_begin_note(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];

@@ -678,6 +678,37 @@ BPBXSYN_API void bpbxsyn_synth_remove_envelope(bpbxsyn_synth_s *inst,
 BPBXSYN_API void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst);
 
 /**
+ * @brief Obtain the size of the exstate for a given synth type.
+ *
+ * @return The exstate size, in bytes. Returns 0 if the instrument type has no
+ *         exstate.
+ */
+BPBXSYN_API size_t bpbxsyn_synth_get_exstate_size(bpbxsyn_synth_type_e type);
+
+/**
+ * @brief Copy the exstate of the synth into the provided buffer
+ *
+ * @note There are no guarantees of atomicity between threads.
+ *
+ * @param inst         Pointer to the synth instance.
+ * @param [out] buffer Pointer to the buffer to write into. Passing in NULL is safe: no writes will occur.
+ * @return             The size of the synth's exstate.
+ **/
+BPBXSYN_API size_t bpbxsyn_synth_get_exstate(bpbxsyn_synth_s *inst,
+                                             void *buffer);
+
+/**
+ * @brief Apply exstate data to the given synth.
+ *
+ * @note It is only safe to call this function from the audio thread.
+ *
+ * @param inst Pointer to the synth instance.
+ * @param buffer Pointer to the buffer to read from.
+ */
+BPBXSYN_API void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst,
+                                           const void *buffer);
+
+/**
  * @brief Send a note on event to an instrument.
  *
  * Sends a note on event to an instrument.

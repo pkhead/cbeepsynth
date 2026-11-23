@@ -35,17 +35,27 @@ static double get_lp_cutoff_decay_volume_compensation(const envelope_curve_prese
     return 1.0;
 }
 
-static double compute_envelope(const envelope_curve_preset_s *curve, double time, double beats, double note_size, double mod_x, double mod_y, double mod_w) {
+static double compute_envelope(const envelope_curve_preset_s *curve,
+                               double time, double beats,
+                               const envelope_computer_s *env_computer,
+                               int index) {
+    double note_size = env_computer->note_size[index] * NOTE_SIZE_MAX;
+    double mod_x = env_computer->mod_x[index];
+    double mod_y = env_computer->mod_y[index];
+    double mod_w = env_computer->mod_wheel[index];
+
+    assert(!isnan(note_size));
+    
     switch (curve->curve_type) {
-        case ENV_CURVE_NOTE_SIZE:       return bbsyn_note_size_to_volume_mult(note_size);
-        case ENV_CURVE_NONE:            return 1.0;
-        case ENV_CURVE_TWANG:           return 1.0 / (1.0 + time * curve->speed);
-        case ENV_CURVE_SWELL:           return 1.0 - 1.0 / (1.0 + time * curve->speed);
-        case ENV_CURVE_TREMOLO:         return 0.5 - cos(beats * 2.0 * PI * curve->speed) * 0.5;
-        case ENV_CURVE_TREMOLO2:        return 0.75 - cos(beats * 2.0 * PI * curve->speed) * 0.25;
-        case ENV_CURVE_PUNCH:           return max(1.0, 2.0 - time * 10.0);
-        case ENV_CURVE_DECAY:           return pow(2.0, -curve->speed * time);
-        case ENV_CURVE_BLIP:            return 1.0 * +(time < (0.25 / sqrt(curve->speed)));
+        case ENV_CURVE_NOTE_SIZE: return bbsyn_note_size_to_volume_mult(note_size);
+        case ENV_CURVE_NONE:      return 1.0;
+        case ENV_CURVE_TWANG:     return 1.0 / (1.0 + time * curve->speed);
+        case ENV_CURVE_SWELL:     return 1.0 - 1.0 / (1.0 + time * curve->speed);
+        case ENV_CURVE_TREMOLO:   return 0.5 - cos(beats * 2.0 * PI * curve->speed) * 0.5;
+        case ENV_CURVE_TREMOLO2:  return 0.75 - cos(beats * 2.0 * PI * curve->speed) * 0.25;
+        case ENV_CURVE_PUNCH:     return max(1.0, 2.0 - time * 10.0);
+        case ENV_CURVE_DECAY:     return pow(2.0, -curve->speed * time);
+        case ENV_CURVE_BLIP:      return 1.0 * +(time < (0.25 / sqrt(curve->speed)));
 
         case ENV_CURVE_FLARE: {
             const double attack = 0.25 / sqrt(curve->speed);
@@ -63,7 +73,8 @@ static double compute_envelope(const envelope_curve_preset_s *curve, double time
 }
 
 void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
-                                  double mod_x, double mod_y, double mod_w) {
+                                  double note_size, double mod_x, double mod_y,
+                                  double mod_w) {
     for (int i = 0; i < BPBXSYN_ENV_INDEX_COUNT; i++) {
         env_computer->envelope_starts[i] = 1.0;
         env_computer->envelope_ends[i] = 1.0;
@@ -71,22 +82,26 @@ void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
 
     env_computer->lp_cutoff_decay_volume_compensation = 1.0;
 
+    env_computer->note_size[0] = note_size;
     env_computer->mod_x[0] = mod_x;
     env_computer->mod_y[0] = mod_y;
     env_computer->mod_wheel[0] = mod_w;
 
+    env_computer->note_size[1] = note_size;
     env_computer->mod_x[1] = mod_x;
     env_computer->mod_y[1] = mod_y;
     env_computer->mod_wheel[1] = mod_w;
 }
 
 void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
-                                      double mod_x, double mod_y,
-                                      double mod_w) {
+                                      double note_size, double mod_x,
+                                      double mod_y, double mod_w) {
+    env_computer->note_size[0] = env_computer->note_size[1];
     env_computer->mod_x[0] = env_computer->mod_x[1];
     env_computer->mod_y[0] = env_computer->mod_y[1];
     env_computer->mod_wheel[0] = env_computer->mod_wheel[1];
 
+    env_computer->note_size[1] = note_size;
     env_computer->mod_x[1] = mod_x;
     env_computer->mod_y[1] = mod_y;
     env_computer->mod_wheel[1] = mod_w;
@@ -179,32 +194,41 @@ void bbsyn_compute_envelopes(
         }
     }
 
-    for (unsigned int i = 0; i < inst->envelope_count; i++) {
-        const bpbxsyn_envelope_s *env = &inst->envelopes[i];
-        const envelope_curve_preset_s curve = bbsyn_envelope_curve_presets[env->curve_preset];
+    bool used_note_size = false;
+    int env_count = inst->envelope_count;
+    for (int i = 0; i <= env_count; ++i) {
+        bpbxsyn_envelope_s env = inst->envelopes[i];
+
+        // Special case: if no other envelopes used note size, default to
+        // applying it to note volume.
+        if (i == env_count)
+        {
+            if (used_note_size) break;
+            
+            env.index = BPBXSYN_ENV_INDEX_NOTE_VOLUME;
+            env.curve_preset = 1;
+        }
+
+        const envelope_curve_preset_s curve =
+            bbsyn_envelope_curve_presets[env.curve_preset];
+
+        if (i != env_count && curve.curve_type == ENV_CURVE_NOTE_SIZE)
+            used_note_size = true;
 
         double envelope_start = compute_envelope(
-            &curve, env_computer->note_secs_start, beats_time_start, NOTE_SIZE_MAX,
-            env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
-        );
-
+            &curve, env_computer->note_secs_start, beats_time_start,
+            env_computer, 0);
         double envelope_end = compute_envelope(
-            &curve, env_computer->note_secs_end, beats_time_end, NOTE_SIZE_MAX,
-            env_computer->mod_x[1], env_computer->mod_y[1], env_computer->mod_wheel[1]
-        );
+            &curve, env_computer->note_secs_end, beats_time_end,
+            env_computer, 1);
 
         if (sliding) {
             const double other_start = compute_envelope(
-                &curve,
-                env_computer->prev_note_secs_end, beats_time_start, NOTE_SIZE_MAX,
-                env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
-            );
-
+                &curve, env_computer->prev_note_secs_end, beats_time_start,
+                env_computer, 0);
             const double other_end = compute_envelope(
-                &curve,
-                env_computer->prev_note_secs_end, beats_time_end, NOTE_SIZE_MAX,
-                env_computer->mod_x[0], env_computer->mod_y[0], env_computer->mod_wheel[0]
-            );
+                &curve, env_computer->prev_note_secs_end, beats_time_end,
+                env_computer, 0);
 
             envelope_start =
                 (envelope_start - other_start) * env_computer->slide_ratio_start + other_start;
@@ -212,10 +236,10 @@ void bbsyn_compute_envelopes(
                 (envelope_end - other_end) * env_computer->slide_ratio_end + other_end;
         }
 
-        env_computer->envelope_starts[env->index] *= envelope_start;
-        env_computer->envelope_ends[env->index] *= envelope_end;
+        env_computer->envelope_starts[env.index] *= envelope_start;
+        env_computer->envelope_ends[env.index] *= envelope_end;
 
-        int filter_target = get_filter_target(env->index);
+        int filter_target = get_filter_target(env.index);
         if (filter_target != -1 && inst->note_filter.type[filter_target] == BPBXSYN_FILTER_TYPE_LP) {
             double v = get_lp_cutoff_decay_volume_compensation(&curve);
             if (v > env_computer->lp_cutoff_decay_volume_compensation)

@@ -321,8 +321,10 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
         
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            double x0 = algo_func(voice, ctx->wavetables.sine_wave, voice->feedback_mult) *
-                voice->base.expression * voice->base.volume;
+            double x0 = algo_func(voice,
+                                  ctx->wavetables.sine_wave,
+                                  voice->feedback_mult);
+            x0 *= voice->base.expression;
             
             float sample;
             if (voice->base.filters_enabled) {

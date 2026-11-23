@@ -31,6 +31,7 @@ typedef struct {
     // TODO: implement this. Currently it's always 1.0
     double lp_cutoff_decay_volume_compensation;
 
+    double note_size[2];
     double mod_x[2];
     double mod_y[2];
     double mod_wheel[2];
@@ -64,10 +65,12 @@ typedef struct {
 } envelope_curve_preset_s;
 
 void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
-                                  double mod_x, double mod_y, double mod_w);
+                                  double note_size, double mod_x, double mod_y,
+                                  double mod_w);
 
 void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
-                                      double mod_x, double mod_y, double mod_w);
+                                      double note_size, double mod_x,
+                                      double mod_y, double mod_w);
 
 void bbsyn_compute_envelopes(const bpbxsyn_synth_s *instrument,
                              envelope_computer_s *env_computer,

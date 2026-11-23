@@ -119,11 +119,15 @@ static uint8_t get_chord_list(inst_base_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES]
 bpbxsyn_voice_id bbsyn_trigger_voice(bpbxsyn_synth_s *inst,
                             void *voices, size_t sizeof_voice,
                             int key, double velocity, int32_t length,
-                            bool *continuation
-) {
+                            bool *continuation) {
     if (key < 0) key = 0;
-    if (velocity < 0.0)      velocity = 0.0;
-    else if (velocity > 1.0) velocity = 1.0;
+
+    bool use_note_size = isnan(velocity);
+    if (!use_note_size)
+    {
+        if (velocity < 0.0) velocity = 0.0;
+        else if (velocity > 1.0) velocity = 1.0;
+    }
 
     if (continuation)
         *continuation = false;
@@ -238,13 +242,13 @@ bpbxsyn_voice_id bbsyn_trigger_voice(bpbxsyn_synth_s *inst,
         voice->flags &= ~(VOICE_FLAG_RELEASE_TRIGGERED | VOICE_FLAG_RELEASED);
         voice->key = (uint16_t)key;
         voice->current_key = (double)voice->key;
-        voice->volume = (float)velocity;
+        voice->note_size = voice->note_size;
         voice->note_length = (int) length;
 
         if (inst->callbacks.voice_end)
-            inst->callbacks.voice_end(
-                inst, (bpbxsyn_voice_id)voice_index_to_shadow);
-            
+            inst->callbacks.voice_end(inst,
+                                      (bpbxsyn_voice_id)voice_index_to_shadow);
+        
         shadowed_voice->flags = 0;
 
         if (inst->active_effects[BPBXSYN_SYNTHFX_TRANSITION_TYPE])
@@ -270,17 +274,20 @@ bpbxsyn_voice_id bbsyn_trigger_voice(bpbxsyn_synth_s *inst,
             .chord_index = chord_index,
 
             .key = (uint16_t)key,
-            .volume = (float)velocity,
+            .note_size = velocity,
             .note_length = (int)length
         };
 
         voice->current_key = (double)voice->key;
+        if (use_note_size)
+            voice->flags |= VOICE_FLAG_USE_NOTE_SIZE;
 
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
             bbsyn_dyn_biquad_reset_output(voice->note_filters + i);
         }
 
-        bbsyn_envelope_computer_init(&voice->env_computer, inst->mod_x, inst->mod_y, inst->mod_wheel);
+        bbsyn_envelope_computer_init(&voice->env_computer, velocity,
+                                     inst->mod_x, inst->mod_y, inst->mod_wheel);
     }
 
     return (bpbxsyn_voice_id) voice_index;
@@ -337,12 +344,20 @@ static void compute_voice_pre(inst_base_voice_s *const voice, voice_compute_s *c
     // const double part_time_start = (double)ticks_into_bar / TICKS_PER_PART;
     // const double part_time_end = (double)(ticks_into_bar + 1) / TICKS_PER_PART;
 
-    // update envelope computer modulation
+    // on the note's first tick, the previous value of note size is undefined.
+    // thus, it is set to NaN at that time to indicate that the envelope
+    // computer should not interpolate.
+    if (isnan(voice->note_size)) {
+        voice->env_computer.note_size[1] =
+            voice->env_computer.note_size[0] = compute_data->note_size;
+    }
+    
     bbsyn_update_envelope_modulation(&voice->env_computer,
-        compute_data->mod_x, compute_data->mod_y, compute_data->mod_w);
-    bbsyn_compute_envelopes(inst, &voice->env_computer,
-        compute_data->cur_beat, voice->time_secs, samples_per_tick * sample_len
-    );
+                                     compute_data->note_size,
+                                     compute_data->mod_x, compute_data->mod_y,
+                                     compute_data->mod_w);
+    bbsyn_compute_envelopes(inst, &voice->env_computer, compute_data->cur_beat,
+                            voice->time_secs, samples_per_tick * sample_len);
 
     double interval_start = 0.0;
     double interval_end = 0.0;
@@ -529,12 +544,6 @@ void bbsyn_inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, c
     const double beat = run_ctx->beat;
 
     const double samples_per_tick = bbsyn_calc_samples_per_tick(run_ctx->bpm, sample_rate);
-    const double fade_in = inst->fade_in;
-    const double fade_out = inst->fade_out;
-
-    const double mod_x = inst->mod_x;
-    const double mod_y = inst->mod_y;
-    const double mod_w = run_ctx->mod_wheel;
 
     // if chord type is disabled, set chord type to simultaneous
     if (!inst->active_effects[BPBXSYN_SYNTHFX_CHORD_TYPE]) {
@@ -673,6 +682,13 @@ void bbsyn_inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, c
             break;
     }
 
+    const double fade_in = inst->fade_in;
+    const double fade_out = inst->fade_out;
+    const double note_size = run_ctx->note_size;
+    const double mod_x = inst->mod_x;
+    const double mod_y = inst->mod_y;
+    const double mod_w = inst->mod_wheel;
+
     for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(params->voice_list, params->sizeof_voice, i);
         
@@ -688,6 +704,12 @@ void bbsyn_inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, c
         }
 
         if (voice_is_computing(voice)) {
+            double voice_note_size;
+            if (voice->flags & VOICE_FLAG_USE_NOTE_SIZE)
+                voice_note_size = note_size;
+            else
+                voice_note_size = voice->note_size;
+
             voice_compute_s compute_data = {
                 .constants = {
                     .inst = inst,
@@ -699,6 +721,7 @@ void bbsyn_inst_tick(bpbxsyn_synth_s *inst, const bpbxsyn_tick_ctx_s *run_ctx, c
                     .cur_beat = beat,
                     .vibrato_params = &vibrato,
 
+                    .note_size = voice_note_size,
                     .mod_x = mod_x,
                     .mod_y = mod_y,
                     .mod_w = mod_w

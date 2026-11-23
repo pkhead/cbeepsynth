@@ -25,9 +25,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef __cplusplus
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 #else
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
 #endif
 
 #ifdef __cplusplus
@@ -67,6 +69,8 @@ extern "C" {
 #define BPBXSYN_FILTER_GAIN_RANGE 15
 #define BPBXSYN_FILTER_FREQ_MAX ((BPBXSYN_FILTER_FREQ_RANGE - 1))
 #define BPBXSYN_FILTER_GAIN_MAX ((BPBXSYN_FILTER_GAIN_RANGE - 1))
+
+#define BPBXSYN_USE_NOTE_SIZE NAN
 #define BPBXSYN_NOTE_LENGTH_UNKNOWN -1
 
 typedef enum {
@@ -307,8 +311,16 @@ typedef struct {
     int base_pitch;
 
     /**
-     * This is basically essentially the "note size" parameter in BeepBox.
-     * It is a value from 0 to 1. The resting value is 1.
+     * This controls the "note size" envelope source for all participating
+     * voices. It is a value in the range of [0, 1]. Full note size is 1.
+     *
+     * @note This is only relevant when passed to a synth.
+     */
+    double note_size;
+
+    /**
+     * This controls the "mod wheel" envelope source. It is a value in the range
+     * [0, 1].
      *
      * @note This is only relevant when passed to a synth.
      **/
@@ -668,13 +680,21 @@ BPBXSYN_API void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst);
 /**
  * @brief Send a note on event to an instrument.
  *
- * @note If the length given is BPBXSYN_NOTE_LENGTH_UNKNOWN, then the note will
- * play until bpbxsyn_synth_end_note is called for the given voice id.
+ * Sends a note on event to an instrument.
+ *
+ * To have the note use "note size" data passed into @ref bpbxsyn_synth_tick,
+ * pass in the constant BPBXSYN_USE_NOTE_SIZE as the velocity parameter.
+ * Otherwise, the size of the note will be dictated by the given velocity, and
+ * will be constant throughout its duration.
+ *
+ * If the length given is BPBXSYN_NOTE_LENGTH_UNKNOWN, then the note will
+ * play until @ref bpbxsyn_synth_end_note is called for the given voice id.
  * Otherwise, the note will end automatically based on the given length.
  *
  * @param inst     Pointer to the instrument.
  * @param key      The MIDI key of the note.
- * @param velocity The velocity of the note, from 0-1.
+ * @param velocity The velocity of the note, from 0-1, or the constant
+ *                 BPBXSYN_USE_NOTE_SIZE.
  * @param length   The length of the note, in ticks. BPBXSYN_NOTE_LENGTH_UNKNOWN
  *                 if unknown.
  * @returns The ID of the newly created voice.

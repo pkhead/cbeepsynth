@@ -117,9 +117,10 @@ enum {
                                                 // be unset.
     VOICE_FLAG_COMPUTING            = (1 << 4), // voice is fully active
     VOICE_FLAG_IS_ON_LAST_TICK      = (1 << 5), // this voice will be freed on the start of the next tick
-    VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 6), // for vibrato continuity
-    VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 7),
-    VOICE_FLAG_HAS_PREV_NOTE        = (1 << 8),
+    VOICE_FLAG_USE_NOTE_SIZE        = (1 << 6), // value of note size for this voice updates on every tick
+    VOICE_FLAG_HAS_PREV_VIBRATO     = (1 << 7), // for vibrato continuity
+    VOICE_FLAG_HAS_PREV_PITCH_EXPR  = (1 << 8),
+    VOICE_FLAG_HAS_PREV_NOTE        = (1 << 9),
 };
 
 #define voice_is_active(voice)    ((voice)->flags & VOICE_FLAG_ACTIVE)
@@ -140,8 +141,13 @@ typedef struct {
     // chronological index of the note within the chord
     uint8_t chord_index;
     
-    float volume;
     int note_length;
+
+    // current note size: a value from 0-1. this is copied from the tick run
+    // context on every tick the voice is active. this is initialized to -1 when
+    // the voice has just begun before its first tick without an initial
+    // velocity
+    double note_size;
 
     double current_key; // modified by chord type
     double prev_pitch; // used by slide transition
@@ -178,6 +184,7 @@ typedef struct {
     double samples_per_tick;
     double sample_rate;
     double cur_beat;
+    double note_size;
     double mod_x, mod_y, mod_w;
     bpbxsyn_vibrato_params_s *vibrato_params;
 } voice_compute_constants_s;

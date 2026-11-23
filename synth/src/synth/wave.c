@@ -206,7 +206,7 @@ static void wave_audio_render_callback(
 
             double x0_sum = x0[0] + x0[1] * unison.sign;
 
-            x0_sum *= voice->base.expression * voice->base.volume;
+            x0_sum *= voice->base.expression;
 
             float final_sample;
             if (voice->base.filters_enabled) {

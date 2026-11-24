@@ -196,25 +196,29 @@ void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
 
 #define INIT_WAVETABLE_GENERIC(INDEX, EXPR, TRANSFORM, ...)                    \
     {                                                                          \
-        static const float arrdata[] = {__VA_ARGS__, 0};                       \
-        float *raw = bpbxsyn_malloc(ctx, sizeof(arrdata));                     \
+        static double wave_arr[] = {__VA_ARGS__, 0};                           \
+        TRANSFORM(wave_arr, ARRLEN(wave_arr));                                 \
+                                                                               \
+        float *raw = bpbxsyn_malloc(ctx, ARRLEN(wave_arr) * sizeof(float));    \
         assert(raw);                                                           \
         if (!raw) return false;                                                \
-        memcpy(raw, arrdata, sizeof(arrdata));                                 \
-        TRANSFORM(raw, ARRLEN(arrdata));                                       \
-        float *use = bpbxsyn_malloc(ctx, sizeof(arrdata));                     \
+        for (int i = 0; i < ARRLEN(wave_arr); ++i)                             \
+            raw[i] = (float)wave_arr[i];                                       \
+                                                                               \
+        float *use = bpbxsyn_malloc(ctx, ARRLEN(wave_arr) * sizeof(float));    \
         assert(use);                                                           \
         if (!use) return false;                                                \
-        perform_integral(raw, use, ARRLEN(arrdata));                           \
+        perform_integral(raw, use, ARRLEN(wave_arr));                          \
+                                                                               \
         wavetables->raw_chip_wavetables[INDEX] = (wavetable_desc_s) {          \
             .expression = EXPR,                                                \
             .samples = raw,                                                    \
-            .length = ARRLEN(arrdata)                                          \
+            .length = ARRLEN(wave_arr)                                         \
         };                                                                     \
         wavetables->chip_wavetables[INDEX] = (wavetable_desc_s) {              \
             .expression = EXPR,                                                \
             .samples = use,                                                    \
-            .length = ARRLEN(arrdata)                                          \
+            .length = ARRLEN(wave_arr)                                         \
         };                                                                     \
     }
 
@@ -224,14 +228,14 @@ void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
 #define INIT_WAVETABLE_N(INDEX, EXPR, ...) \
     INIT_WAVETABLE_GENERIC(INDEX, EXPR, center_and_normalize_wave, __VA_ARGS__)
 
-static void center_wave(float *wave, size_t length) {
+static void center_wave(double *wave, size_t length) {
     length--;
 
     double sum = 0.0;
     for (size_t i = 0; i < length; i++) {
         sum += wave[i];
     }
-    const float average = (float)(sum / length);
+    double average = sum / length;
     for (size_t i = 0; i < length; i++) {
         wave[i] -= average;
     }
@@ -242,7 +246,7 @@ static void center_wave(float *wave, size_t length) {
     // subtract 1 from length.)
 }
 
-static void center_and_normalize_wave(float *wave, size_t length) {
+static void center_and_normalize_wave(double *wave, size_t length) {
     double magn = 0.0;
     center_wave(wave, length);
 
@@ -252,7 +256,7 @@ static void center_and_normalize_wave(float *wave, size_t length) {
         magn += fabs(wave[i]);
     }
 
-    const float magn_avg = (float)(magn / (length - 1));
+    double magn_avg = (float)(magn / (length - 1));
     for (size_t i = 0; i < length - 1; i++) {
         wave[i] = wave[i] / magn_avg;
     }
@@ -261,10 +265,10 @@ static void center_and_normalize_wave(float *wave, size_t length) {
 static void perform_integral(float *wave, float *new_wave, size_t length) {
     // Perform the integral on the wave. The synth function will perform the
     // derivative to get the original wave back but with antialiasing.
-    float cumulative = 0.0;
+    double cumulative = 0.0;
     for (size_t i = 0; i < length; i++) {
-        new_wave[i] = cumulative;
-        cumulative += wave[i];
+        new_wave[i] = (float) cumulative;
+        cumulative += (double) wave[i];
     }
 }
 
@@ -276,18 +280,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed) {
         wavetables->sine_wave[i] =
             (float)sin((double)i / SINE_WAVE_LENGTH * PI2);
     }
-
-    // set up chip wavetables
-    // a warning is emitted because i'm initializing a float array with doubles
-    // but what the fuck. i'm not suffixing and f to every number here. fuck you
-    // compiler.
-#ifdef _MSC_VER
-#   pragma warning(push)
-#   pragma warning(disable : 4305)
-#elif defined(__clang__)
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
-#endif
 
     INIT_WAVETABLE(
         BPBXSYN_CHIP_WAVE_ROUNDED,
@@ -394,12 +386,6 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed) {
         0.5,
         1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0
     );
-
-#ifdef _MSC_VER
-#   pragma warning(pop)
-#elif defined(__clang__)
-#   pragma GCC diagnostic pop
-#endif
 
     // generate noise wavetables
     prng_state_s prng_state = bbsyn_random_seeded_state(seed);

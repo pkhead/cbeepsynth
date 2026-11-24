@@ -12,6 +12,8 @@
 #include "../util.h"
 #include "../param_util.h"
 #include "../context.h"
+#include "../stream.h"
+#include "../log.h"
 
 
 #define CHIP_MOD_COUNT 1
@@ -539,6 +541,52 @@ static void custom_chip_get_exstate(bpbxsyn_synth_s *inst, void *out) {
     custom_chip_inst_s *const chip = (custom_chip_inst_s *)inst;
 
     *((bpbxsyn_custom_chip_exstate_s *)out) = chip->exstate;
+}
+
+static int custom_chip_serialize_exstate(bpbxsyn_synth_s *inst,
+                                         bpbxsyn_writer_f writer,
+                                         void *userdata) {
+    assert(inst);
+    assert(inst->type == BPBXSYN_SYNTH_CUSTOM_CHIP);
+    custom_chip_inst_s *const chip = (custom_chip_inst_s *)inst;
+
+    int stat = bbsyn_stream_write_int(writer, userdata,
+                                      sizeof(chip->exstate.wave),
+                                      sizeof(size_t));
+    if (stat) return stat;
+
+    // it's just a byte array so no need to worry about endianness
+    if (writer(chip->exstate.wave, sizeof(chip->exstate.wave), userdata))
+        return BPBXSYN_SERIALIZE_STATUS_IO_ERROR;
+
+    return BPBXSYN_SERIALIZE_STATUS_OK;
+}
+
+static int custom_chip_deserialize_exstate(bpbxsyn_synth_s *inst,
+                                           bpbxsyn_reader_f reader,
+                                           void *userdata) {
+    assert(inst);
+    assert(inst->type == BPBXSYN_SYNTH_CUSTOM_CHIP);
+    custom_chip_inst_s *const chip = (custom_chip_inst_s *)inst;
+
+    size_t read_size;
+    int stat = bbsyn_stream_read_int(reader, userdata, &read_size,
+                                     sizeof(read_size));
+    if (stat) return stat;
+
+    if (read_size != sizeof(chip->exstate.wave)) {
+        bbsyn_logmsgf(inst->ctx, BPBXSYN_LOG_ERROR,
+                      "error deserializing custom chip: expected %zu for size, but got %zu instead",
+                       sizeof(chip->exstate.wave), read_size);
+        assert(false);
+        return BPBXSYN_SERIALIZE_STATUS_INVALID;
+    }
+    
+    // it's just a byte array so no need to worry about endianness
+    if (reader(chip->exstate.wave, sizeof(chip->exstate.wave), userdata))
+        return BPBXSYN_SERIALIZE_STATUS_IO_ERROR;
+
+    return BPBXSYN_SERIALIZE_STATUS_OK;
 }
 
 
@@ -1217,7 +1265,9 @@ const inst_vtable_s bbsyn_inst_custom_chip_vtable = {
 
     .exstate_size = sizeof(bpbxsyn_custom_chip_exstate_s),
     .inst_get_exstate = custom_chip_get_exstate,
-    .inst_set_exstate = custom_chip_set_exstate
+    .inst_set_exstate = custom_chip_set_exstate,
+    .inst_serialize_exstate = custom_chip_serialize_exstate,
+    .inst_deserialize_exstate = custom_chip_deserialize_exstate,
 };
 
 const inst_vtable_s bbsyn_inst_harmonics_vtable = {

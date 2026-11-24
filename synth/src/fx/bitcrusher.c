@@ -30,7 +30,7 @@ typedef struct {
 static void bitcrusher_init(bbxs_context_s *ctx, bbxs_effect_s *p_inst) {
     bitcrusher_effect_s *inst = (bitcrusher_effect_s *)p_inst;
     *inst = (bitcrusher_effect_s){.base.type = BBXS_EFFECT_BITCRUSHER,
-                                  .base.ctx  = ctx};
+                                  .base.ctx = ctx};
 }
 
 static void bitcrusher_destroy(bbxs_effect_s *inst) { (void)inst; }
@@ -43,10 +43,10 @@ static void bitcrusher_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
         ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double freq_setting_start = inst->freq_crush[0];
-    double freq_setting_end   = inst->freq_crush[1];
+    double freq_setting_end = inst->freq_crush[1];
 
     double quantization_setting_start = inst->bit_crush[0];
-    double quantization_setting_end   = inst->bit_crush[1];
+    double quantization_setting_end = inst->bit_crush[1];
 
     // const base_pitch: number = Config.keys[synth.song!.key].base_pitch; //
     // TODO: What if there's a key change mid-song?
@@ -62,9 +62,9 @@ static void bitcrusher_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
         pow(2.0, (BBXS_BITCRUSHER_FREQ_MAX - freq_setting_end) *
                      BITCRUSHER_OCTAVE_STEP);
     const double phase_delta_start = min(1.0, freq_start / samples_per_second);
-    const double phase_delta_end   = min(1.0, freq_end / samples_per_second);
+    const double phase_delta_end = min(1.0, freq_end / samples_per_second);
 
-    inst->phase_delta       = phase_delta_start;
+    inst->phase_delta = phase_delta_start;
     inst->phase_delta_scale = pow(phase_delta_end / phase_delta_start,
                                   1.0 / rounded_samples_per_tick);
 
@@ -92,7 +92,7 @@ static void bitcrusher_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     inst->fold_level_scale =
         pow(fold_level_end / fold_level_start, 1.0 / rounded_samples_per_tick);
 
-    inst->bit_crush[0]  = inst->bit_crush[1];
+    inst->bit_crush[0] = inst->bit_crush[1];
     inst->freq_crush[0] = inst->freq_crush[1];
 }
 
@@ -103,15 +103,15 @@ static void bitcrusher_run(bbxs_effect_s *p_inst, float **p_buffer,
     float *buffer = p_buffer[0];
     assert(buffer);
 
-    double prev_input              = inst->prev_input;
-    double current_output          = inst->current_output;
-    double phase                   = inst->phase;
-    double phase_delta             = inst->phase_delta;
+    double prev_input = inst->prev_input;
+    double current_output = inst->current_output;
+    double phase = inst->phase;
+    double phase_delta = inst->phase_delta;
     const double phase_delta_scale = inst->phase_delta_scale;
-    double scale                   = inst->scale;
-    const double scale_scale       = inst->scale_scale;
-    double fold_level              = inst->fold_level;
-    const double fold_level_scale  = inst->fold_level_scale;
+    double scale = inst->scale;
+    const double scale_scale = inst->scale_scale;
+    double fold_level = inst->fold_level;
+    const double fold_level_scale = inst->fold_level_scale;
 
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample = (double)buffer[frame];
@@ -126,13 +126,13 @@ static void bitcrusher_run(bbxs_effect_s *p_inst, float **p_buffer,
         phase += phase_delta;
         if (phase < 1.0) {
             prev_input = sample;
-            sample     = current_output;
+            sample = current_output;
         } else {
-            phase              = fmod(phase, 1.0);
+            phase = fmod(phase, 1.0);
             const double ratio = phase / phase_delta;
 
             const double lerped_input = sample + (prev_input - sample) * ratio;
-            prev_input                = sample;
+            prev_input = sample;
 
             const double wrap_level = fold_level * 4.0;
             const double wrapped_sample =
@@ -141,14 +141,14 @@ static void bitcrusher_run(bbxs_effect_s *p_inst, float **p_buffer,
             const double folded_sample =
                 fold_level - fabs(fold_level * 2.0 - wrapped_sample);
             const double scaled_sample = folded_sample / scale;
-            const double old_value     = current_output;
+            const double old_value = current_output;
             const double new_value =
                 (((int)(scaled_sample > 0 ? scaled_sample + 1
                                           : scaled_sample)) -
                  .5) *
                 scale;
 
-            sample         = old_value + (new_value - old_value) * ratio;
+            sample = old_value + (new_value - old_value) * ratio;
             current_output = new_value;
         }
 
@@ -162,33 +162,33 @@ static void bitcrusher_run(bbxs_effect_s *p_inst, float **p_buffer,
     if (fabs(prev_input) < FLUSH_ZERO_EPSILON) prev_input = 0.0;
     if (fabs(current_output) < FLUSH_ZERO_EPSILON) current_output = 0.0;
 
-    inst->prev_input     = prev_input;
+    inst->prev_input = prev_input;
     inst->current_output = current_output;
-    inst->phase          = phase;
-    inst->phase_delta    = phase_delta;
-    inst->scale          = scale;
-    inst->fold_level     = fold_level;
+    inst->phase = phase;
+    inst->phase_delta = phase_delta;
+    inst->scale = scale;
+    inst->fold_level = fold_level;
 }
 
 static const bbxs_param_info_s param_info[BBXS_PANNING_PARAM_COUNT] = {
     {
         .group = "Effects/Bitcrusher",
-        .name  = "Bitcrusher Quantization",
-        .id    = "bitQuant",
-        .type  = BBXS_PARAM_DOUBLE,
+        .name = "Bitcrusher Quantization",
+        .id = "bitQuant",
+        .type = BBXS_PARAM_DOUBLE,
 
-        .min_value     = 0.0,
-        .max_value     = BBXS_BITCRUSHER_QUANTIZATION_MAX,
+        .min_value = 0.0,
+        .max_value = BBXS_BITCRUSHER_QUANTIZATION_MAX,
         .default_value = 0.0,
     },
     {
         .group = "Effects/Bitcrusher",
-        .name  = "Frequency Quantization",
-        .id    = "bitFreqQ",
-        .type  = BBXS_PARAM_DOUBLE,
+        .name = "Frequency Quantization",
+        .id = "bitFreqQ",
+        .type = BBXS_PARAM_DOUBLE,
 
-        .min_value     = 0.0,
-        .max_value     = BBXS_BITCRUSHER_FREQ_MAX,
+        .min_value = 0.0,
+        .max_value = BBXS_BITCRUSHER_FREQ_MAX,
         .default_value = 0.0,
     }};
 
@@ -198,17 +198,17 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
 };
 
 const effect_vtable_s bbxs__effect_bitcrusher_vtable = {
-    .struct_size    = sizeof(bitcrusher_effect_s),
-    .effect_init    = bitcrusher_init,
+    .struct_size = sizeof(bitcrusher_effect_s),
+    .effect_init = bitcrusher_init,
     .effect_destroy = bitcrusher_destroy,
 
-    .input_channel_count  = 1,
+    .input_channel_count = 1,
     .output_channel_count = 1,
 
-    .param_count     = BBXS_BITCRUSHER_PARAM_COUNT,
-    .param_info      = param_info,
+    .param_count = BBXS_BITCRUSHER_PARAM_COUNT,
+    .param_info = param_info,
     .param_addresses = param_addresses,
 
     .effect_tick = bitcrusher_tick,
-    .effect_run  = bitcrusher_run,
+    .effect_run = bitcrusher_run,
 };

@@ -1,6 +1,4 @@
 #include "context.h"
-#include "alloc.h"
-#include "log.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -8,6 +6,8 @@
 #include <stdlib.h>
 
 #include "../include/beepbox_synth.h"
+#include "alloc.h"
+#include "log.h"
 
 void *bbxs_malloc(const bbxs_context_s *ctx, size_t size) {
     assert(ctx->alloc.alloc);

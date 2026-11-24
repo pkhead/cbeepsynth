@@ -77,18 +77,18 @@ static void chorus_stop(bbxs_effect_s *p_inst) {
 
 static void chorus_destroy(bbxs_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
-    const bbxs_context_s *ctx   = inst->base.ctx;
+    const bbxs_context_s *ctx = inst->base.ctx;
 
     bbxs_free(ctx, inst->delay_line_alloc);
     inst->delay_line_alloc = NULL;
-    inst->delay_line[0]    = NULL;
-    inst->delay_line[1]    = NULL;
+    inst->delay_line[0] = NULL;
+    inst->delay_line[1] = NULL;
 }
 
 static void chorus_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
                                        double new_sr) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
-    const bbxs_context_s *ctx   = inst->base.ctx;
+    const bbxs_context_s *ctx = inst->base.ctx;
     if (old_sr == new_sr) return;
 
     // reallocate/resize delay line
@@ -124,12 +124,12 @@ static void chorus_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
         ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_chorus_start = inst->param[0];
-    double use_chorus_end   = inst->param[1];
+    double use_chorus_end = inst->param[1];
 
     double chorus_start = min(1.0, use_chorus_start / BBXS_CHORUS_MAX);
-    double chorus_end   = min(1.0, use_chorus_end / BBXS_CHORUS_MAX);
-    chorus_start        = chorus_start * 0.6 + (pow(chorus_start, 6.0)) * 0.4;
-    chorus_end          = chorus_end * 0.6 + (pow(chorus_end, 6.0)) * 0.4;
+    double chorus_end = min(1.0, use_chorus_end / BBXS_CHORUS_MAX);
+    chorus_start = chorus_start * 0.6 + (pow(chorus_start, 6.0)) * 0.4;
+    chorus_end = chorus_end * 0.6 + (pow(chorus_end, 6.0)) * 0.4;
     const double chorus_combined_mult_start =
         1.0 / sqrt(3.0 * chorus_start * chorus_start + 1.0);
     const double chorus_combined_mult_end =
@@ -154,15 +154,15 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
     assert(inst->delay_line[1]);
     if (!inst->delay_line[0] || !inst->delay_line[1]) return;
 
-    const int mask            = inst->delay_line_mask;
+    const int mask = inst->delay_line_mask;
     float *const delay_line_l = inst->delay_line[0];
     float *const delay_line_r = inst->delay_line[1];
     // instrumentState.chorusDelayLineDirty = true;
     int delay_pos = inst->delay_pos & mask;
 
-    double voice_mult                = inst->voice_mult;
-    const double voice_mult_delta    = inst->voice_mult_delta;
-    double combined_mult             = inst->combined_mult;
+    double voice_mult = inst->voice_mult;
+    const double voice_mult_delta = inst->voice_mult_delta;
+    double combined_mult = inst->combined_mult;
     const double combined_mult_delta = inst->combined_mult_delta;
 
     const double sample_rate = inst->base.sample_rate;
@@ -170,8 +170,8 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
         1.0; // TODO: how is delay_input_mult calculated?
 
     const double duration = CHORUS_PERIOD_SECONDS;
-    const double angle    = PI * 2.0 / (duration * sample_rate);
-    const double range    = sample_rate * CHORUS_DELAY_RANGE;
+    const double angle = PI * 2.0 / (duration * sample_rate);
+    const double range = sample_rate * CHORUS_DELAY_RANGE;
     const double offset0 =
         inst->delay_line_size - chorus_delay_offsets[0][0] * range;
     const double offset1 =
@@ -223,7 +223,7 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
     const double tap4_delta = (tap4_end - tap4_index) / frame_count;
     const double tap5_delta = (tap5_end - tap5_index) / frame_count;
 
-    float *left  = buffer[0];
+    float *left = buffer[0];
     float *right = buffer[1];
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample_l = (double)left[frame];
@@ -235,24 +235,24 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
         const double tap3_ratio = fmod(tap3_index, 1);
         const double tap4_ratio = fmod(tap4_index, 1);
         const double tap5_ratio = fmod(tap5_index, 1);
-        const double tap0a      = delay_line_l[(int)(tap0_index)&mask];
-        const double tap0b      = delay_line_l[(int)(tap0_index + 1) & mask];
-        const double tap1a      = delay_line_l[(int)(tap1_index)&mask];
-        const double tap1b      = delay_line_l[(int)(tap1_index + 1) & mask];
-        const double tap2a      = delay_line_l[(int)(tap2_index)&mask];
-        const double tap2b      = delay_line_l[(int)(tap2_index + 1) & mask];
-        const double tap3a      = delay_line_r[(int)(tap3_index)&mask];
-        const double tap3b      = delay_line_r[(int)(tap3_index + 1) & mask];
-        const double tap4a      = delay_line_r[(int)(tap4_index)&mask];
-        const double tap4b      = delay_line_r[(int)(tap4_index + 1) & mask];
-        const double tap5a      = delay_line_r[(int)(tap5_index)&mask];
-        const double tap5b      = delay_line_r[(int)(tap5_index + 1) & mask];
-        const double tap0       = tap0a + (tap0b - tap0a) * tap0_ratio;
-        const double tap1       = tap1a + (tap1b - tap1a) * tap1_ratio;
-        const double tap2       = tap2a + (tap2b - tap2a) * tap2_ratio;
-        const double tap3       = tap3a + (tap3b - tap3a) * tap3_ratio;
-        const double tap4       = tap4a + (tap4b - tap4a) * tap4_ratio;
-        const double tap5       = tap5a + (tap5b - tap5a) * tap5_ratio;
+        const double tap0a = delay_line_l[(int)(tap0_index)&mask];
+        const double tap0b = delay_line_l[(int)(tap0_index + 1) & mask];
+        const double tap1a = delay_line_l[(int)(tap1_index)&mask];
+        const double tap1b = delay_line_l[(int)(tap1_index + 1) & mask];
+        const double tap2a = delay_line_l[(int)(tap2_index)&mask];
+        const double tap2b = delay_line_l[(int)(tap2_index + 1) & mask];
+        const double tap3a = delay_line_r[(int)(tap3_index)&mask];
+        const double tap3b = delay_line_r[(int)(tap3_index + 1) & mask];
+        const double tap4a = delay_line_r[(int)(tap4_index)&mask];
+        const double tap4b = delay_line_r[(int)(tap4_index + 1) & mask];
+        const double tap5a = delay_line_r[(int)(tap5_index)&mask];
+        const double tap5b = delay_line_r[(int)(tap5_index + 1) & mask];
+        const double tap0 = tap0a + (tap0b - tap0a) * tap0_ratio;
+        const double tap1 = tap1a + (tap1b - tap1a) * tap1_ratio;
+        const double tap2 = tap2a + (tap2b - tap2a) * tap2_ratio;
+        const double tap3 = tap3a + (tap3b - tap3a) * tap3_ratio;
+        const double tap4 = tap4a + (tap4b - tap4a) * tap4_ratio;
+        const double tap5 = tap5a + (tap5b - tap5a) * tap5_ratio;
         delay_line_l[delay_pos] = (float)(sample_l * delay_input_mult);
         delay_line_r[delay_pos] = (float)(sample_r * delay_input_mult);
         sample_l =
@@ -269,27 +269,27 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
         voice_mult += voice_mult_delta;
         combined_mult += combined_mult_delta;
 
-        left[frame]  = (float)sample_l;
+        left[frame] = (float)sample_l;
         right[frame] = (float)sample_r;
     }
 
     bbxs__sanitize_delay_line(delay_line_l, delay_pos, mask);
     bbxs__sanitize_delay_line(delay_line_r, delay_pos, mask);
-    inst->phase         = phase;
-    inst->delay_pos     = delay_pos;
-    inst->voice_mult    = voice_mult;
+    inst->phase = phase;
+    inst->delay_pos = delay_pos;
+    inst->voice_mult = voice_mult;
     inst->combined_mult = combined_mult;
 }
 
 static const bbxs_param_info_s param_info[BBXS_PANNING_PARAM_COUNT] = {
     {
         .group = "Effects/Chorus",
-        .name  = "Chorus",
-        .id    = "chorus\0\0",
-        .type  = BBXS_PARAM_DOUBLE,
+        .name = "Chorus",
+        .id = "chorus\0\0",
+        .type = BBXS_PARAM_DOUBLE,
 
-        .min_value     = 0.0,
-        .max_value     = BBXS_CHORUS_MAX,
+        .min_value = 0.0,
+        .max_value = BBXS_CHORUS_MAX,
         .default_value = 0.0,
     },
 };
@@ -299,19 +299,19 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
 };
 
 const effect_vtable_s bbxs__effect_chorus_vtable = {
-    .struct_size    = sizeof(chorus_effect_s),
-    .effect_init    = chorus_init,
+    .struct_size = sizeof(chorus_effect_s),
+    .effect_init = chorus_init,
     .effect_destroy = chorus_destroy,
 
-    .input_channel_count  = 2,
+    .input_channel_count = 2,
     .output_channel_count = 2,
 
-    .param_count     = BBXS_CHORUS_PARAM_COUNT,
-    .param_info      = param_info,
+    .param_count = BBXS_CHORUS_PARAM_COUNT,
+    .param_info = param_info,
     .param_addresses = param_addresses,
 
-    .effect_stop                = chorus_stop,
+    .effect_stop = chorus_stop,
     .effect_sample_rate_changed = chorus_sample_rate_changed,
-    .effect_tick                = chorus_tick,
-    .effect_run                 = chorus_run,
+    .effect_tick = chorus_tick,
+    .effect_run = chorus_run,
 };

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <math.h>
+
 #include "util.h"
 
 double bbxs__calc_samples_per_tick(double bpm, double sample_rate) {
@@ -46,7 +47,8 @@ double bbxs__find_random_zero_crossing(prng_state_s *rng_state, float *wave,
     double wavePrev = (double)wave[indexPrev];
     const int stride = 16;
 
-    for (int attemptsRemaining = 128; attemptsRemaining > 0; --attemptsRemaining) {
+    for (int attemptsRemaining = 128; attemptsRemaining > 0;
+         --attemptsRemaining) {
         const int indexNext = (indexPrev + stride) & phaseMask;
         const double waveNext = (double)wave[indexNext];
 

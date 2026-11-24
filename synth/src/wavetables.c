@@ -30,7 +30,7 @@ void bbxs__generate_harmonics(const wavetables_s *tables,
     const float *retro_wave =
         tables->noise_wavetables[BBXS_NOISE_RETRO].samples;
 
-    const double overall_slope        = -0.25;
+    const double overall_slope = -0.25;
     double combined_control_point_amp = 1;
 
     for (int harmonic_index = 0; harmonic_index < harmonics_rendered;
@@ -84,8 +84,8 @@ static double draw_noise_spectrum(const wavetables_s *tables, float *wave,
                                   double high_octave, double low_power,
                                   double high_power, double overall_slope) {
     const int reference_octave = 11;
-    const int reference_index  = 1 << reference_octave;
-    const int low_index        = (int)pow(2, low_octave);
+    const int reference_index = 1 << reference_octave;
+    const int low_index = (int)pow(2, low_octave);
     const int high_index = mini(wave_length >> 1, (int)pow(2, high_octave));
     const float *retro_wave =
         tables->noise_wavetables[BBXS_NOISE_RETRO].samples;
@@ -110,7 +110,7 @@ static double draw_noise_spectrum(const wavetables_s *tables, float *wave,
         amplitude *= retro_wave[i];
         const double radians = 0.61803398875 * i * i * PI2;
 
-        wave[i]               = (float)(cos(radians) * amplitude);
+        wave[i] = (float)(cos(radians) * amplitude);
         wave[wave_length - i] = (float)(sin(radians) * amplitude);
     }
 
@@ -131,7 +131,7 @@ void bbxs__generate_spectrum_wave(const wavetables_s *tables,
     memset(wave, 0, sizeof(float) * SPECTRUM_WAVE_LENGTH);
 
     const double highest_octave = 14;
-    const double falloff_ratio  = 0.25;
+    const double falloff_ratio = 0.25;
 
     // Nudge the 2/7 and 4/7 control points so that they form harmonic
     // intervals.
@@ -397,15 +397,15 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_RETRO];
-        wavetable->expression        = 0.25;
-        wavetable->base_pitch        = 69;
+        wavetable->expression = 0.25;
+        wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i]        = (float)((drum_buffer & 1) * 2.0 - 1.0);
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 1 << 14;
@@ -418,10 +418,10 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_WHITE];
-        wavetable->expression        = 1.0;
-        wavetable->base_pitch        = 69;
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 8.0;
-        wavetable->is_soft           = true;
+        wavetable->is_soft = true;
 
         float *wave = wavetable->samples;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
@@ -434,15 +434,15 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_CLANG];
-        wavetable->expression        = 0.4;
-        wavetable->base_pitch        = 69;
+        wavetable->expression = 0.4;
+        wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i]        = (float)((drum_buffer & 1) * 2.0 - 1.0);
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 2 << 14;
@@ -456,15 +456,15 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_BUZZ];
-        wavetable->expression        = 0.3;
-        wavetable->base_pitch        = 69;
+        wavetable->expression = 0.3;
+        wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i]        = (float)((drum_buffer & 1) * 2.0 - 1.0);
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 10 << 2;
@@ -477,10 +477,10 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_HOLLOW];
-        wavetable->expression        = 1.5;
-        wavetable->base_pitch        = 96;
+        wavetable->expression = 1.5;
+        wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1.0;
-        wavetable->is_soft           = true;
+        wavetable->is_soft = true;
 
         float *wave = wavetable->samples;
         memset(wave, 0, NOISE_WAVETABLE_LENGTH * sizeof(float));
@@ -498,15 +498,15 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_SHINE];
-        wavetable->expression        = 1.0;
-        wavetable->base_pitch        = 69;
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 69;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i]        = (float)((drum_buffer & 1) * 2.0 - 1.0);
+            wave[i] = (float)((drum_buffer & 1) * 2.0 - 1.0);
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer += 10 << 2;
@@ -519,10 +519,10 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_DEEP];
-        wavetable->expression        = 1.5;
-        wavetable->base_pitch        = 120;
+        wavetable->expression = 1.5;
+        wavetable->base_pitch = 120;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = true;
+        wavetable->is_soft = true;
 
         float *wave = wavetable->samples;
         memset(wave, 0, NOISE_WAVETABLE_LENGTH * sizeof(float));
@@ -539,12 +539,12 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_CUTTER];
-        wavetable->expression        = 0.005;
-        wavetable->base_pitch        = 96;
+        wavetable->expression = 0.005;
+        wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
             wave[i] = (drum_buffer & 1) * 4.f * (RANDOM() * 14.f + 1) - 8.f;
@@ -560,15 +560,15 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     {
         noise_wavetable_s *wavetable =
             &wavetables->noise_wavetables[BBXS_NOISE_METALLIC];
-        wavetable->expression        = 1.0;
-        wavetable->base_pitch        = 96;
+        wavetable->expression = 1.0;
+        wavetable->base_pitch = 96;
         wavetable->pitch_filter_mult = 1024.0;
-        wavetable->is_soft           = false;
+        wavetable->is_soft = false;
 
-        float *wave     = wavetable->samples;
+        float *wave = wavetable->samples;
         int drum_buffer = 1;
         for (int i = 0; i < NOISE_WAVETABLE_LENGTH; i++) {
-            wave[i]        = (drum_buffer & 1) / 2.f - 0.5f;
+            wave[i] = (drum_buffer & 1) / 2.f - 0.5f;
             int new_buffer = drum_buffer >> 1;
             if (((drum_buffer + new_buffer) & 1) == 1) {
                 new_buffer -= 10 << 2;

@@ -26,7 +26,7 @@ typedef struct {
 static void distortion_init(bbxs_context_s *ctx, bbxs_effect_s *p_inst) {
     distortion_effect_s *inst = (distortion_effect_s *)p_inst;
     *inst = (distortion_effect_s){.base.type = BBXS_EFFECT_DISTORTION,
-                                  .base.ctx  = ctx};
+                                  .base.ctx = ctx};
 }
 
 static void distortion_destroy(bbxs_effect_s *inst) { (void)inst; }
@@ -38,7 +38,7 @@ static void distortion_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
         ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_distortion_start = inst->param[0];
-    double use_distortion_end   = inst->param[1];
+    double use_distortion_end = inst->param[1];
 
     const double distortion_slider_start =
         min(1.0, use_distortion_start / BBXS_DISTORTION_MAX);
@@ -59,7 +59,7 @@ static void distortion_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     inst->distortion_delta =
         (distortion_end - distortion_start) / rounded_samples_per_tick;
 
-    inst->drive       = distortion_drive_start;
+    inst->drive = distortion_drive_start;
     inst->drive_delta = (distortion_drive_end - distortion_drive_start) /
                         rounded_samples_per_tick;
 
@@ -73,10 +73,10 @@ static void distortion_run(bbxs_effect_s *p_inst, float **p_buffer,
     float *buffer = p_buffer[0];
     assert(buffer);
 
-    double distortion                  = inst->distortion;
-    const double distortion_delta      = inst->distortion_delta;
-    double drive                       = inst->drive;
-    const double drive_delta           = inst->drive_delta;
+    double distortion = inst->distortion;
+    const double distortion_delta = inst->distortion_delta;
+    double drive = inst->drive;
+    const double drive_delta = inst->drive_delta;
     const double fractional_resolution = 4.0;
     const double oversample_compensation =
         DISTORTION_BASE_VOLUME / fractional_resolution;
@@ -105,15 +105,15 @@ static void distortion_run(bbxs_effect_s *p_inst, float **p_buffer,
     double fractional_input1 = inst->fractional_input[0];
     double fractional_input2 = inst->fractional_input[1];
     double fractional_input3 = inst->fractional_input[2];
-    double prev_input        = inst->prev_input;
-    double next_output       = inst->next_output;
+    double prev_input = inst->prev_input;
+    double next_output = inst->next_output;
 
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample = (double)buffer[frame];
 
-        const double reverse    = 1.0 - distortion;
+        const double reverse = 1.0 - distortion;
         const double next_input = sample * drive;
-        sample                  = next_output;
+        sample = next_output;
         next_output = next_input / (reverse * fabs(next_input) + distortion);
         fractional_input1 = fractional_delay_g1 * next_input + prev_input -
                             fractional_delay_g1 * fractional_input1;
@@ -141,7 +141,7 @@ static void distortion_run(bbxs_effect_s *p_inst, float **p_buffer,
     }
 
     inst->distortion = distortion;
-    inst->drive      = drive;
+    inst->drive = drive;
 
     if (!isfinite(fractional_input1) ||
         fabs(fractional_input1) < FLUSH_ZERO_EPSILON)
@@ -160,19 +160,19 @@ static void distortion_run(bbxs_effect_s *p_inst, float **p_buffer,
     inst->fractional_input[0] = fractional_input1;
     inst->fractional_input[1] = fractional_input2;
     inst->fractional_input[2] = fractional_input3;
-    inst->prev_input          = prev_input;
-    inst->next_output         = next_output;
+    inst->prev_input = prev_input;
+    inst->next_output = next_output;
 }
 
 static const bbxs_param_info_s param_info[BBXS_PANNING_PARAM_COUNT] = {
     {
         .group = "Effects/Distortion",
-        .name  = "Distortion Drive",
-        .id    = "distort\0",
-        .type  = BBXS_PARAM_DOUBLE,
+        .name = "Distortion Drive",
+        .id = "distort\0",
+        .type = BBXS_PARAM_DOUBLE,
 
-        .min_value     = 0.0,
-        .max_value     = BBXS_DISTORTION_MAX,
+        .min_value = 0.0,
+        .max_value = BBXS_DISTORTION_MAX,
         .default_value = 0.0,
     },
 };
@@ -182,17 +182,17 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
 };
 
 const effect_vtable_s bbxs__effect_distortion_vtable = {
-    .struct_size    = sizeof(distortion_effect_s),
-    .effect_init    = distortion_init,
+    .struct_size = sizeof(distortion_effect_s),
+    .effect_init = distortion_init,
     .effect_destroy = distortion_destroy,
 
-    .input_channel_count  = 1,
+    .input_channel_count = 1,
     .output_channel_count = 1,
 
-    .param_count     = BBXS_DISTORTION_PARAM_COUNT,
-    .param_info      = param_info,
+    .param_count = BBXS_DISTORTION_PARAM_COUNT,
+    .param_info = param_info,
     .param_addresses = param_addresses,
 
     .effect_tick = distortion_tick,
-    .effect_run  = distortion_run,
+    .effect_run = distortion_run,
 };

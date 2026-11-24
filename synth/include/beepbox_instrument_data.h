@@ -30,7 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #define BBXS_SYNTH_MAX_VOICES 16
 
-typedef enum {
+typedef enum bbxs_synth_param {
     // basic params
     BBXS_PARAM_FADE_IN,
     BBXS_PARAM_FADE_OUT,
@@ -104,7 +104,7 @@ typedef enum {
 #define BBXS_FM_ALGORITHM_COUNT 13
 #define BBXS_FM_FEEDBACK_TYPE_COUNT 18
 
-typedef enum {
+typedef enum bbxs_fm_param {
     BBXS_FM_PARAM_ALGORITHM = BBXS_BASE_PARAM_COUNT,
     BBXS_FM_PARAM_FREQ1,
     BBXS_FM_PARAM_VOLUME1,
@@ -123,7 +123,7 @@ typedef enum {
 ///////////////
 #define BBXS_CHIP_PARAM_COUNT 2
 
-typedef enum {
+typedef enum bbxs_chip_param {
     BBXS_CHIP_PARAM_WAVEFORM = BBXS_BASE_PARAM_COUNT,
     BBXS_CHIP_PARAM_UNISON,
     // TODO: chip aliasing
@@ -136,7 +136,7 @@ typedef enum {
 #define BBXS_CUSTOM_CHIP_WAVE_LENGTH 64
 #define BBXS_CUSTOM_CHIP_SAMPLE_RANGE 24
 
-typedef enum {
+typedef enum bbxs_custom_chip_param {
     BBXS_CUSTOM_CHIP_PARAM_UNISON = BBXS_BASE_PARAM_COUNT,
     BBXS_CUSTOM_CHIP_PARAM_ALIASES
 } bbxs_custom_chip_param_e;
@@ -151,7 +151,7 @@ typedef struct bbxs_custom_chip_exstate {
 ////////////////
 #define BBXS_NOISE_PARAM_COUNT 3
 
-typedef enum {
+typedef enum bbxs_noise_param {
     BBXS_NOISE_PARAM_IS_NOISE_CHANNEL = BBXS_BASE_PARAM_COUNT,
     BBXS_NOISE_PARAM_TYPE,
     BBXS_NOISE_PARAM_UNISON
@@ -165,7 +165,7 @@ typedef enum {
 #define BBXS_PULSE_WIDTH_MIN 1
 #define BBXS_PULSE_WIDTH_MAX BBXS_PULSE_WIDTH_RANGE
 
-typedef enum {
+typedef enum bbxs_pulse_width_param {
     BBXS_PULSE_WIDTH_PARAM_WIDTH = BBXS_BASE_PARAM_COUNT,
     BBXS_PULSE_WIDTH_ALIASES
 } bbxs_pulse_width_param_e;
@@ -178,7 +178,7 @@ typedef enum {
 #define BBXS_HARMONICS_CONTROL_MAX ((BBXS_HARMONICS_CONTROL_RANGE - 1))
 #define BBXS_HARMONICS_PARAM_COUNT ((1 + BBXS_HARMONICS_CONTROL_COUNT))
 
-typedef enum {
+typedef enum bbxs_harmonics_param {
     BBXS_HARMONICS_PARAM_UNISON = BBXS_BASE_PARAM_COUNT,
     BBXS_HARMONICS_PARAM_CONTROL_FIRST,
     BBXS_HARMONICS_PARAM_CONTROL_LAST =
@@ -195,7 +195,7 @@ typedef enum {
 #define BBXS_PICKED_STRING_PARAM_COUNT                                      \
     ((2 + BBXS_HARMONICS_CONTROL_COUNT))
 
-typedef enum {
+typedef enum bbxs_picked_string_param {
     BBXS_PICKED_STRING_PARAM_UNISON = BBXS_BASE_PARAM_COUNT,
     BBXS_PICKED_STRING_PARAM_SUSTAIN,
     BBXS_PICKED_STRING_PARAM_CONTROL_FIRST,
@@ -212,7 +212,7 @@ typedef enum {
 #define BBXS_SPECTRUM_CONTROL_MAX ((BBXS_SPECTRUM_CONTROL_RANGE - 1))
 #define BBXS_SPECTRUM_PARAM_COUNT ((BBXS_SPECTRUM_CONTROL_COUNT + 1))
 
-typedef enum {
+typedef enum bbxs_spectrum_param {
     BBXS_SPECTRUM_PARAM_IS_NOISE_CHANNEL = BBXS_BASE_PARAM_COUNT,
     BBXS_SPECTRUM_PARAM_CONTROL_FIRST,
     BBXS_SPECTRUM_PARAM_CONTROL_LAST =
@@ -225,7 +225,7 @@ typedef enum {
 ///////////////////
 #define BBXS_SUPERSAW_PARAM_COUNT 5
 
-typedef enum {
+typedef enum bbxs_supersaw_param {
     BBXS_SUPERSAW_PARAM_DYNAMISM = BBXS_BASE_PARAM_COUNT,
     BBXS_SUPERSAW_PARAM_SPREAD,
     BBXS_SUPERSAW_PARAM_BLEND,
@@ -240,7 +240,7 @@ typedef enum {
 #define BBXS_INSTRUMENT_VOLUME_MIN -25.0
 #define BBXS_INSTRUMENT_VOLUME_MAX 25.0
 
-typedef enum {
+typedef enum bbxs_volume_param {
     BBXS_VOLUME_PARAM_VOLUME
 } bbxs_volume_param_e;
 
@@ -252,7 +252,7 @@ typedef enum {
 #define BBXS_PAN_VALUE_MAX ((BBXS_PAN_VALUE_CENTER * 2))
 #define BBXS_PAN_DELAY_MAX 20
 
-typedef enum {
+typedef enum bbxs_panning_param {
     BBXS_PANNING_PARAM_PAN,
     BBXS_PANNING_PARAM_PAN_DELAY,
 } bbxs_panning_param_e;
@@ -264,7 +264,7 @@ typedef enum {
 #define BBXS_DISTORTION_RANGE 8
 #define BBXS_DISTORTION_MAX (BBXS_DISTORTION_RANGE - 1)
 
-typedef enum {
+typedef enum bbxs_distortion_param {
     BBXS_DISTORTION_PARAM_POWER
 } bbxs_distortion_param_e;
 
@@ -277,7 +277,7 @@ typedef enum {
 #define BBXS_BITCRUSHER_FREQ_MAX (BBXS_BITCRUSHER_FREQ_RANGE - 1)
 #define BBXS_BITCRUSHER_QUANTIZATION_MAX (BBXS_BITCRUSHER_QUANTIZATION_RANGE - 1)
 
-typedef enum {
+typedef enum bbxs_bitcrusher_param {
     BBXS_BITCRUSHER_PARAM_BIT_QUANTIZATION,
     BBXS_BITCRUSHER_PARAM_FREQ_QUANTIZATION,
 } bbxs_bitcrusher_param_e;
@@ -287,7 +287,7 @@ typedef enum {
 ////////////////////
 #define BBXS_EQ_PARAM_COUNT 24
 
-typedef enum {
+typedef enum bbxs_eq_param {
     BBXS_PARAM_EQ_TYPE0,
     BBXS_PARAM_EQ_FREQ0,
     BBXS_PARAM_EQ_GAIN0,
@@ -321,7 +321,7 @@ typedef enum {
 #define BBXS_CHORUS_RANGE 8
 #define BBXS_CHORUS_MAX (BBXS_CHORUS_RANGE - 1)
 
-typedef enum {
+typedef enum bbxs_chorus_param {
     BBXS_CHORUS_PARAM_CHORUS
 } bbxs_chorus_param_e;
 
@@ -334,7 +334,7 @@ typedef enum {
 #define BBXS_ECHO_DELAY_MAX ((BBXS_ECHO_DELAY_RANGE - 1))
 #define BBXS_ECHO_SUSTAIN_MAX ((BBXS_ECHO_SUSTAIN_RANGE - 1))
 
-typedef enum {
+typedef enum bbxs_echo_param {
     BBXS_ECHO_PARAM_SUSTAIN,
     BBXS_ECHO_PARAM_DELAY
 } bbxs_echo_param_e;
@@ -346,7 +346,7 @@ typedef enum {
 #define BBXS_REVERB_RANGE 32
 #define BBXS_REVERB_MAX (BBXS_REVERB_RANGE - 1)
 
-typedef enum {
+typedef enum bbxs_reverb_param {
     BBXS_REVERB_PARAM_REVERB
 } bbxs_reverb_param_e;
 
@@ -390,7 +390,7 @@ typedef enum {
 #define BBXS_LIMITER_CUTOFF_RATIO_DEFAULT 10.0
 #define BBXS_LIMITER_CUTOFF_RATIO_STEP 1.0
 
-typedef enum {
+typedef enum bbxs_limiter_param {
     BBXS_LIMITER_MASTER_GAIN,
     BBXS_LIMITER_LIMIT_DECAY,
     BBXS_LIMITER_LIMIT_RISE,

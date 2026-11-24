@@ -75,7 +75,7 @@ extern "C" {
 #define BBXS_USE_NOTE_SIZE NAN
 #define BBXS_NOTE_LENGTH_UNKNOWN -1
 
-typedef enum {
+typedef enum bbxs_synth_type {
     BBXS_SYNTH_CHIP,
     BBXS_SYNTH_FM,
     BBXS_SYNTH_NOISE,
@@ -89,7 +89,7 @@ typedef enum {
     BBXS_SYNTH_COUNT,
 } bbxs_synth_type_e;
 
-typedef enum {
+typedef enum bbxs_synthfx_type {
     BBXS_SYNTHFX_TRANSITION_TYPE,
     BBXS_SYNTHFX_CHORD_TYPE,
     BBXS_SYNTHFX_PITCH_SHIFT,
@@ -98,21 +98,21 @@ typedef enum {
     BBXS_SYNTHFX_NOTE_FILTER
 } bbxs_synthfx_type_e;
 
-typedef enum {
+typedef enum bbxs_transition_type {
     BBXS_TRANSITION_TYPE_NORMAL,
     BBXS_TRANSITION_TYPE_INTERRUPT,
     BBXS_TRANSITION_TYPE_CONTINUE,
     BBXS_TRANSITION_TYPE_SLIDE
 } bbxs_transition_type_e;
 
-typedef enum {
+typedef enum bbxs_chord_type {
     BBXS_CHORD_TYPE_SIMULTANEOUS,
     BBXS_CHORD_TYPE_STRUM,
     BBXS_CHORD_TYPE_ARPEGGIO,
     BBXS_CHORD_TYPE_CUSTOM_INTERVAL
 } bbxs_chord_type_e;
 
-typedef enum {
+typedef enum bbxs_vibrato_preset {
     BBXS_VIBRATO_PRESET_NONE,
     BBXS_VIBRATO_PRESET_LIGHT,
     BBXS_VIBRATO_PRESET_DELAYED,
@@ -121,12 +121,12 @@ typedef enum {
     BBXS_VIBRATO_PRESET_CUSTOM
 } bbxs_vibrato_preset_e;
 
-typedef enum {
+typedef enum bbxs_vibrato_type {
     BBXS_VIBRATO_TYPE_NORMAL,
     BBXS_VIBRATO_TYPE_SHAKY
 } bbxs_vibrato_type_e;
 
-typedef enum {
+typedef enum bbxs_chip_wave {
     BBXS_CHIP_WAVE_ROUNDED,
     BBXS_CHIP_WAVE_TRIANGLE,
     BBXS_CHIP_WAVE_SQUARE,
@@ -151,7 +151,7 @@ typedef enum {
     BBXS_CHIP_WAVE_COUNT
 } bbxs_chip_wave_e;
 
-typedef enum {
+typedef enum bbxs_unsion_type {
     BBXS_UNISON_NONE,
     BBXS_UNISON_SHIMMER,
     BBXS_UNISON_HUM,
@@ -165,7 +165,7 @@ typedef enum {
     BBXS_UNISON_COUNT,
 } bbxs_unsion_type_e;
 
-typedef enum {
+typedef enum bbxs_effect_type {
     BBXS_EFFECT_PANNING,
     BBXS_EFFECT_DISTORTION,
     BBXS_EFFECT_BITCRUSHER,
@@ -179,7 +179,7 @@ typedef enum {
     BBXS_EFFECT_COUNT,
 } bbxs_effect_type_e;
 
-typedef enum {
+typedef enum bbxs_noise_type {
     BBXS_NOISE_RETRO,
     BBXS_NOISE_WHITE,
     BBXS_NOISE_CLANG,
@@ -192,22 +192,24 @@ typedef enum {
     BBXS_NOISE_COUNT
 } bbxs_noise_type_e;
 
-typedef enum {
+typedef enum bbxs_filter_type {
     BBXS_FILTER_TYPE_OFF,
     BBXS_FILTER_TYPE_LP,
     BBXS_FILTER_TYPE_HP,
     BBXS_FILTER_TYPE_NOTCH
 } bbxs_filter_type_e;
 
-typedef enum {
+typedef enum bbxs_param_type {
     BBXS_PARAM_UINT8,
     BBXS_PARAM_INT,
     BBXS_PARAM_DOUBLE
 } bbxs_param_type_e;
 
-typedef enum { BBXS_PARAM_FLAG_NO_AUTOMATION } bbxs_param_flags_e;
+typedef enum bbxs_param_flags {
+    BBXS_PARAM_FLAG_NO_AUTOMATION
+} bbxs_param_flags_e;
 
-typedef enum {
+typedef enum bbxs_envelope_compute_index {
     BBXS_ENV_INDEX_NONE,
     BBXS_ENV_INDEX_NOTE_VOLUME,
     BBXS_ENV_INDEX_NOTE_FILTER_ALL_FREQS,
@@ -248,19 +250,19 @@ typedef enum {
     BBXS_ENV_INDEX_COUNT
 } bbxs_envelope_compute_index_e;
 
-typedef enum {
+typedef enum bbxs_serialize_status {
     BBXS_SERIALIZE_STATUS_OK,
     BBXS_SERIALIZE_STATUS_NO_DATA,
     BBXS_SERIALIZE_STATUS_INVALID,
     BBXS_SERIALIZE_STATUS_IO_ERROR,
 } bbxs_serialize_status_e;
 
-typedef struct {
+typedef struct bbxs_envelope {
     bbxs_envelope_compute_index_e index;
     uint8_t curve_preset;
 } bbxs_envelope_s;
 
-typedef struct {
+typedef struct bbxs_param_info {
     bbxs_param_type_e type;
     uint32_t flags; // bbxs_param_flags_e
 
@@ -279,14 +281,14 @@ typedef struct {
     const char **enum_values;
 } bbxs_param_info_s;
 
-typedef struct {
+typedef struct bbxs_vibrato_params {
     double depth; // in beepbox code, this was quantized to increments of 0.04
     double speed;
     int delay; // in ticks, I think?
     uint8_t type;
 } bbxs_vibrato_params_s;
 
-typedef struct {
+typedef struct bbxs_tick_ctx {
     /**
      * The tempo of the transport, in beats per minute.
      *
@@ -336,7 +338,7 @@ typedef struct {
     double mod_wheel;
 } bbxs_tick_ctx_s;
 
-typedef struct {
+typedef struct bbxs_complex {
     double real;
     double imag;
 } bbxs_complex_s;
@@ -375,7 +377,7 @@ typedef struct bbxs_allocator {
     void *userdata;
 } bbxs_allocator_s;
 
-typedef enum {
+typedef enum bbxs_log_severity {
     BBXS_LOG_DEBUG,
     BBXS_LOG_INFO,
     BBXS_LOG_WARNING,
@@ -407,7 +409,7 @@ typedef int (*bbxs_writer_f)(const void *data, size_t size, void *userdata);
  */
 typedef int (*bbxs_reader_f)(void *data, size_t size, void *userdata);
 
-typedef struct {
+typedef struct bbxs_synth_callbacks {
     /**
      * Called when a voice is finished being processed.
      * @param inst Pointer to the instrument.

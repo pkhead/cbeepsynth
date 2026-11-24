@@ -3,16 +3,16 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "effect.h"
-#include "../audio.h"
 #include "../alloc.h"
-#include "../util.h"
+#include "../audio.h"
 #include "../log.h"
+#include "../util.h"
+#include "effect.h"
 
 #define PAN_DELAY_SECS_MAX 0.001
 
 typedef struct {
-    bpbxsyn_effect_s base;
+    bbxs_effect_s base;
 
     // for old and new value
     double pan[2];
@@ -30,53 +30,51 @@ typedef struct {
     int delay_buffer_mask;
 } panning_effect_s;
 
-static void panning_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
-    panning_effect_s *inst = (panning_effect_s*)p_inst;
-    *inst = (panning_effect_s){
-        .base.ctx = ctx,
-        .base.type = BPBXSYN_EFFECT_PANNING
-    };
+static void panning_init(bbxs_context_s *ctx, bbxs_effect_s *p_inst) {
+    panning_effect_s *inst = (panning_effect_s *)p_inst;
+    *inst =
+        (panning_effect_s){.base.ctx = ctx, .base.type = BBXS_EFFECT_PANNING};
 
     for (int i = 0; i < 2; ++i) {
-        inst->pan[i] = BPBXSYN_PAN_VALUE_CENTER;
-        inst->pan_delay[i] = (double)BPBXSYN_PAN_DELAY_MAX / 2;
+        inst->pan[i] = BBXS_PAN_VALUE_CENTER;
+        inst->pan_delay[i] = (double)BBXS_PAN_DELAY_MAX / 2;
     }
 }
 
-static void panning_stop(bpbxsyn_effect_s *p_inst) {
+static void panning_stop(bbxs_effect_s *p_inst) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
-    
+
     if (inst->delay_line) {
         memset(inst->delay_line, 0, inst->delay_line_size * sizeof(float));
     }
     inst->delay_pos = 0;
 }
 
-static void panning_destroy(bpbxsyn_effect_s *p_inst) {
+static void panning_destroy(bbxs_effect_s *p_inst) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
-    const bpbxsyn_context_s *ctx = inst->base.ctx;
-    bpbxsyn_free(ctx, inst->delay_line);
+    const bbxs_context_s *ctx = inst->base.ctx;
+    bbxs_free(ctx, inst->delay_line);
 }
 
-static void panning_sample_rate_changed(bpbxsyn_effect_s *p_inst,
-                                        double old_sr, double new_sr) {
+static void panning_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
+                                        double new_sr) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
-    const bpbxsyn_context_s *ctx = inst->base.ctx;
+    const bbxs_context_s *ctx = inst->base.ctx;
     if (old_sr == new_sr) return;
 
-    bpbxsyn_free(ctx, inst->delay_line);
+    bbxs_free(ctx, inst->delay_line);
 
     inst->delay_line_size =
         bbsyn_fitting_power_of_two((int)ceil(new_sr * PAN_DELAY_SECS_MAX));
-    inst->delay_line = bpbxsyn_malloc(ctx, inst->delay_line_size * sizeof(float));
+    inst->delay_line = bbxs_malloc(ctx, inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
 
     if (!inst->delay_line)
-        bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR, "Could not allocate panning delay line");
+        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
+                      "Could not allocate panning delay line");
 }
 
-static void panning_tick(bpbxsyn_effect_s *p_inst,
-                         const bpbxsyn_tick_ctx_s *ctx) {
+static void panning_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
@@ -85,20 +83,26 @@ static void panning_tick(bpbxsyn_effect_s *p_inst,
     double use_pan_start = inst->pan[0];
     double use_pan_end = inst->pan[1];
 
-    double pan_start = max(-1.0, min(1.0, (use_pan_start - BPBXSYN_PAN_VALUE_CENTER) / BPBXSYN_PAN_VALUE_CENTER));
-    double pan_end = max(-1.0, min(1.0, (use_pan_end - BPBXSYN_PAN_VALUE_CENTER) / BPBXSYN_PAN_VALUE_CENTER));
+    double pan_start =
+        max(-1.0, min(1.0, (use_pan_start - BBXS_PAN_VALUE_CENTER) /
+                               BBXS_PAN_VALUE_CENTER));
+    double pan_end = max(-1.0, min(1.0, (use_pan_end - BBXS_PAN_VALUE_CENTER) /
+                                            BBXS_PAN_VALUE_CENTER));
 
     const double volume_start_l = cos((1.0 + pan_start) * PI * 0.25) * 1.414;
     const double volume_start_r = cos((1.0 - pan_start) * PI * 0.25) * 1.414;
     const double volume_end_l = cos((1.0 + pan_end) * PI * 0.25) * 1.414;
     const double volume_end_r = cos((1.0 - pan_end) * PI * 0.25) * 1.414;
-    const double max_delay_samples = inst->base.sample_rate * PAN_DELAY_SECS_MAX;
+    const double max_delay_samples =
+        inst->base.sample_rate * PAN_DELAY_SECS_MAX;
 
     double use_pan_delay_start = inst->pan_delay[0];
     double use_pan_delay_end = inst->pan_delay[1];
 
-    const double delay_start = pan_start * use_pan_delay_start * max_delay_samples / 10;
-    const double delay_end = pan_end * use_pan_delay_end * max_delay_samples / 10;
+    const double delay_start =
+        pan_start * use_pan_delay_start * max_delay_samples / 10;
+    const double delay_end =
+        pan_end * use_pan_delay_end * max_delay_samples / 10;
     const double delay_start_l = max(0.0, delay_start);
     const double delay_start_r = max(0.0, -delay_start);
     const double delay_end_l = max(0.0, delay_end);
@@ -106,25 +110,27 @@ static void panning_tick(bpbxsyn_effect_s *p_inst,
 
     inst->volume[0] = volume_start_l;
     inst->volume[1] = volume_start_r;
-    inst->volume_delta[0] = (volume_end_l - volume_start_l) / rounded_samples_per_tick;
-    inst->volume_delta[1] = (volume_end_r - volume_start_r) / rounded_samples_per_tick;
+    inst->volume_delta[0] =
+        (volume_end_l - volume_start_l) / rounded_samples_per_tick;
+    inst->volume_delta[1] =
+        (volume_end_r - volume_start_r) / rounded_samples_per_tick;
     inst->offset[0] = inst->delay_pos - delay_start_l + inst->delay_line_size;
     inst->offset[1] = inst->delay_pos - delay_start_r + inst->delay_line_size;
-    inst->offset_delta[0] = (delay_end_l - delay_start_l) / rounded_samples_per_tick;
-    inst->offset_delta[1] = (delay_end_r - delay_start_r) / rounded_samples_per_tick;
+    inst->offset_delta[0] =
+        (delay_end_l - delay_start_l) / rounded_samples_per_tick;
+    inst->offset_delta[1] =
+        (delay_end_r - delay_start_r) / rounded_samples_per_tick;
 
     inst->pan[0] = inst->pan[1];
     inst->pan_delay[0] = inst->pan_delay[1];
 }
 
-static void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                        size_t frame_count)
-{
+static void panning_run(bbxs_effect_s *p_inst, float **buffer,
+                        size_t frame_count) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
 
     assert(inst->delay_line);
-    if (!inst->delay_line)
-        return;
+    if (!inst->delay_line) return;
 
     double volume[2];
     double volume_delta[2];
@@ -144,7 +150,7 @@ static void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
 
     float *left = buffer[0];
     float *right = buffer[1];
-    
+
     for (size_t frame = 0; frame < frame_count; ++frame) {
         double sample = (double)left[frame];
 
@@ -152,9 +158,9 @@ static void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
         delay_line[delay_pos] = (float)sample;
         double ratio_l = fmod(offset[0], 1.0);
         double ratio_r = fmod(offset[1], 1.0);
-        double tap_la = delay_line[(int)(offset[0])     & mask];
+        double tap_la = delay_line[(int)(offset[0]) & mask];
         double tap_lb = delay_line[(int)(offset[0] + 1) & mask];
-        double tap_ra = delay_line[(int)(offset[1])     & mask];
+        double tap_ra = delay_line[(int)(offset[1]) & mask];
         double tap_rb = delay_line[(int)(offset[1] + 1) & mask];
         double tap_l = tap_la + (tap_lb - tap_la) * ratio_l;
         double tap_r = tap_ra + (tap_rb - tap_ra) * ratio_r;
@@ -181,38 +187,32 @@ static void panning_run(bpbxsyn_effect_s *p_inst, float **buffer,
     }
 }
 
-
-
-
-
-
-
-static const bpbxsyn_param_info_s param_info[BPBXSYN_PANNING_PARAM_COUNT] = {
+static const bbxs_param_info_s param_info[BBXS_PANNING_PARAM_COUNT] = {
     {
         .group = "General",
         .name = "Pan",
         .id = "panning\0",
-        .type = BPBXSYN_PARAM_DOUBLE,
-        
+        .type = BBXS_PARAM_DOUBLE,
+
         .min_value = 0.0,
-        .max_value = BPBXSYN_PAN_VALUE_MAX,
-        .default_value = BPBXSYN_PAN_VALUE_CENTER,
+        .max_value = BBXS_PAN_VALUE_MAX,
+        .default_value = BBXS_PAN_VALUE_CENTER,
     },
     {
         .group = "General",
         .name = "Pan Delay",
         .id = "panDelay",
-        .type = BPBXSYN_PARAM_DOUBLE,
-        
-        .min_value = 0.0,
-        .max_value = BPBXSYN_PAN_DELAY_MAX,
-        .default_value = (double)BPBXSYN_PAN_DELAY_MAX / 2,
+        .type = BBXS_PARAM_DOUBLE,
 
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION
+        .min_value = 0.0,
+        .max_value = BBXS_PAN_DELAY_MAX,
+        .default_value = (double)BBXS_PAN_DELAY_MAX / 2,
+
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
     },
 };
 
-static const size_t param_addresses[BPBXSYN_PANNING_PARAM_COUNT] = {
+static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(panning_effect_s, pan[1]),
     offsetof(panning_effect_s, pan_delay[1]),
 };
@@ -225,12 +225,12 @@ const effect_vtable_s bbsyn_effect_panning_vtable = {
     .input_channel_count = 1,
     .output_channel_count = 2,
 
-    .param_count = BPBXSYN_PANNING_PARAM_COUNT,
+    .param_count = BBXS_PANNING_PARAM_COUNT,
     .param_info = param_info,
     .param_addresses = param_addresses,
 
     .effect_stop = panning_stop,
     .effect_sample_rate_changed = panning_sample_rate_changed,
     .effect_tick = panning_tick,
-    .effect_run = panning_run
+    .effect_run = panning_run,
 };

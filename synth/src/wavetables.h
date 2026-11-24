@@ -1,9 +1,10 @@
 #ifndef _wavetables_h_
 #define _wavetables_h_
 
-// wavetable data is stored in the bpbxsyn_context struct
+// wavetable data is stored in the bbxs_context struct
 
 #include <stdbool.h>
+
 #include "../include/beepbox_synth.h"
 
 // SINE_WAVE_LENGTH must be a power of 2!
@@ -32,33 +33,33 @@ typedef struct {
     bool is_soft;
 
     // float instead of double for space efficiency
-    float samples[NOISE_WAVETABLE_LENGTH+1];
+    float samples[NOISE_WAVETABLE_LENGTH + 1];
 } noise_wavetable_s;
 
 typedef struct wavetables {
     float sine_wave[SINE_WAVE_LENGTH + 1];
 
-    noise_wavetable_s noise_wavetables[BPBXSYN_NOISE_COUNT];
+    noise_wavetable_s noise_wavetables[BBXS_NOISE_COUNT];
 
     // raw chip wavetables
-    wavetable_desc_s raw_chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+    wavetable_desc_s raw_chip_wavetables[BBXS_CHIP_WAVE_COUNT];
 
     // chip wavetables integrated for the purposes of anti-aliasing
-    wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
+    wavetable_desc_s chip_wavetables[BBXS_CHIP_WAVE_COUNT];
 } wavetables_s;
 
-extern const char *bbsyn_noise_waveform_names[BPBXSYN_NOISE_COUNT + 1];
-extern const char *bbsyn_chip_waveform_names[BPBXSYN_CHIP_WAVE_COUNT + 1];
+extern const char *bbsyn_noise_waveform_names[BBXS_NOISE_COUNT + 1];
+extern const char *bbsyn_chip_waveform_names[BBXS_CHIP_WAVE_COUNT + 1];
 
-bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed);
+bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed);
 
 void bbsyn_generate_harmonics(const wavetables_s *wavetables,
-                              uint8_t controls[BPBXSYN_HARMONICS_CONTROL_COUNT],
+                              uint8_t controls[BBXS_HARMONICS_CONTROL_COUNT],
                               int harmonics_rendered,
                               float out[HARMONICS_WAVE_LENGTH + 1]);
 
 void bbsyn_generate_spectrum_wave(const wavetables_s *wavetables,
-                                  uint8_t controls[BPBXSYN_SPECTRUM_CONTROL_COUNT],
+                                  uint8_t controls[BBXS_SPECTRUM_CONTROL_COUNT],
                                   double lowest_octave,
                                   float out[SPECTRUM_WAVE_LENGTH + 1]);
 

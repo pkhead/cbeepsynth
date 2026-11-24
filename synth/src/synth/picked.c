@@ -1,12 +1,12 @@
 #include <assert.h>
 #include <string.h>
-#include "../util.h"
-#include "../param_util.h"
-#include "../wavetables.h"
-#include "../filtering.h"
-#include "../alloc.h"
-#include "../log.h"
 
+#include "../alloc.h"
+#include "../filtering.h"
+#include "../log.h"
+#include "../param_util.h"
+#include "../util.h"
+#include "../wavetables.h"
 #include "synth.h"
 
 #if UNISON_MAX_VOICES != 2
@@ -16,7 +16,7 @@
 #define PICKED_BASE_EXPRESSION 0.025 // Same as harmonics.
 #define STRING_DECAY_RATE 0.12
 #define IMPULSE_WAVE_LENGTH ((HARMONICS_WAVE_LENGTH + 1))
-#define DELAY_LINE_COUNT ((BPBXSYN_SYNTH_MAX_VOICES * UNISON_MAX_VOICES))
+#define DELAY_LINE_COUNT ((BBXS_SYNTH_MAX_VOICES * UNISON_MAX_VOICES))
 
 // Picked strings have an all-pass filter with a corner frequency based on the
 // tone fundamental frequency, in order to add a slight inharmonicity. (Which is
@@ -29,9 +29,9 @@
 // The tone fundamental freq freq moves this much toward the center freq for
 // computing the all-pass corner freq.
 #define STRING_DISPERSION_FREQ_SCALE 0.3
-                                        
+
 // The all-pass corner freq is based on this times the adjusted tone fundamental
-// freq. 
+// freq.
 #define STRING_DISPERSION_FREQ_MULT 4.0
 
 // The cutoff freq of the shelf filter that is used to decay the high frequency
@@ -51,9 +51,9 @@ typedef struct pstring {
     double all_pass_sample;
     double all_pass_prev_input;
     double sustain_filter_sample;
-	double sustain_filter_prev_output2;
-	double sustain_filter_prev_input1;
-	double sustain_filter_prev_input2;
+    double sustain_filter_prev_output2;
+    double sustain_filter_prev_input1;
+    double sustain_filter_prev_input2;
     double fractional_delay_sample;
     double prev_delay_length;
     double delay_length_delta;
@@ -63,15 +63,15 @@ typedef struct pstring {
     double all_pass_g_delta;
     double sustain_filter_a0_delta;
     double sustain_filter_a1;
-	double sustain_filter_a1_delta;
-	double sustain_filter_a2;
-	double sustain_filter_a2_delta;
-	double sustain_filter_b0;
-	double sustain_filter_b0_delta;
-	double sustain_filter_b1;
-	double sustain_filter_b1_delta;
-	double sustain_filter_b2;
-	double sustain_filter_b2_delta;
+    double sustain_filter_a1_delta;
+    double sustain_filter_a2;
+    double sustain_filter_a2_delta;
+    double sustain_filter_b0;
+    double sustain_filter_b0_delta;
+    double sustain_filter_b1;
+    double sustain_filter_b1_delta;
+    double sustain_filter_b2;
+    double sustain_filter_b2_delta;
 } pstring_s;
 
 typedef struct picked_voice {
@@ -94,27 +94,26 @@ typedef struct picked_voice {
 } picked_voice_s;
 
 typedef struct picked_inst {
-    bpbxsyn_synth_s base;
+    bbxs_synth_s base;
 
     uint8_t unison_type;
-    uint8_t harmonics[BPBXSYN_HARMONICS_CONTROL_COUNT];
-    uint8_t last_harmonics[BPBXSYN_HARMONICS_CONTROL_COUNT];
+    uint8_t harmonics[BBXS_HARMONICS_CONTROL_COUNT];
+    uint8_t last_harmonics[BBXS_HARMONICS_CONTROL_COUNT];
 
     // [0] = prev
     // [1] = current
     double sustain[2];
 
     float impulse_wave[IMPULSE_WAVE_LENGTH];
-    
+
     // TODO: what is a good size for the delay line?
-    picked_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
+    picked_voice_s voices[BBXS_SYNTH_MAX_VOICES];
     float *delay_line_alloc; // a continguous list of delay lines, of size
                              // delay_line_size
     int delay_line_size;
 } picked_inst_s;
 
-static void pstring_reset(pstring_s *self)
-{
+static void pstring_reset(pstring_s *self) {
     self->delay_index = -1;
     self->all_pass_sample = 0.0;
     self->all_pass_prev_input = 0.0;
@@ -131,8 +130,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
                            picked_voice_s *voice, int string_index,
                            double rounded_samples_per_tick,
                            double string_decay_start, double string_decay_end,
-                           string_sustain_e sustain_type)
-{
+                           string_sustain_e sustain_type) {
     const double samples_per_second = inst->base.sample_rate;
     double all_pass_center =
         PI2 * STRING_DISPERSION_CENTER_FREQ / samples_per_second;
@@ -151,43 +149,56 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     double center_harmonic_end = radians_per_sample_end * 2.0;
 
     double all_pass_radians_start =
-        min(PI, radians_per_sample_start * STRING_DISPERSION_FREQ_MULT
-                * pow(all_pass_center / radians_per_sample_start,
-                      STRING_DISPERSION_FREQ_SCALE));
+        min(PI, radians_per_sample_start * STRING_DISPERSION_FREQ_MULT *
+                    pow(all_pass_center / radians_per_sample_start,
+                        STRING_DISPERSION_FREQ_SCALE));
     double all_pass_radians_end =
-        min(PI, radians_per_sample_end * STRING_DISPERSION_FREQ_MULT
-                * pow(all_pass_center / radians_per_sample_end,
-                      STRING_DISPERSION_FREQ_SCALE));
+        min(PI, radians_per_sample_end * STRING_DISPERSION_FREQ_MULT *
+                    pow(all_pass_center / radians_per_sample_end,
+                        STRING_DISPERSION_FREQ_SCALE));
     double shelf_radians = PI2 * STRING_SHELF_HZ / samples_per_second;
     double decay_curve_start = (pow(100.0, string_decay_start) - 1.0) / 99.0;
-    double decay_curve_end   = (pow(100.0, string_decay_end  ) - 1.0) / 99.0;
+    double decay_curve_end = (pow(100.0, string_decay_end) - 1.0) / 99.0;
     double register_amt = sustain_type = STRING_SUSTAIN_ACOUSTIC ? 0.25 : 0.0;
     double register_shelf_center = 15.6;
     double register_lowpass_center = 3.0 * samples_per_second / 48000.0;
-    //const decay_rate_start: number = Math.pow(0.5, decay_curve_start * shelf_radians / radians_per_sample_start);
-    //const decay_rate_end: number   = Math.pow(0.5, decay_curve_end   * shelf_radians / radians_per_sample_end);
+    // const decay_rate_start: number = Math.pow(0.5, decay_curve_start *
+    // shelf_radians / radians_per_sample_start); const decay_rate_end: number
+    // = Math.pow(0.5, decay_curve_end   * shelf_radians /
+    // radians_per_sample_end);
 
     // why do i even try column-limiting this crap
-    double decay_rate_start = pow(0.5, decay_curve_start * pow(shelf_radians / (radians_per_sample_start * register_shelf_center), (1.0 + 2.0 * register_amt)) * register_shelf_center);
-    double decay_rate_end = pow(0.5, decay_curve_end * pow(shelf_radians / (radians_per_sample_end * register_shelf_center), (1.0 + 2.0 * register_amt)) * register_shelf_center);
-    
+    double decay_rate_start =
+        pow(0.5, decay_curve_start *
+                     pow(shelf_radians /
+                             (radians_per_sample_start * register_shelf_center),
+                         (1.0 + 2.0 * register_amt)) *
+                     register_shelf_center);
+    double decay_rate_end =
+        pow(0.5, decay_curve_end *
+                     pow(shelf_radians /
+                             (radians_per_sample_end * register_shelf_center),
+                         (1.0 + 2.0 * register_amt)) *
+                     register_shelf_center);
+
     double expression_decay_start = pow(decay_rate_start, 0.002);
     double expression_decay_end = pow(decay_rate_end, 0.002);
 
     filter_coefs_s temp_filter_start_coefs;
     filter_coefs_s temp_filter_end_coefs;
-    bpbxsyn_complex_s temp_freq_resp;
+    bbxs_complex_s temp_freq_resp;
 
     bbsyn_filter_ap1ipa(&temp_filter_start_coefs, all_pass_radians_start);
     temp_freq_resp =
         bbsyn_filter_analyze(temp_filter_start_coefs, center_harmonic_start);
     double all_pass_g_start = temp_filter_start_coefs.b[0]; /* same as a[1] */
     double all_pass_phase_delay_start =
-        -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_start;
+        -atan2(temp_freq_resp.imag, temp_freq_resp.real) /
+        center_harmonic_start;
 
     bbsyn_filter_ap1ipa(&temp_filter_end_coefs, all_pass_radians_end);
-    temp_freq_resp
-        = bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
+    temp_freq_resp =
+        bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
     double all_pass_g_end = temp_filter_end_coefs.b[0]; /* same as a[1] */
     double all_pass_phase_delay_end =
         -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_end;
@@ -202,13 +213,14 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
         STRING_BRIGHTNESS_RESONANT, // 3rd order lowpass, harder corner
     } pstring_brightness_e;
 
-    pstring_brightness_e brightness_type =
-        sustain_type == STRING_SUSTAIN_BRIGHT ? STRING_BRIGHTNESS_BRIGHT
-                                              : STRING_BRIGHTNESS_NORMAL;
+    pstring_brightness_e brightness_type = sustain_type == STRING_SUSTAIN_BRIGHT
+                                               ? STRING_BRIGHTNESS_BRIGHT
+                                               : STRING_BRIGHTNESS_NORMAL;
 
     if (brightness_type == STRING_BRIGHTNESS_BRIGHT) {
-        const double shelf_gain_start = pow(decay_rate_start, STRING_DECAY_RATE);
-        const double shelf_gain_end   = pow(decay_rate_end,   STRING_DECAY_RATE);
+        const double shelf_gain_start =
+            pow(decay_rate_start, STRING_DECAY_RATE);
+        const double shelf_gain_end = pow(decay_rate_end, STRING_DECAY_RATE);
 
         bbsyn_filter_hshelf2(&temp_filter_start_coefs, shelf_radians,
                              shelf_gain_start, 0.5);
@@ -217,10 +229,22 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     } else {
         double corner_hardness =
             pow(brightness_type == STRING_BRIGHTNESS_NORMAL ? 0.0 : 1.0, 0.25);
-        double lp1_cutoff_radians_start = pow(register_lowpass_center * register_lowpass_center * radians_per_sample_start * 3.3 * 48000 / samples_per_second, 0.5 + register_amt) / register_lowpass_center / pow(decay_curve_start, .5);
-        double lp1_cutoff_radians_end = pow(register_lowpass_center * register_lowpass_center * radians_per_sample_end   * 3.3 * 48000 / samples_per_second, 0.5 + register_amt) / register_lowpass_center / pow(decay_curve_end,   .5);
-        double lp2_cutoff_radians_start = lp1_cutoff_radians_start * pow(2.0, 0.5 - 1.75 * (1.0 - pow(1.0 - corner_hardness, 0.85)));
-        double lp2_cutoff_radians_end = lp1_cutoff_radians_end   * pow(2.0, 0.5 - 1.75 * (1.0 - pow(1.0 - corner_hardness, 0.85)));
+        double lp1_cutoff_radians_start =
+            pow(register_lowpass_center * register_lowpass_center *
+                    radians_per_sample_start * 3.3 * 48000 / samples_per_second,
+                0.5 + register_amt) /
+            register_lowpass_center / pow(decay_curve_start, .5);
+        double lp1_cutoff_radians_end =
+            pow(register_lowpass_center * register_lowpass_center *
+                    radians_per_sample_end * 3.3 * 48000 / samples_per_second,
+                0.5 + register_amt) /
+            register_lowpass_center / pow(decay_curve_end, .5);
+        double lp2_cutoff_radians_start =
+            lp1_cutoff_radians_start *
+            pow(2.0, 0.5 - 1.75 * (1.0 - pow(1.0 - corner_hardness, 0.85)));
+        double lp2_cutoff_radians_end =
+            lp1_cutoff_radians_end *
+            pow(2.0, 0.5 - 1.75 * (1.0 - pow(1.0 - corner_hardness, 0.85)));
         double lp2_gain_start = pow(2.0, -pow(2.0, -pow(corner_hardness, 0.9)));
         double lp2_gain_end = pow(2.0, -pow(2.0, -pow(corner_hardness, 0.9)));
 
@@ -231,63 +255,100 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
                            bbsyn_warp_inf_to_nyquist(lp2_cutoff_radians_end),
                            lp2_gain_end);
     }
-    
-    temp_freq_resp = bbsyn_filter_analyze(temp_filter_start_coefs, center_harmonic_start);
+
+    temp_freq_resp =
+        bbsyn_filter_analyze(temp_filter_start_coefs, center_harmonic_start);
     const double sustain_filter_start_a1 = temp_filter_start_coefs.a[1];
     const double sustain_filter_start_a2 = temp_filter_start_coefs.a[2];
-    const double sustain_filter_start_b0 = temp_filter_start_coefs.b[0] * expression_decay_start;
-    const double sustain_filter_start_b1 = temp_filter_start_coefs.b[1] * expression_decay_start;
-    const double sustain_filter_start_b2 = temp_filter_start_coefs.b[2] * expression_decay_start;
-    const double sustain_filter_phase_delay_start = -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_start;
-    
-    temp_freq_resp = bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
+    const double sustain_filter_start_b0 =
+        temp_filter_start_coefs.b[0] * expression_decay_start;
+    const double sustain_filter_start_b1 =
+        temp_filter_start_coefs.b[1] * expression_decay_start;
+    const double sustain_filter_start_b2 =
+        temp_filter_start_coefs.b[2] * expression_decay_start;
+    const double sustain_filter_phase_delay_start =
+        -atan2(temp_freq_resp.imag, temp_freq_resp.real) /
+        center_harmonic_start;
+
+    temp_freq_resp =
+        bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
     const double sustain_filter_end_a1 = temp_filter_end_coefs.a[1];
     const double sustain_filter_end_a2 = temp_filter_end_coefs.a[2];
-    const double sustain_filter_end_b0 = temp_filter_end_coefs.b[0] * expression_decay_end;
-    const double sustain_filter_b1_end = temp_filter_end_coefs.b[1] * expression_decay_end;
-    const double sustain_filter_b2_end = temp_filter_end_coefs.b[2] * expression_decay_end;
-    const double sustain_filter_phase_delay_end = -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_end;
-    
+    const double sustain_filter_end_b0 =
+        temp_filter_end_coefs.b[0] * expression_decay_end;
+    const double sustain_filter_b1_end =
+        temp_filter_end_coefs.b[1] * expression_decay_end;
+    const double sustain_filter_b2_end =
+        temp_filter_end_coefs.b[2] * expression_decay_end;
+    const double sustain_filter_phase_delay_end =
+        -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_end;
+
     const double period_length_start = 1.0 / phase_delta_start;
     const double period_length_end = 1.0 / phase_delta_end;
-    const double min_buffer_length = ceil(max(period_length_start, period_length_end) * 2);
-    const double delay_length = period_length_start - all_pass_phase_delay_start - sustain_filter_phase_delay_start;
-    const double delay_length_end = period_length_end - all_pass_phase_delay_end - sustain_filter_phase_delay_end;
-    
+    const double min_buffer_length =
+        ceil(max(period_length_start, period_length_end) * 2);
+    const double delay_length = period_length_start -
+                                all_pass_phase_delay_start -
+                                sustain_filter_phase_delay_start;
+    const double delay_length_end = period_length_end -
+                                    all_pass_phase_delay_end -
+                                    sustain_filter_phase_delay_end;
+
     self->prev_delay_length = delay_length;
-    self->delay_length_delta = (delay_length_end - delay_length) / rounded_samples_per_tick;
+    self->delay_length_delta =
+        (delay_length_end - delay_length) / rounded_samples_per_tick;
     self->all_pass_g = all_pass_g_start;
     self->sustain_filter_a1 = sustain_filter_start_a1;
     self->sustain_filter_a2 = sustain_filter_start_a2;
     self->sustain_filter_b0 = sustain_filter_start_b0;
     self->sustain_filter_b1 = sustain_filter_start_b1;
     self->sustain_filter_b2 = sustain_filter_start_b2;
-    self->all_pass_g_delta = (all_pass_g_end - all_pass_g_start) / rounded_samples_per_tick;
-    self->sustain_filter_a1_delta = (sustain_filter_end_a1 - sustain_filter_start_a1) / rounded_samples_per_tick;
-    self->sustain_filter_a2_delta = (sustain_filter_end_a2 - sustain_filter_start_a2) / rounded_samples_per_tick;
-    self->sustain_filter_b0_delta = (sustain_filter_end_b0 - sustain_filter_start_b0) / rounded_samples_per_tick;
-    self->sustain_filter_b1_delta = (sustain_filter_b1_end - sustain_filter_start_b1) / rounded_samples_per_tick;
-    self->sustain_filter_b2_delta = (sustain_filter_b2_end - sustain_filter_start_b2) / rounded_samples_per_tick;
+    self->all_pass_g_delta =
+        (all_pass_g_end - all_pass_g_start) / rounded_samples_per_tick;
+    self->sustain_filter_a1_delta =
+        (sustain_filter_end_a1 - sustain_filter_start_a1) /
+        rounded_samples_per_tick;
+    self->sustain_filter_a2_delta =
+        (sustain_filter_end_a2 - sustain_filter_start_a2) /
+        rounded_samples_per_tick;
+    self->sustain_filter_b0_delta =
+        (sustain_filter_end_b0 - sustain_filter_start_b0) /
+        rounded_samples_per_tick;
+    self->sustain_filter_b1_delta =
+        (sustain_filter_b1_end - sustain_filter_start_b1) /
+        rounded_samples_per_tick;
+    self->sustain_filter_b2_delta =
+        (sustain_filter_b2_end - sustain_filter_start_b2) /
+        rounded_samples_per_tick;
 
-    const bool pitch_changed = fabs(log2(delay_length / prev_delay_length)) > 0.01;
+    const bool pitch_changed =
+        fabs(log2(delay_length / prev_delay_length)) > 0.01;
 
     const bool reinit_impulse = (self->delay_index == -1 || pitch_changed);
     assert(inst->delay_line_size > min_buffer_length);
     (void)min_buffer_length;
     // TODO: picked string delay line allocation
-    // if (this.delay_line == null || this.delay_line.length <= min_buffer_length) {
-    //     // The delay line buffer will get reused for other tones so might as well
+    // if (this.delay_line == null || this.delay_line.length <=
+    // min_buffer_length) {
+    //     // The delay line buffer will get reused for other tones so might as
+    //     well
     //     // start off with a buffer size that is big enough for most notes.
-    //     const likelyMaximumLength: number = Math.ceil(2 * synth.samplesPerSecond / Instrument.frequencyFromPitch(12));
-    //     const newDelayLine: Float32Array = new Float32Array(Synth.fittingPowerOfTwo(Math.max(likelyMaximumLength, min_buffer_length)));
-    //     if (!reinit_impulse && this.delay_line != null) {
-    //         // If the tone has already started but the buffer needs to be reallocated,
+    //     const likelyMaximumLength: number = Math.ceil(2 *
+    //     synth.samplesPerSecond / Instrument.frequencyFromPitch(12)); const
+    //     newDelayLine: Float32Array = new
+    //     Float32Array(Synth.fittingPowerOfTwo(Math.max(likelyMaximumLength,
+    //     min_buffer_length))); if (!reinit_impulse && this.delay_line != null)
+    //     {
+    //         // If the tone has already started but the buffer needs to be
+    //         reallocated,
     //         // transfer the old data to the new buffer.
-    //         const oldDelayBufferMask: number = (this.delay_line.length - 1) >> 0;
-    //         const startCopyingFromIndex: number = this.delayIndex + this.delay_reset_offset;
-    //         this.delayIndex = this.delay_line.length - this.delay_reset_offset;
-    //         for (let i: number = 0; i < this.delay_line.length; i++) {
-    //             newDelayLine[i] = this.delay_line[(startCopyingFromIndex + i) & oldDelayBufferMask];
+    //         const oldDelayBufferMask: number = (this.delay_line.length - 1)
+    //         >> 0; const startCopyingFromIndex: number = this.delayIndex +
+    //         this.delay_reset_offset; this.delayIndex = this.delay_line.length
+    //         - this.delay_reset_offset; for (let i: number = 0; i <
+    //         this.delay_line.length; i++) {
+    //             newDelayLine[i] = this.delay_line[(startCopyingFromIndex + i)
+    //             & oldDelayBufferMask];
     //         }
     //     }
     //     this.delay_line = newDelayLine;
@@ -316,9 +377,9 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
         // Clear away a region of the delay buffer for the new impulse.
         const double start_impulse_from = -delay_length;
         const int start_zeros_from =
-            (int) floor(start_impulse_from - period_length_start / 2);
+            (int)floor(start_impulse_from - period_length_start / 2);
         const int stop_zeros_at =
-            (int) ceil(start_zeros_from + period_length_start * 2);
+            (int)ceil(start_zeros_from + period_length_start * 2);
         self->delay_reset_offset = stop_zeros_at; // And continue clearing the
                                                   // area in front of the delay
                                                   // line.
@@ -329,30 +390,30 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
         const float *const impulse_wave = inst->impulse_wave;
         // The first sample is duplicated at the end, don't double-count it.
         const int impulse_wave_len = IMPULSE_WAVE_LENGTH - 1;
-        const double impulse_phase_delta = (double) impulse_wave_len
-                                           / period_length_start;
+        const double impulse_phase_delta =
+            (double)impulse_wave_len / period_length_start;
 
-        const double fade_duration = min(period_length_start * 0.2,
-                                         samples_per_second * 0.003);
+        const double fade_duration =
+            min(period_length_start * 0.2, samples_per_second * 0.003);
         const double start_impulse_from_sample = ceil(start_impulse_from);
         const double stop_impulse_at =
             start_impulse_from + period_length_start + fade_duration;
         const double stop_impulse_at_sample = stop_impulse_at; // TODO: is this
                                                                // an int?
-        double impulse_phase = (start_impulse_from_sample - start_impulse_from)
-                               * impulse_phase_delta;
+        double impulse_phase =
+            (start_impulse_from_sample - start_impulse_from) *
+            impulse_phase_delta;
         double prev_wave_integral = 0.0;
-        for (double i = start_impulse_from_sample;
-             i <= stop_impulse_at_sample; ++i)
-        {
-            const int impulse_phase_int = (int) impulse_phase;
+        for (double i = start_impulse_from_sample; i <= stop_impulse_at_sample;
+             ++i) {
+            const int impulse_phase_int = (int)impulse_phase;
             const int index = impulse_phase_int % impulse_wave_len;
-            double next_wave_integral = (double) impulse_wave[index];
+            double next_wave_integral = (double)impulse_wave[index];
             const double phase_ratio = impulse_phase - impulse_phase_int;
-            next_wave_integral += (impulse_wave[index + 1] - next_wave_integral)
-                                  * phase_ratio;
-            const double sample = (next_wave_integral - prev_wave_integral)
-                                  / impulse_phase_delta;
+            next_wave_integral +=
+                (impulse_wave[index + 1] - next_wave_integral) * phase_ratio;
+            const double sample =
+                (next_wave_integral - prev_wave_integral) / impulse_phase_delta;
             const double fade_in =
                 min(1.0, (i - start_impulse_from) / fade_duration);
             const double fade_out =
@@ -360,52 +421,50 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
             const double combined_fade = fade_in * fade_out;
             const double curved_fade =
                 combined_fade * combined_fade * (3.0 - 2.0 * combined_fade);
-                //                              A cubic sigmoid from 0 to 1.
-            delay_line[(int)i & delay_buf_mask] += (float)(sample * curved_fade);
+            //                              A cubic sigmoid from 0 to 1.
+            delay_line[(int)i & delay_buf_mask] +=
+                (float)(sample * curved_fade);
             prev_wave_integral = next_wave_integral;
             impulse_phase += impulse_phase_delta;
         }
     }
 }
 
-static void picked_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+static void picked_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
     *inst = (picked_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_PICKED_STRING);
+    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_PICKED_STRING);
 
-    inst->sustain[0] = BPBXSYN_PICKED_STRING_SUSTAIN_MAX;
+    inst->sustain[0] = BBXS_PICKED_STRING_SUSTAIN_MAX;
     inst->sustain[1] = inst->sustain[0];
 
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i)
-    {
-        for (int j = 0; j < UNISON_MAX_VOICES; ++j)
-        {
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
+        for (int j = 0; j < UNISON_MAX_VOICES; ++j) {
             pstring_reset(&inst->voices[i].strings[j]);
         }
     }
 
-    bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics,
-                             64, inst->impulse_wave);
+    bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics, 64,
+                             inst->impulse_wave);
     memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
 }
 
-static void picked_destroy(bpbxsyn_synth_s *p_inst)
-{
+static void picked_destroy(bbxs_synth_s *p_inst) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bpbxsyn_free(inst->base.ctx, inst->delay_line_alloc);
+    bbxs_free(inst->base.ctx, inst->delay_line_alloc);
 }
 
-static bpbxsyn_voice_id picked_note_on(bpbxsyn_synth_s *p_inst, int key,
+static bbxs_voice_id picked_note_on(bbxs_synth_s *p_inst, int key,
                                     double velocity, int32_t length) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
 
     bool continuation;
-    bpbxsyn_voice_id id =
+    bbxs_voice_id id =
         bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
@@ -419,53 +478,52 @@ static bpbxsyn_voice_id picked_note_on(bpbxsyn_synth_s *p_inst, int key,
 
         memcpy(temp_strings, voice->strings, sizeof(voice->strings));
 
-        *voice = (picked_voice_s) {
+        *voice = (picked_voice_s){
             .base = voice->base,
         };
 
         memcpy(voice->strings, temp_strings, sizeof(voice->strings));
         for (int i = 0; i < UNISON_MAX_VOICES; ++i)
             pstring_reset(&voice->strings[i]);
-        
+
         voice->at_note_start = true;
     }
 
     return id;
 }
 
-static void picked_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
+static void picked_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
 
     bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
-static void picked_note_all_off(bpbxsyn_synth_s *p_inst) {
+static void picked_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
 
     bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
-static void picked_sample_rate_changed(bpbxsyn_synth_s *p_inst, double old,
-                                       double new)
-{
+static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
+                                       double new) {
     if (new == old) return;
 
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
-    const bpbxsyn_context_s *const ctx = inst->base.ctx;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
+    const bbxs_context_s *const ctx = inst->base.ctx;
 
-    if (inst->delay_line_alloc)
-        bpbxsyn_free(ctx, inst->delay_line_alloc);
+    if (inst->delay_line_alloc) bbxs_free(ctx, inst->delay_line_alloc);
 
     // The delay line buffer will get reused for other tones so might as well
     // start off with a buffer size that is big enough for most notes.
-    // const int likely_maximum_length = (int) ceil(4 * new / key_to_hz_d(12.0));
-    // int dl_size = bbsyn_fitting_power_of_two(likely_maximum_length);
+    // const int likely_maximum_length = (int) ceil(4 * new /
+    // key_to_hz_d(12.0)); int dl_size =
+    // bbsyn_fitting_power_of_two(likely_maximum_length);
 
     // the min_buffer_length of MIDI E(-1) is 4660; i think the intended value
     // of likelyMaximumLength (16,384) is higher than reasonable. and I should
@@ -473,42 +531,38 @@ static void picked_sample_rate_changed(bpbxsyn_synth_s *p_inst, double old,
     int dl_size = 8192;
 
     float *dl_alloc =
-        bpbxsyn_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
-    if (!dl_alloc)
-    {
-        bbsyn_logmsgf(ctx, BPBXSYN_LOG_ERROR,
+        bbxs_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
+    if (!dl_alloc) {
+        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
                       "picked string could not allocate delay lines!");
-        
+
         // umm i don't know how the program would recover from this. uhhh.
         inst->delay_line_alloc = NULL;
         inst->delay_line_size = 0;
         return;
     }
 
-    bbsyn_logmsgf(ctx, BPBXSYN_LOG_DEBUG,
+    bbsyn_logmsgf(ctx, BBXS_LOG_DEBUG,
                   "allocated %llu bytes of delay line buffers",
                   (size_t)dl_size * DELAY_LINE_COUNT * sizeof(float));
-    
+
     memset(dl_alloc, 0, DELAY_LINE_COUNT * dl_size * sizeof(float));
 
     inst->delay_line_size = dl_size;
     inst->delay_line_alloc = dl_alloc;
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i)
-    {
-        for (int j = 0; j < UNISON_MAX_VOICES; ++j)
-        {
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
+        for (int j = 0; j < UNISON_MAX_VOICES; ++j) {
             inst->voices[i].strings[j].delay_line = dl_alloc;
             dl_alloc += dl_size;
         }
     }
 }
 
-static void compute_voice(
-    const bpbxsyn_synth_s *const base_inst, inst_base_voice_s *base_voice,
-    voice_compute_s *compute_data
-) {
-    const picked_inst_s *const inst = (picked_inst_s*) base_inst;
-    picked_voice_s *const voice = (picked_voice_s*) base_voice;
+static void compute_voice(const bbxs_synth_s *const base_inst,
+                          inst_base_voice_s *base_voice,
+                          voice_compute_s *compute_data) {
+    const picked_inst_s *const inst = (picked_inst_s *)base_inst;
+    picked_voice_s *const voice = (picked_voice_s *)base_voice;
 
     const double sample_len = compute_data->varying.sample_len;
     const double rounded_samples_per_tick =
@@ -543,20 +597,19 @@ static void compute_voice(
     voice->sustain_end = use_sustain_end;
 
     // Increase expression to compensate for string decay.
-    settings_expression_mult *=
-        pow(2.0, 0.7 *
-                 (1.0 - use_sustain_start / BPBXSYN_PICKED_STRING_SUSTAIN_MAX));
+    settings_expression_mult *= pow(
+        2.0, 0.7 * (1.0 - use_sustain_start / BBXS_PICKED_STRING_SUSTAIN_MAX));
 
     // calculate final expression
-    const double expr_start = varying->expr_start * settings_expression_mult
-                                                  * pitch_expression_start;
-    const double expr_end   = varying->expr_end * settings_expression_mult
-                                                * pitch_expression_end;
-    
+    const double expr_start =
+        varying->expr_start * settings_expression_mult * pitch_expression_start;
+    const double expr_end =
+        varying->expr_end * settings_expression_mult * pitch_expression_end;
+
     const double unison_env_start =
-        voice->base.env_computer.envelope_starts[BPBXSYN_ENV_INDEX_UNISON];
+        voice->base.env_computer.envelope_starts[BBXS_ENV_INDEX_UNISON];
     const double unison_env_end =
-        voice->base.env_computer.envelope_ends[BPBXSYN_ENV_INDEX_UNISON];
+        voice->base.env_computer.envelope_ends[BBXS_ENV_INDEX_UNISON];
 
     const double freq_end_ratio =
         pow(2.0, (interval_end - interval_start) * 1.0 / 12.0);
@@ -576,9 +629,10 @@ static void compute_voice(
     unison_ends[0] =
         pow(2.0, (unison.offset + unison.spread) * unison_env_end / 12.0);
     unison_starts[1] =
-        pow(2.0, (unison.offset - unison.spread) * unison_env_start / 12.0)/* * specialIntervalMult*/;
-    unison_ends[1] =
-        pow(2.0, (unison.offset - unison.spread) * unison_env_end / 12.0)/* * specialIntervalMult*/;
+        pow(2.0, (unison.offset - unison.spread) * unison_env_start /
+                     12.0) /* * specialIntervalMult*/;
+    unison_ends[1] = pow(2.0, (unison.offset - unison.spread) * unison_env_end /
+                                  12.0) /* * specialIntervalMult*/;
 
     for (int i = 0; i < UNISON_MAX_VOICES; i++) {
         voice->phase_delta[i] = start_freq * sample_len * unison_starts[i];
@@ -586,7 +640,7 @@ static void compute_voice(
             base_phase_delta_scale * pow(unison_ends[i] / unison_starts[i],
                                          1.0 / rounded_samples_per_tick);
     }
-    
+
     voice->base.expression = expr_start;
     voice->base.expression_delta =
         (expr_end - expr_start) / rounded_samples_per_tick;
@@ -596,15 +650,17 @@ static void compute_voice(
         string_decay_start = voice->prev_string_decay;
     } else {
         double sustain_envelope_start =
-            voice->base.env_computer.envelope_starts[BPBXSYN_ENV_INDEX_STRING_SUSTAIN];
+            voice->base.env_computer
+                .envelope_starts[BBXS_ENV_INDEX_STRING_SUSTAIN];
         string_decay_start =
-            1.0- min(1.0, sustain_envelope_start * voice->sustain_start 
-                          / BPBXSYN_PICKED_STRING_SUSTAIN_MAX);
+            1.0 - min(1.0, sustain_envelope_start * voice->sustain_start /
+                               BBXS_PICKED_STRING_SUSTAIN_MAX);
     }
     double sustain_envelope_end =
-        voice->base.env_computer.envelope_ends[BPBXSYN_ENV_INDEX_STRING_SUSTAIN];
+        voice->base.env_computer.envelope_ends[BBXS_ENV_INDEX_STRING_SUSTAIN];
     double string_decay_end =
-        1.0 - min(1.0, sustain_envelope_end * voice->sustain_end / BPBXSYN_PICKED_STRING_SUSTAIN_MAX);
+        1.0 - min(1.0, sustain_envelope_end * voice->sustain_end /
+                           BBXS_PICKED_STRING_SUSTAIN_MAX);
     voice->prev_string_decay = string_decay_end;
 
     // for (int i: number = tone.pickedStrings.length; i < unison.voices; i++) {
@@ -626,39 +682,35 @@ static void compute_voice(
     voice->at_note_start = false;
 }
 
-static void picked_tick(bpbxsyn_synth_s *p_inst,
-                     const bpbxsyn_tick_ctx_s *tick_ctx) {
+static void picked_tick(bbxs_synth_s *p_inst, const bbxs_tick_ctx_s *tick_ctx) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bbsyn_inst_tick(p_inst, tick_ctx, &(audio_compute_s) {
-        .voice_list = inst->voices,
-        .sizeof_voice = sizeof(*inst->voices),
-        .compute_voice = compute_voice,
-        .userdata = NULL
-    });
+    bbsyn_inst_tick(p_inst, tick_ctx,
+                    &(audio_compute_s){.voice_list = inst->voices,
+                                       .sizeof_voice = sizeof(*inst->voices),
+                                       .compute_voice = compute_voice,
+                                       .userdata = NULL});
 
     inst->sustain[0] = inst->sustain[1];
 }
 
-static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
-                       size_t frame_count)
-{
+static void picked_run(bbxs_synth_s *p_inst, float *samples,
+                       size_t frame_count) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PICKED_STRING);
-    picked_inst_s *inst = (picked_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
+    picked_inst_s *inst = (picked_inst_s *)p_inst;
     (void)inst;
 
     memset(samples, 0, frame_count * sizeof(float));
 
     // if harmonic controls changed, rebuild the wave
     if (memcmp(inst->harmonics, inst->last_harmonics,
-               sizeof(inst->harmonics)))
-    {
+               sizeof(inst->harmonics))) {
         memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
-        bbsyn_generate_harmonics(&inst->base.ctx->wavetables,
-                                 inst->harmonics, 64, inst->impulse_wave);
+        bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics,
+                                 64, inst->impulse_wave);
     }
 
     const int delay_line_length = inst->delay_line_size;
@@ -666,13 +718,13 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
     // This algorithm is similar to the Karpluss-Strong algorithm in principle,
     // but with an all-pass filter for dispersion and with more control over the
     // impulse harmonics.
-    for (int vi = 0; vi < BPBXSYN_SYNTH_MAX_VOICES; ++vi) {
+    for (int vi = 0; vi < BBXS_SYNTH_MAX_VOICES; ++vi) {
         picked_voice_s *voice = &inst->voices[vi];
         if (!voice_is_computing(&voice->base)) continue;
 
         double expression = voice->base.expression;
-		const double expression_delta = voice->base.expression_delta;
-		
+        const double expression_delta = voice->base.expression_delta;
+
         // const unison_sign = tone.specialIntervalExpressionMult
         //                     * instrumentState.unison.sign;
         const double unison_sign = 1.0;
@@ -726,8 +778,8 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
             vd->delay_line = pstr->delay_line;
             vd->delay_buf_mask = delay_line_length - 1;
             vd->delayIndex = pstr->delay_index;
-            vd->delayIndex = (vd->delayIndex & vd->delay_buf_mask)
-                             + delay_line_length;
+            vd->delayIndex =
+                (vd->delayIndex & vd->delay_buf_mask) + delay_line_length;
             vd->delay_length = pstr->prev_delay_length;
             vd->delay_length_delta = pstr->delay_length_delta;
             vd->all_pass_g = pstr->all_pass_g;
@@ -752,11 +804,13 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
             for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
                 voice_data_s *vd = voice_data + ui;
 
-                const double target_sample_time = vd->delayIndex - vd->delay_length;
+                const double target_sample_time =
+                    vd->delayIndex - vd->delay_length;
                 // Offset to improve stability of all-pass filter.
                 const int lower_index = (int)(target_sample_time + 0.125);
                 const int upper_index = lower_index + 1;
-                const double fractional_delay = upper_index - target_sample_time;
+                const double fractional_delay =
+                    upper_index - target_sample_time;
                 // Inlined version of
                 // FilterCoefficients.prototype.allPass1stOrderFractionalDelay
                 const double fractional_delay_g =
@@ -765,54 +819,54 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
                     vd->delay_line[lower_index & vd->delay_buf_mask];
                 const double input =
                     vd->delay_line[upper_index & vd->delay_buf_mask];
-                
+
                 vd->fractional_delay_sample =
-                    fractional_delay_g * input + prev_input
-                    - fractional_delay_g * vd->fractional_delay_sample;
-                
+                    fractional_delay_g * input + prev_input -
+                    fractional_delay_g * vd->fractional_delay_sample;
+
                 vd->all_pass_sample =
-                    vd->fractional_delay_sample * vd->all_pass_g
-                    + vd->all_pass_prev_input
-                    - vd->all_pass_g * vd->all_pass_sample;
+                    vd->fractional_delay_sample * vd->all_pass_g +
+                    vd->all_pass_prev_input -
+                    vd->all_pass_g * vd->all_pass_sample;
                 vd->all_pass_prev_input = vd->fractional_delay_sample;
-                
-                const double sustain_filter_prev_output1 = vd->sustain_filter_sample;
+
+                const double sustain_filter_prev_output1 =
+                    vd->sustain_filter_sample;
                 vd->sustain_filter_sample =
-                    vd->sustain_filter_b0 * vd->all_pass_sample
-                    + vd->sustain_filter_b1 * vd->sustain_filter_prev_input1
-                    + vd->sustain_filter_b2 * vd->sustain_filter_prev_input2
-                    - vd->sustain_filter_a1 * vd->sustain_filter_sample
-                    - vd->sustain_filter_a2 * vd->sustain_filter_prev_output2;
-                
+                    vd->sustain_filter_b0 * vd->all_pass_sample +
+                    vd->sustain_filter_b1 * vd->sustain_filter_prev_input1 +
+                    vd->sustain_filter_b2 * vd->sustain_filter_prev_input2 -
+                    vd->sustain_filter_a1 * vd->sustain_filter_sample -
+                    vd->sustain_filter_a2 * vd->sustain_filter_prev_output2;
+
                 vd->sustain_filter_prev_output2 = sustain_filter_prev_output1;
                 vd->sustain_filter_prev_input2 = vd->sustain_filter_prev_input1;
                 vd->sustain_filter_prev_input1 = vd->all_pass_sample;
-                
+
                 vd->delay_line[vd->delayIndex & vd->delay_buf_mask] +=
-                    (float) vd->sustain_filter_sample;
-                
-                const int delay_line_reset_idx = 
-                    (vd->delayIndex + vd->delay_reset_offset)
-                    & vd->delay_buf_mask;
+                    (float)vd->sustain_filter_sample;
+
+                const int delay_line_reset_idx =
+                    (vd->delayIndex + vd->delay_reset_offset) &
+                    vd->delay_buf_mask;
                 vd->delay_line[delay_line_reset_idx] = 0.0f;
 
                 ++vd->delayIndex;
             }
 
             const double input_sample =
-                (voice_data[0].fractional_delay_sample
-                 + voice_data[1].fractional_delay_sample * unison_sign)
-                * expression;
-            const double sample =
-                bbsyn_apply_filters(input_sample, init_filter_input1,
-                                    init_filter_input2,
-                                    voice->base.note_filters);
+                (voice_data[0].fractional_delay_sample +
+                 voice_data[1].fractional_delay_sample * unison_sign) *
+                expression;
+            const double sample = bbsyn_apply_filters(
+                input_sample, init_filter_input1, init_filter_input2,
+                voice->base.note_filters);
             init_filter_input2 = init_filter_input1;
             init_filter_input1 = input_sample;
-            samples[frame] += (float) sample;
+            samples[frame] += (float)sample;
 
             expression += expression_delta;
-            
+
             for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
                 voice_data_s *vd = voice_data + ui;
 
@@ -829,15 +883,15 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
         for (int ui = 0; ui < UNISON_MAX_VOICES; ++ui) {
             voice_data_s *vd = voice_data + ui;
             pstring_s *pstr = &voice->strings[ui];
-            
+
             // Avoid persistent denormal or NaN values in the delay buffers and
             // filter history.
             const double epsilon = 1.0e-24; // okay what why is this difference
                                             // than the other epsilons?
-            
-            #define SANITIZE(n)\
-                if (!isfinite(n) || fabs(n) < epsilon) n = 0.0;
-            
+
+#define SANITIZE(n)                                                            \
+    if (!isfinite(n) || fabs(n) < epsilon) n = 0.0;
+
             SANITIZE(vd->all_pass_sample);
             SANITIZE(vd->all_pass_prev_input);
             SANITIZE(vd->sustain_filter_sample);
@@ -845,8 +899,8 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
             SANITIZE(vd->sustain_filter_prev_input1);
             SANITIZE(vd->sustain_filter_prev_input2);
             SANITIZE(vd->fractional_delay_sample);
-            
-            #undef SANITIZE
+
+#undef SANITIZE
 
             pstr->all_pass_sample = vd->all_pass_sample;
             pstr->all_pass_prev_input = vd->all_pass_prev_input;
@@ -872,347 +926,340 @@ static void picked_run(bpbxsyn_synth_s *p_inst, float *samples,
     }
 }
 
-
-
-
-
-
 //////////
 // DATA //
 //////////
 
-static const bpbxsyn_param_info_s picked_param_info[] = {
-    {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+static const bbxs_param_info_s picked_param_info[] = {
+    {.type = BBXS_PARAM_UINT8,
+     .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
-        .id = "psUnison",
-        .name = "Unison",
-        .group = "Picked String",
-        .min_value = 0,
-        .max_value = BPBXSYN_UNISON_COUNT - 1,
-        .default_value = BPBXSYN_UNISON_NONE,
+     .id = "psUnison",
+     .name = "Unison",
+     .group = "Picked String",
+     .min_value = 0,
+     .max_value = BBXS_UNISON_COUNT - 1,
+     .default_value = BBXS_UNISON_NONE,
 
-        .enum_values = bbsyn_unison_enum_values
-    },
+     .enum_values = bbsyn_unison_enum_values},
 
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
 
         .id = "psSustai",
         .name = "Sustain",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_PICKED_STRING_SUSTAIN_MAX,
+        .max_value = BBXS_PICKED_STRING_SUSTAIN_MAX,
         .default_value = 10.0,
     },
-    
+
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm01",
         .name = "Harmonics 1x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm02",
         .name = "Harmonics 2x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm03",
         .name = "Harmonics 3x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm04",
         .name = "Harmonics 4x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm05",
         .name = "Harmonics 5x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm06",
         .name = "Harmonics 6x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm07",
         .name = "Harmonics 7x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm08",
         .name = "Harmonics 8x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm09",
         .name = "Harmonics 9x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm10",
         .name = "Harmonics 10x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm11",
         .name = "Harmonics 11x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm12",
         .name = "Harmonics 12x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm13",
         .name = "Harmonics 13x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm14",
         .name = "Harmonics 14x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm15",
         .name = "Harmonics 15x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm16",
         .name = "Harmonics 16x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm17",
         .name = "Harmonics 17x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm18",
         .name = "Harmonics 18x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm19",
         .name = "Harmonics 19x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm20",
         .name = "Harmonics 20x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm21",
         .name = "Harmonics 21x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm22",
         .name = "Harmonics 22x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm23",
         .name = "Harmonics 23x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm24",
         .name = "Harmonics 24x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm25",
         .name = "Harmonics 25x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm26",
         .name = "Harmonics 26x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm27",
         .name = "Harmonics 27x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "psHarm28",
         .name = "Harmonics 28x",
         .group = "Picked String",
         .min_value = 0,
-        .max_value = BPBXSYN_HARMONICS_CONTROL_MAX,
+        .max_value = BBXS_HARMONICS_CONTROL_MAX,
         .default_value = 0.0,
     },
 };
@@ -1250,15 +1297,15 @@ static const size_t picked_param_addresses[] = {
     offsetof(picked_inst_s, harmonics[27]),
 };
 
-static const bpbxsyn_envelope_compute_index_e picked_env_targets[] = {
-    BPBXSYN_ENV_INDEX_UNISON,
-    BPBXSYN_ENV_INDEX_STRING_SUSTAIN,
+static const bbxs_envelope_compute_index_e picked_env_targets[] = {
+    BBXS_ENV_INDEX_UNISON,
+    BBXS_ENV_INDEX_STRING_SUSTAIN,
 };
 
 const inst_vtable_s bbsyn_inst_picked_vtable = {
     .struct_size = sizeof(picked_inst_s),
 
-    .param_count = BPBXSYN_PICKED_STRING_PARAM_COUNT,
+    .param_count = BBXS_PICKED_STRING_PARAM_COUNT,
     .param_info = picked_param_info,
     .param_addresses = picked_param_addresses,
 
@@ -1273,5 +1320,5 @@ const inst_vtable_s bbsyn_inst_picked_vtable = {
     .inst_sample_rate_changed = picked_sample_rate_changed,
 
     .inst_tick = picked_tick,
-    .inst_run = picked_run
+    .inst_run = picked_run,
 };

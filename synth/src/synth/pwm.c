@@ -1,16 +1,16 @@
 #include <assert.h>
 #include <string.h>
-#include "synth.h"
-#include "../util.h"
+
 #include "../param_util.h"
+#include "../util.h"
+#include "synth.h"
 
 // It's actually closer to half of this, the synthesized pulse amplitude range
 // is only .5 to -.5, but also note that the fundamental sine partial amplitude
 // of a square wave is 4/π times the measured square wave amplitude.
 #define BASE_EXPRESSION 0.04725
 #define PWM_MOD_COUNT 1
-#define pulse_width_ratio(x)                                                   \
-    ((double)(x) / (BPBXSYN_PULSE_WIDTH_RANGE * 2))
+#define pulse_width_ratio(x) ((double)(x) / (BBXS_PULSE_WIDTH_RANGE * 2))
 
 typedef struct pwm_voice {
     inst_base_voice_s base;
@@ -27,68 +27,66 @@ typedef struct pwm_voice {
 } pwm_voice_s;
 
 typedef struct pwm_inst {
-    bpbxsyn_synth_s base;
+    bbxs_synth_s base;
 
     // [0] = prev
     // [1] = cur
     double pulse_width_param[2];
     uint8_t aliases;
 
-    pwm_voice_s voices[BPBXSYN_SYNTH_MAX_VOICES];
+    pwm_voice_s voices[BBXS_SYNTH_MAX_VOICES];
 } pwm_inst_s;
 
-static void pwm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+static void pwm_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
     *inst = (pwm_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_PULSE_WIDTH);
+    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_PULSE_WIDTH);
 
-    inst->pulse_width_param[0] = BPBXSYN_PULSE_WIDTH_MAX;
+    inst->pulse_width_param[0] = BBXS_PULSE_WIDTH_MAX;
     inst->pulse_width_param[1] = inst->pulse_width_param[0];
 }
 
-static bpbxsyn_voice_id pwm_note_on(bpbxsyn_synth_s *p_inst, int key,
-                                    double velocity, int32_t length) {
+static bbxs_voice_id pwm_note_on(bbxs_synth_s *p_inst, int key, double velocity,
+                                 int32_t length) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
     bool continuation;
-    bpbxsyn_voice_id id =
+    bbxs_voice_id id =
         bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
     if (!continuation) {
         pwm_voice_s *voice = &inst->voices[id];
-        *voice = (pwm_voice_s) {
-            .base = voice->base
-        };
+        *voice = (pwm_voice_s){.base = voice->base};
     }
 
     return id;
 }
 
-static void pwm_note_off(bpbxsyn_synth_s *p_inst, bpbxsyn_voice_id id) {
+static void pwm_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
     bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
-static void pwm_note_all_off(bpbxsyn_synth_s *p_inst) {
+static void pwm_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
     bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
-static void compute_voice(const bpbxsyn_synth_s *const base_inst,
+static void compute_voice(const bbxs_synth_s *const base_inst,
                           inst_base_voice_s *base_voice,
                           voice_compute_s *compute_data) {
-    const pwm_inst_s *const inst = (pwm_inst_s*)base_inst;
-    pwm_voice_s *voice = (pwm_voice_s*)base_voice;
-    
+    const pwm_inst_s *const inst = (pwm_inst_s *)base_inst;
+    pwm_voice_s *voice = (pwm_voice_s *)base_voice;
+
     const double sample_len = compute_data->varying.sample_len;
     const double rounded_samples_per_tick =
         compute_data->varying.rounded_samples_per_tick;
@@ -122,48 +120,46 @@ static void compute_voice(const bpbxsyn_synth_s *const base_inst,
     voice->phase_delta = start_freq * sample_len;
     voice->phase_delta_scale =
         pow(end_freq / start_freq, 1.0 / rounded_samples_per_tick);
-    
+
     voice->base.expression = expr_start;
     voice->base.expression_delta =
         (expr_end - expr_start) / rounded_samples_per_tick;
-    
+
     // pulse width modulation calculation
     const double pulse_width_start =
         pulse_width_ratio(inst->pulse_width_param[0]) *
-        voice->base.env_computer.envelope_starts[BPBXSYN_ENV_INDEX_PULSE_WIDTH];
+        voice->base.env_computer.envelope_starts[BBXS_ENV_INDEX_PULSE_WIDTH];
     const double pulse_width_end =
         pulse_width_ratio(inst->pulse_width_param[1]) *
-        voice->base.env_computer.envelope_ends[BPBXSYN_ENV_INDEX_PULSE_WIDTH];
+        voice->base.env_computer.envelope_ends[BBXS_ENV_INDEX_PULSE_WIDTH];
 
     voice->pulse_width = pulse_width_start;
-    voice->pulse_width_delta = (pulse_width_end - pulse_width_start) /
-        rounded_samples_per_tick;
+    voice->pulse_width_delta =
+        (pulse_width_end - pulse_width_start) / rounded_samples_per_tick;
 }
 
-static void pwm_tick(bpbxsyn_synth_s *p_inst,
-                     const bpbxsyn_tick_ctx_s *tick_ctx) {
+static void pwm_tick(bbxs_synth_s *p_inst, const bbxs_tick_ctx_s *tick_ctx) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
-    bbsyn_inst_tick(p_inst, tick_ctx, &(audio_compute_s) {
-        .voice_list = inst->voices,
-        .sizeof_voice = sizeof(*inst->voices),
-        .compute_voice = compute_voice,
-        .userdata = NULL
-    });
+    bbsyn_inst_tick(p_inst, tick_ctx,
+                    &(audio_compute_s){.voice_list = inst->voices,
+                                       .sizeof_voice = sizeof(*inst->voices),
+                                       .compute_voice = compute_voice,
+                                       .userdata = NULL});
 
     inst->pulse_width_param[0] = inst->pulse_width_param[1];
 }
 
-static void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
+static void pwm_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
     assert(p_inst);
-    assert(p_inst->type == BPBXSYN_SYNTH_PULSE_WIDTH);
-    pwm_inst_s *inst = (pwm_inst_s*)p_inst;
+    assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
+    pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
     memset(samples, 0, frame_count * sizeof(float));
 
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; ++i) {
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
         pwm_voice_s *voice = &inst->voices[i];
         if (!voice_is_computing(&voice->base)) continue;
 
@@ -185,7 +181,7 @@ static void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count)
             const double saw_phase_b = fmod(phase + pulse_width, 1);
 
             double pulse_wave = saw_phase_b - saw_phase_a;
-            
+
             // This is a PolyBLEP, which smooths out discontinuities at any
             // frequency to reduce aliasing.
             if (!inst->aliases) {
@@ -233,56 +229,46 @@ static void pwm_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count)
     }
 }
 
-
-
-
-
-
-
-
-
-
-
 //////////
 // DATA //
 //////////
 
-static const bpbxsyn_param_info_s pwm_param_info[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
+static const bbxs_param_info_s pwm_param_info[BBXS_PULSE_WIDTH_PARAM_COUNT] = {
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "pwmWidth",
         .group = "Pulse Width",
         .name = "Pulse Width",
-        .min_value = BPBXSYN_PULSE_WIDTH_MIN,
-        .max_value = BPBXSYN_PULSE_WIDTH_MAX,
-        .default_value = BPBXSYN_PULSE_WIDTH_MAX,
+        .min_value = BBXS_PULSE_WIDTH_MIN,
+        .max_value = BBXS_PULSE_WIDTH_MAX,
+        .default_value = BBXS_PULSE_WIDTH_MAX,
     },
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "pwmAlias",
         .group = "Pulse Width",
         .name = "Aliases",
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bbsyn_yes_no_enum_values
+        .enum_values = bbsyn_yes_no_enum_values,
     },
 };
 
-static const size_t pwm_param_addresses[BPBXSYN_PULSE_WIDTH_PARAM_COUNT] = {
+static const size_t pwm_param_addresses[BBXS_PULSE_WIDTH_PARAM_COUNT] = {
     offsetof(pwm_inst_s, pulse_width_param[1]),
     offsetof(pwm_inst_s, aliases),
 };
 
-static const bpbxsyn_envelope_compute_index_e pwm_env_targets[PWM_MOD_COUNT] = {
-    BPBXSYN_ENV_INDEX_PULSE_WIDTH,
+static const bbxs_envelope_compute_index_e pwm_env_targets[PWM_MOD_COUNT] = {
+    BBXS_ENV_INDEX_PULSE_WIDTH,
 };
 
 const inst_vtable_s bbsyn_inst_pwm_vtable = {
     .struct_size = sizeof(pwm_inst_s),
 
-    .param_count = BPBXSYN_PULSE_WIDTH_PARAM_COUNT,
+    .param_count = BBXS_PULSE_WIDTH_PARAM_COUNT,
     .param_info = pwm_param_info,
     .param_addresses = pwm_param_addresses,
 
@@ -295,5 +281,5 @@ const inst_vtable_s bbsyn_inst_pwm_vtable = {
     .inst_note_all_off = pwm_note_all_off,
 
     .inst_tick = pwm_tick,
-    .inst_run = pwm_run
+    .inst_run = pwm_run,
 };

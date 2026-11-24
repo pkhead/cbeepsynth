@@ -1,18 +1,18 @@
-#include <stdint.h>
-#include <stddef.h>
-#include <string.h>
-#include <math.h>
-#include <assert.h>
-
-#include "synth.h"
 #include "fm.h"
-#include "fm_algo.h"
-#include "../util.h"
-#include "../wavetables.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "../context.h"
 #include "../envelope.h"
 #include "../filtering.h"
-#include "../context.h"
-
+#include "../util.h"
+#include "../wavetables.h"
+#include "fm_algo.h"
+#include "synth.h"
 
 #define VOICE_BASE_EXPRESSION 0.03
 
@@ -60,8 +60,8 @@ typedef struct {
     double amplitude_sign;
 } fm_freq_data_s;
 
-static const fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT];
-static const int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4];
+static const fm_freq_data_s frequency_data[BBXS_FM_FREQ_COUNT];
+static const int algo_associated_carriers[BBXS_FM_ALGORITHM_COUNT][4];
 static const double carrier_intervals[FM_OP_COUNT];
 
 static double operator_amplitude_curve(double amplitude) {
@@ -70,42 +70,42 @@ static double operator_amplitude_curve(double amplitude) {
 
 static void setup_algorithm(fm_inst_s *inst) {
     switch (inst->algorithm) {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-        case 4:
-            inst->carrier_count = 1;
-            break;
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+    case 4:
+        inst->carrier_count = 1;
+        break;
 
-        case 5:
-        case 6:
-        case 7:
-        case 8:
-        case 9:
-            inst->carrier_count = 2;
-            break;
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+        inst->carrier_count = 2;
+        break;
 
-        case 10:
-        case 11:
-            inst->carrier_count = 3;
-            break;
+    case 10:
+    case 11:
+        inst->carrier_count = 3;
+        break;
 
-        case 12:
-            inst->carrier_count = 4;
-            break;
+    case 12:
+        inst->carrier_count = 4;
+        break;
 
-        default:
-            inst->carrier_count = 0;
+    default:
+        inst->carrier_count = 0;
     }
 }
 
-static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
-    fm_inst_s *inst = (fm_inst_s*)p_inst;
+static void fm_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
+    fm_inst_s *inst = (fm_inst_s *)p_inst;
     *inst = (fm_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BPBXSYN_SYNTH_FM);
+    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_FM);
 
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
     }
 
@@ -120,62 +120,62 @@ static void fm_init(bpbxsyn_context_s *ctx, bpbxsyn_synth_s *p_inst) {
     inst->freq_ratios[1] = 4;
     inst->freq_ratios[2] = 4;
     inst->freq_ratios[3] = 4;
-    
+
     inst->feedback = 0;
 }
 
-static bpbxsyn_voice_id fm_note_on(bpbxsyn_synth_s *inst, int key,
-                                   double velocity, int32_t length) {
+static bbxs_voice_id fm_note_on(bbxs_synth_s *inst, int key, double velocity,
+                                int32_t length) {
     assert(inst);
-    assert(inst->type == BPBXSYN_SYNTH_FM);
-    fm_inst_s *const fm = (fm_inst_s*)inst;
+    assert(inst->type == BBXS_SYNTH_FM);
+    fm_inst_s *const fm = (fm_inst_s *)inst;
 
     bool continuation;
-    bpbxsyn_voice_id voice_id = bbsyn_trigger_voice(
+    bbxs_voice_id voice_id = bbsyn_trigger_voice(
         inst, GENERIC_LIST(fm->voices), key, velocity, length, &continuation);
-    
+
     if (!continuation) {
         fm_voice_s *voice = &fm->voices[voice_id];
 
         for (int op = 0; op < FM_OP_COUNT; op++) {
-            voice->op_states[op] = (fm_voice_opstate_s) {
-                .phase = 0.0,
-                .phase_delta = 0.0,
-                .expression = 0.0,
-                .output = 0.0,
-                .prev_pitch_expression = 0.0,
-                .has_prev_pitch_expression = FALSE
-            };
+            voice->op_states[op] =
+                (fm_voice_opstate_s){.phase = 0.0,
+                                     .phase_delta = 0.0,
+                                     .expression = 0.0,
+                                     .output = 0.0,
+                                     .prev_pitch_expression = 0.0,
+                                     .has_prev_pitch_expression = FALSE};
         }
     }
 
     return voice_id;
 }
 
-static void fm_note_off(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id) {
+static void fm_note_off(bbxs_synth_s *inst, bbxs_voice_id id) {
     assert(inst);
-    assert(inst->type == BPBXSYN_SYNTH_FM);
-    fm_inst_s *const fm = (fm_inst_s*)inst;
+    assert(inst->type == BBXS_SYNTH_FM);
+    fm_inst_s *const fm = (fm_inst_s *)inst;
 
     bbsyn_release_voice(inst, GENERIC_LIST(fm->voices), id);
 }
 
-static void fm_note_all_off(bpbxsyn_synth_s *inst) {
+static void fm_note_all_off(bbxs_synth_s *inst) {
     assert(inst);
-    assert(inst->type == BPBXSYN_SYNTH_FM);
-    fm_inst_s *const fm = (fm_inst_s*)inst;
+    assert(inst->type == BBXS_SYNTH_FM);
+    fm_inst_s *const fm = (fm_inst_s *)inst;
 
     bbsyn_release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
-static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst,
+static void compute_fm_voice(const bbxs_synth_s *const base_inst,
                              inst_base_voice_s *const voice,
                              voice_compute_s *compute_data) {
-    const fm_inst_s *const inst = (fm_inst_s*)base_inst;
-    fm_voice_s *const fm_voice = (fm_voice_s*)voice;
+    const fm_inst_s *const inst = (fm_inst_s *)base_inst;
+    fm_voice_s *const fm_voice = (fm_voice_s *)voice;
 
     const double sample_len = compute_data->varying.sample_len;
-    const double rounded_samples_per_tick = compute_data->varying.rounded_samples_per_tick;
+    const double rounded_samples_per_tick =
+        compute_data->varying.rounded_samples_per_tick;
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
@@ -183,34 +183,51 @@ static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst,
     double total_carrier_expr = 0.0;
 
     for (int op = 0; op < FM_OP_COUNT; op++) {
-        const fm_freq_data_s *freq_data = &frequency_data[inst->freq_ratios[op]];
+        const fm_freq_data_s *freq_data =
+            &frequency_data[inst->freq_ratios[op]];
 
-        int associated_carrier_idx = algo_associated_carriers[inst->algorithm][op] - 1;
+        int associated_carrier_idx =
+            algo_associated_carriers[inst->algorithm][op] - 1;
         const double freq_mult = freq_data->mult;
-        const double pitch_start = voice->current_key + varying->interval_start + carrier_intervals[associated_carrier_idx];
-        const double pitch_end = voice->current_key + varying->interval_end + carrier_intervals[associated_carrier_idx];
+        const double pitch_start = voice->current_key +
+                                   varying->interval_start +
+                                   carrier_intervals[associated_carrier_idx];
+        const double pitch_end = voice->current_key + varying->interval_end +
+                                 carrier_intervals[associated_carrier_idx];
         const double base_freq_start = key_to_hz_d(pitch_start);
         const double base_freq_end = key_to_hz_d(pitch_end);
         const double hz_offset = freq_data->hz_offset;
-        const double target_freq_start = freq_mult * base_freq_start + hz_offset;
+        const double target_freq_start =
+            freq_mult * base_freq_start + hz_offset;
         const double target_freq_end = freq_mult * base_freq_end + hz_offset;
 
-        const double freq_env_start = voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_OPERATOR_FREQ0 + op];
-        const double freq_env_end = voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_OPERATOR_FREQ0 + op];
+        const double freq_env_start =
+            voice->env_computer
+                .envelope_starts[BBXS_ENV_INDEX_OPERATOR_FREQ0 + op];
+        const double freq_env_end =
+            voice->env_computer
+                .envelope_ends[BBXS_ENV_INDEX_OPERATOR_FREQ0 + op];
         double freq_start, freq_end;
         if (freq_env_start != 1.0 || freq_env_end != 1.0) {
-            freq_start = pow(2.0, log2(target_freq_start / base_freq_start) * freq_env_start) * base_freq_start;
-            freq_end = pow(2.0, log2(target_freq_end / base_freq_end) * freq_env_end) * base_freq_end;
+            freq_start = pow(2.0, log2(target_freq_start / base_freq_start) *
+                                      freq_env_start) *
+                         base_freq_start;
+            freq_end =
+                pow(2.0, log2(target_freq_end / base_freq_end) * freq_env_end) *
+                base_freq_end;
         } else {
             freq_start = target_freq_start;
             freq_end = target_freq_end;
         }
 
         fm_voice->op_states[op].phase_delta = freq_start * sample_len;
-        fm_voice->op_states[op].phase_delta_scale = pow(freq_end / freq_start, 1.0 / rounded_samples_per_tick);
+        fm_voice->op_states[op].phase_delta_scale =
+            pow(freq_end / freq_start, 1.0 / rounded_samples_per_tick);
 
-        const double amplitude_curve = operator_amplitude_curve((double) inst->amplitudes[op]);
-        const double amplitude_mult = amplitude_curve * freq_data->amplitude_sign;
+        const double amplitude_curve =
+            operator_amplitude_curve((double)inst->amplitudes[op]);
+        const double amplitude_mult =
+            amplitude_curve * freq_data->amplitude_sign;
         double expression_start = amplitude_mult;
         double expression_end = amplitude_mult;
 
@@ -218,14 +235,17 @@ static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst,
             // carrier
             double pitch_expression_start;
             if (fm_voice->op_states[op].has_prev_pitch_expression) {
-                pitch_expression_start = fm_voice->op_states[op].prev_pitch_expression;
+                pitch_expression_start =
+                    fm_voice->op_states[op].prev_pitch_expression;
             } else {
                 pitch_expression_start = calc_pitch_expression(pitch_start);
             }
-            const double pitch_expression_end = calc_pitch_expression(pitch_end);
+            const double pitch_expression_end =
+                calc_pitch_expression(pitch_end);
 
             fm_voice->op_states[op].has_prev_pitch_expression = TRUE;
-            fm_voice->op_states[op].prev_pitch_expression = pitch_expression_end;
+            fm_voice->op_states[op].prev_pitch_expression =
+                pitch_expression_end;
 
             expression_start *= pitch_expression_start;
             expression_end *= pitch_expression_end;
@@ -239,78 +259,93 @@ static void compute_fm_voice(const bpbxsyn_synth_s *const base_inst,
             sine_expr_boost *= 1.0 - min(1.0, inst->amplitudes[op] / 15.0);
         }
 
-        expression_start *= voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_OPERATOR_AMP0 + op];
-        expression_end *= voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_OPERATOR_AMP0 + op];
+        expression_start *=
+            voice->env_computer
+                .envelope_starts[BBXS_ENV_INDEX_OPERATOR_AMP0 + op];
+        expression_end *= voice->env_computer
+                              .envelope_ends[BBXS_ENV_INDEX_OPERATOR_AMP0 + op];
 
         fm_voice->op_states[op].expression = expression_start;
-        fm_voice->op_states[op].expression_delta = (expression_end - expression_start) / rounded_samples_per_tick;
+        fm_voice->op_states[op].expression_delta =
+            (expression_end - expression_start) / rounded_samples_per_tick;
     }
 
-    sine_expr_boost *= (pow(2.0, (2.0 - 1.4 * inst->feedback / 15.0)) - 1.0) / 3.0;
+    sine_expr_boost *=
+        (pow(2.0, (2.0 - 1.4 * inst->feedback / 15.0)) - 1.0) / 3.0;
     sine_expr_boost *= 1.0 - min(1.0, max(0.0, total_carrier_expr - 1) / 2.0);
     sine_expr_boost = 1.0 + sine_expr_boost * 3.0;
 
-    const double expr_start = VOICE_BASE_EXPRESSION * sine_expr_boost * varying->expr_start;
-    const double expr_end = VOICE_BASE_EXPRESSION * sine_expr_boost * varying->expr_end;
-    
-    voice->expression = expr_start;
-    voice->expression_delta = (expr_end - expr_start) / rounded_samples_per_tick;
+    const double expr_start =
+        VOICE_BASE_EXPRESSION * sine_expr_boost * varying->expr_start;
+    const double expr_end =
+        VOICE_BASE_EXPRESSION * sine_expr_boost * varying->expr_end;
 
-    const double feedback_amplitude = SINE_WAVE_LENGTH * 0.3 * inst->feedback / 15.0;
-    const double feedback_start = feedback_amplitude * voice->env_computer.envelope_starts[BPBXSYN_ENV_INDEX_FEEDBACK_AMP];
-    const double feedback_end = feedback_amplitude * voice->env_computer.envelope_ends[BPBXSYN_ENV_INDEX_FEEDBACK_AMP];
+    voice->expression = expr_start;
+    voice->expression_delta =
+        (expr_end - expr_start) / rounded_samples_per_tick;
+
+    const double feedback_amplitude =
+        SINE_WAVE_LENGTH * 0.3 * inst->feedback / 15.0;
+    const double feedback_start =
+        feedback_amplitude *
+        voice->env_computer.envelope_starts[BBXS_ENV_INDEX_FEEDBACK_AMP];
+    const double feedback_end =
+        feedback_amplitude *
+        voice->env_computer.envelope_ends[BBXS_ENV_INDEX_FEEDBACK_AMP];
     fm_voice->feedback_mult = feedback_start;
-    fm_voice->feedback_delta = (feedback_end - feedback_start) / rounded_samples_per_tick;
+    fm_voice->feedback_delta =
+        (feedback_end - feedback_start) / rounded_samples_per_tick;
 }
 
 typedef struct {
     fm_inst_s *fm;
 } audio_process_fm_userdata_s;
 
-static void fm_tick(bpbxsyn_synth_s *src_inst,
-                    const bpbxsyn_tick_ctx_s *tick_ctx) {
+static void fm_tick(bbxs_synth_s *src_inst, const bbxs_tick_ctx_s *tick_ctx) {
     assert(src_inst);
-    assert(src_inst->type == BPBXSYN_SYNTH_FM);
-    fm_inst_s *const fm = (fm_inst_s*)src_inst;
+    assert(src_inst->type == BBXS_SYNTH_FM);
+    fm_inst_s *const fm = (fm_inst_s *)src_inst;
 
-    audio_process_fm_userdata_s userdata = (audio_process_fm_userdata_s) {
+    audio_process_fm_userdata_s userdata = (audio_process_fm_userdata_s){
         .fm = fm,
     };
 
-    bbsyn_inst_tick(src_inst, tick_ctx, &(audio_compute_s) {
-        .voice_list = fm->voices,
-        .sizeof_voice = sizeof(*fm->voices),
+    bbsyn_inst_tick(src_inst, tick_ctx,
+                    &(audio_compute_s){.voice_list = fm->voices,
+                                       .sizeof_voice = sizeof(*fm->voices),
 
-        .compute_voice = compute_fm_voice,
+                                       .compute_voice = compute_fm_voice,
 
-        .userdata = &userdata
-    });
+                                       .userdata = &userdata});
 }
 
-static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
-                   size_t frame_count) {
+static void fm_run(bbxs_synth_s *src_inst, float *samples, size_t frame_count) {
     assert(src_inst);
-    assert(src_inst->type == BPBXSYN_SYNTH_FM);
-    
-    fm_inst_s *const fm = (fm_inst_s*)src_inst;
-    const bpbxsyn_context_s *ctx = src_inst->ctx;
+    assert(src_inst->type == BBXS_SYNTH_FM);
+
+    fm_inst_s *const fm = (fm_inst_s *)src_inst;
+    const bbxs_context_s *ctx = src_inst->ctx;
     setup_algorithm(fm);
 
-    fm_algo_f algo_func = bbsyn_fm_algorithm_table[fm->algorithm * BPBXSYN_FM_FEEDBACK_TYPE_COUNT + fm->feedback_type];
+    fm_algo_f algo_func =
+        bbsyn_fm_algorithm_table[fm->algorithm * BBXS_FM_FEEDBACK_TYPE_COUNT +
+                                 fm->feedback_type];
 
     memset(samples, 0, frame_count * sizeof(float));
-    
-    for (int i = 0; i < BPBXSYN_SYNTH_MAX_VOICES; i++) {
+
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         fm_voice_s *voice = fm->voices + i;
         if (!voice_is_computing(&voice->base)) continue;
 
         float *output_sample = samples;
-        
+
         // convert to operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
-            // I'm adding 1000 to the phase to ensure that it's never negative even when modulated
-            // by other waves because negative numbers don't work with the modulus operator very well.
-            voice->op_states[op].phase = (fmod(voice->op_states[op].phase, 1.0) + 1000);
+            // I'm adding 1000 to the phase to ensure that it's never negative
+            // even when modulated by other waves because negative numbers don't
+            // work with the modulus operator very well.
+            voice->op_states[op].phase =
+                (fmod(voice->op_states[op].phase, 1.0) + 1000);
 
             voice->op_states[op].phase *= SINE_WAVE_LENGTH;
             voice->op_states[op].phase_delta *= SINE_WAVE_LENGTH;
@@ -318,19 +353,19 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
 
         double x1 = voice->base.note_filter_input[0];
         double x2 = voice->base.note_filter_input[1];
-        
+
         for (size_t sf = 0; sf < frame_count; sf++) {
             // process the frames
-            double x0 = algo_func(voice,
-                                  ctx->wavetables.sine_wave,
+            double x0 = algo_func(voice, ctx->wavetables.sine_wave,
                                   voice->feedback_mult);
             x0 *= voice->base.expression;
-            
+
             float sample;
             if (voice->base.filters_enabled) {
-                sample = (float) bbsyn_apply_filters(x0, x1, x2, voice->base.note_filters);
+                sample = (float)bbsyn_apply_filters(x0, x1, x2,
+                                                    voice->base.note_filters);
             } else {
-                sample = (float) x0;
+                sample = (float)x0;
             }
 
             x2 = x1;
@@ -341,16 +376,24 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
             voice->op_states[2].phase += voice->op_states[2].phase_delta;
             voice->op_states[3].phase += voice->op_states[3].phase_delta;
 
-            voice->op_states[0].phase_delta *= voice->op_states[0].phase_delta_scale;
-            voice->op_states[1].phase_delta *= voice->op_states[1].phase_delta_scale;
-            voice->op_states[2].phase_delta *= voice->op_states[2].phase_delta_scale;
-            voice->op_states[3].phase_delta *= voice->op_states[3].phase_delta_scale;
+            voice->op_states[0].phase_delta *=
+                voice->op_states[0].phase_delta_scale;
+            voice->op_states[1].phase_delta *=
+                voice->op_states[1].phase_delta_scale;
+            voice->op_states[2].phase_delta *=
+                voice->op_states[2].phase_delta_scale;
+            voice->op_states[3].phase_delta *=
+                voice->op_states[3].phase_delta_scale;
 
-            voice->op_states[0].expression += voice->op_states[0].expression_delta;
-            voice->op_states[1].expression += voice->op_states[1].expression_delta;
-            voice->op_states[2].expression += voice->op_states[2].expression_delta;
-            voice->op_states[3].expression += voice->op_states[3].expression_delta;
-            
+            voice->op_states[0].expression +=
+                voice->op_states[0].expression_delta;
+            voice->op_states[1].expression +=
+                voice->op_states[1].expression_delta;
+            voice->op_states[2].expression +=
+                voice->op_states[2].expression_delta;
+            voice->op_states[3].expression +=
+                voice->op_states[3].expression_delta;
+
             voice->base.expression += voice->base.expression_delta;
             voice->feedback_mult += voice->feedback_delta;
 
@@ -361,7 +404,7 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
         voice->base.note_filter_input[1] = x2;
 
         bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
-        
+
         // convert from operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
             voice->op_states[op].phase /= SINE_WAVE_LENGTH;
@@ -370,17 +413,11 @@ static void fm_run(bpbxsyn_synth_s *src_inst, float *samples,
     }
 }
 
-
-
-
-
-
-
-
 //////////////////
 //     DATA     //
 //////////////////
 
+// clang-format off
 static const char *algo_enum_values[] = {
     "1←(2 3 4)",
     "1←(2 3←4)",
@@ -396,6 +433,7 @@ static const char *algo_enum_values[] = {
     "(1 2 3)←4",
     "1 2 3 4",
 };
+// clang-format on
 
 static const char *freq_enum_values[] = {
     "0.12×",
@@ -421,13 +459,13 @@ static const char *freq_enum_values[] = {
     "13×",
     "14×",
     "15×",
-    //ultrabox
+    // ultrabox
     "16×",
     "17×",
-    //ultrabox
+    // ultrabox
     "18×",
     "19×",
-    //ultrabox
+    // ultrabox
     "20×",
     "~20×",
     // dogebox (maybe another mod also adds this? I got it from dogebox)
@@ -435,12 +473,13 @@ static const char *freq_enum_values[] = {
     "50×",
     "75×",
     "100×",
-    //50 and 100 are from dogebox
-    //128 and 256 from slarmoo's box
+    // 50 and 100 are from dogebox
+    // 128 and 256 from slarmoo's box
     "128×",
     "256×",
 };
 
+// clang-format off
 static const char *feedback_enum_values[] = {
     "1⟲",
     "2⟲",
@@ -461,11 +500,12 @@ static const char *feedback_enum_values[] = {
     "1→4 2→3",
     "1→2→3→4",
 };
+// clang-format on
 
-static const bpbxsyn_param_info_s fm_param_info[BPBXSYN_FM_PARAM_COUNT] = {
+static const bbxs_param_info_s fm_param_info[BBXS_FM_PARAM_COUNT] = {
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "fmAlgthm",
         .name = "Algorithm",
         .group = "FM",
@@ -473,230 +513,202 @@ static const bpbxsyn_param_info_s fm_param_info[BPBXSYN_FM_PARAM_COUNT] = {
         .max_value = 12,
         .default_value = 0,
 
-        .enum_values = algo_enum_values
+        .enum_values = algo_enum_values,
     },
 
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "fmOp1Frq",
         .name = "Operator 1 Frequency",
         .group = "FM",
 
         .min_value = 0,
-        .max_value = BPBXSYN_FM_FREQ_COUNT-1,
+        .max_value = BBXS_FM_FREQ_COUNT - 1,
         .default_value = 4,
 
-        .enum_values = freq_enum_values
+        .enum_values = freq_enum_values,
     },
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "fmOp1Vol",
         .name = "Operator 1 Volume",
         .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
-        .default_value = 15
+        .default_value = 15,
     },
 
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "fmOp2Frq",
         .name = "Operator 2 Frequency",
         .group = "FM",
-        
+
         .min_value = 0,
-        .max_value = BPBXSYN_FM_FREQ_COUNT-1,
+        .max_value = BBXS_FM_FREQ_COUNT - 1,
         .default_value = 4,
 
-        .enum_values = freq_enum_values
+        .enum_values = freq_enum_values,
     },
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "fmOp2Vol",
         .name = "Operator 2 Volume",
         .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
-        .default_value = 0
+        .default_value = 0,
     },
 
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "fmOp3Frq",
         .name = "Operator 3 Frequency",
         .group = "FM",
 
         .min_value = 0,
-        .max_value = BPBXSYN_FM_FREQ_COUNT-1,
+        .max_value = BBXS_FM_FREQ_COUNT - 1,
         .default_value = 4,
-        
-        .enum_values = freq_enum_values
+
+        .enum_values = freq_enum_values,
     },
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "fmOp3Vol",
         .name = "Operator 3 Volume",
         .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
-        .default_value = 0
+        .default_value = 0,
     },
 
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
         .id = "fmOp4Frq",
         .name = "Operator 4 Frequency",
         .group = "FM",
 
         .min_value = 0,
-        .max_value = BPBXSYN_FM_FREQ_COUNT-1,
+        .max_value = BBXS_FM_FREQ_COUNT - 1,
         .default_value = 4,
-        
-        .enum_values = freq_enum_values
+
+        .enum_values = freq_enum_values,
     },
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "fmOp4Vol",
         .name = "Operator 4 Volume",
         .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
-        .default_value = 0
+        .default_value = 0,
     },
 
     {
-        .type = BPBXSYN_PARAM_UINT8,
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
+        .type = BBXS_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
 
         .id = "fmFdbTyp",
         .name = "Feedback Type",
         .group = "FM",
         .min_value = 0,
-        .max_value = BPBXSYN_FM_FEEDBACK_TYPE_COUNT-1,
+        .max_value = BBXS_FM_FEEDBACK_TYPE_COUNT - 1,
         .default_value = 0,
 
-        .enum_values = feedback_enum_values
+        .enum_values = feedback_enum_values,
     },
 
     {
-        .type = BPBXSYN_PARAM_DOUBLE,
+        .type = BBXS_PARAM_DOUBLE,
         .id = "fmFdbVol",
         .name = "Feedback Volume",
         .group = "FM",
 
         .min_value = 0,
         .max_value = 15,
-        .default_value = 0
-    }
+        .default_value = 0,
+    },
 };
 
-static const bpbxsyn_envelope_compute_index_e fm_env_targets[FM_MOD_COUNT] = {
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ0,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP0,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ1,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP1,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ2,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP2,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ3,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP3,
-    BPBXSYN_ENV_INDEX_FEEDBACK_AMP
-};
+static const bbxs_envelope_compute_index_e fm_env_targets[FM_MOD_COUNT] = {
+    BBXS_ENV_INDEX_OPERATOR_FREQ0, BBXS_ENV_INDEX_OPERATOR_AMP0,
+    BBXS_ENV_INDEX_OPERATOR_FREQ1, BBXS_ENV_INDEX_OPERATOR_AMP1,
+    BBXS_ENV_INDEX_OPERATOR_FREQ2, BBXS_ENV_INDEX_OPERATOR_AMP2,
+    BBXS_ENV_INDEX_OPERATOR_FREQ3, BBXS_ENV_INDEX_OPERATOR_AMP3,
+    BBXS_ENV_INDEX_FEEDBACK_AMP};
 
-static const size_t fm_param_addresses[BPBXSYN_FM_PARAM_COUNT] = {
-    offsetof(fm_inst_s, algorithm),
-    offsetof(fm_inst_s, freq_ratios[0]),
-    offsetof(fm_inst_s, amplitudes[0]),
-    offsetof(fm_inst_s, freq_ratios[1]),
-    offsetof(fm_inst_s, amplitudes[1]),
-    offsetof(fm_inst_s, freq_ratios[2]),
-    offsetof(fm_inst_s, amplitudes[2]),
-    offsetof(fm_inst_s, freq_ratios[3]),
-    offsetof(fm_inst_s, amplitudes[3]),
-    offsetof(fm_inst_s, feedback_type),
+static const size_t fm_param_addresses[BBXS_FM_PARAM_COUNT] = {
+    offsetof(fm_inst_s, algorithm),     offsetof(fm_inst_s, freq_ratios[0]),
+    offsetof(fm_inst_s, amplitudes[0]), offsetof(fm_inst_s, freq_ratios[1]),
+    offsetof(fm_inst_s, amplitudes[1]), offsetof(fm_inst_s, freq_ratios[2]),
+    offsetof(fm_inst_s, amplitudes[2]), offsetof(fm_inst_s, freq_ratios[3]),
+    offsetof(fm_inst_s, amplitudes[3]), offsetof(fm_inst_s, feedback_type),
     offsetof(fm_inst_s, feedback),
 };
 
-static const fm_freq_data_s frequency_data[BPBXSYN_FM_FREQ_COUNT] = {
-    { .mult = 0.125,    .hz_offset= 0.0,      .amplitude_sign = 1.0 },
-    { .mult= 0.25,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 0.5,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 0.75,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 1.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 1.0,       .hz_offset= 1.5,      .amplitude_sign= -1.0 },
-    { .mult= 2.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 2.0,       .hz_offset= -1.3,     .amplitude_sign= -1.0 },
-    { .mult= 3.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 3.5,       .hz_offset= -0.05,    .amplitude_sign= 1.0 },
-    { .mult= 4.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 4.0,       .hz_offset= -2.4,     .amplitude_sign= -1.0 },
-    { .mult= 5.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 6.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 7.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 8.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 9.0,       .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 10.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 11.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 12.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 13.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 14.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 15.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    //ultrabox
-    { .mult= 16.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 17.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    //ultrabox
-    { .mult= 18.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 19.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    //ultrabox
-    { .mult= 20.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 20.0,      .hz_offset= -5.0,     .amplitude_sign= -1.0 },
+static const fm_freq_data_s frequency_data[BBXS_FM_FREQ_COUNT] = {
+    {.mult = 0.125, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 0.25, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 0.5, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 0.75, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 1.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 1.0, .hz_offset = 1.5, .amplitude_sign = -1.0},
+    {.mult = 2.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 2.0, .hz_offset = -1.3, .amplitude_sign = -1.0},
+    {.mult = 3.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 3.5, .hz_offset = -0.05, .amplitude_sign = 1.0},
+    {.mult = 4.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 4.0, .hz_offset = -2.4, .amplitude_sign = -1.0},
+    {.mult = 5.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 6.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 7.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 8.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 9.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 10.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 11.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 12.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 13.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 14.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 15.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    // ultrabox
+    {.mult = 16.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 17.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    // ultrabox
+    {.mult = 18.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 19.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    // ultrabox
+    {.mult = 20.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 20.0, .hz_offset = -5.0, .amplitude_sign = -1.0},
     // dogebox (maybe another mod also adds this? I got it from dogebox)
-    { .mult= 25.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 50.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 75.0,      .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 100.0,     .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    //50 and 100 are from dogebox
-    //128 and 256 from slarmoo's box
-    { .mult= 128.0,     .hz_offset= 0.0,      .amplitude_sign= 1.0 },
-    { .mult= 250.0,     .hz_offset= 0.0,      .amplitude_sign= 1.0},
+    {.mult = 25.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 50.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 75.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 100.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    // 50 and 100 are from dogebox
+    // 128 and 256 from slarmoo's box
+    {.mult = 128.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
+    {.mult = 250.0, .hz_offset = 0.0, .amplitude_sign = 1.0},
 };
 
-static const int algo_associated_carriers[BPBXSYN_FM_ALGORITHM_COUNT][4] = {
-    { 1, 1, 1, 1 },
-    { 1, 1, 1, 1 },
-    { 1, 1, 1, 1 },
-    { 1, 1, 1, 1 },
-    { 1, 1, 1, 1 },
-    { 1, 2, 1, 2 },
-    { 1, 2, 2, 2 },
-    { 1, 2, 2, 2 },
-    { 1, 2, 2, 2 },
-    { 1, 2, 2, 2 },
-    { 1, 2, 3, 3 },
-    { 1, 2, 3, 3 },
-    { 1, 2, 3, 4 }
-};
+static const int algo_associated_carriers[BBXS_FM_ALGORITHM_COUNT][4] = {
+    {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1}, {1, 1, 1, 1},
+    {1, 2, 1, 2}, {1, 2, 2, 2}, {1, 2, 2, 2}, {1, 2, 2, 2}, {1, 2, 2, 2},
+    {1, 2, 3, 3}, {1, 2, 3, 3}, {1, 2, 3, 4}};
 
 static const double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
-
-
-
-
-
-
-
 
 const inst_vtable_s bbsyn_inst_fm_vtable = {
     .struct_size = sizeof(fm_inst_s),
 
-    .param_count = BPBXSYN_FM_PARAM_COUNT,
+    .param_count = BBXS_FM_PARAM_COUNT,
     .param_info = fm_param_info,
     .param_addresses = fm_param_addresses,
 
@@ -709,5 +721,5 @@ const inst_vtable_s bbsyn_inst_fm_vtable = {
     .inst_note_all_off = fm_note_all_off,
 
     .inst_tick = fm_tick,
-    .inst_run = fm_run
+    .inst_run = fm_run,
 };

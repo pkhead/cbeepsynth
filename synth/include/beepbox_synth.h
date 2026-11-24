@@ -19,17 +19,19 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef _beepbox_synth_h_
-#define _beepbox_synth_h_
+#ifndef BBXS_BEEPBOX_SYNTH_H
+#define BBXS_BEEPBOX_SYNTH_H
 
 #ifdef __cplusplus
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <cmath>
+
 #else
+#include <math.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <math.h>
+
 #endif
 
 #ifdef __cplusplus
@@ -38,229 +40,229 @@ extern "C" {
 
 // clang-format off
 #ifdef _WIN32
-#   if defined(BPBXSYN_SHARED) && defined(BPBXSYN_SHARED_IMPORT)
-#       define BPBXSYN_API __declspec(dllimport)
-#   elif defined(BPBXSYN_SHARED)
-#       define BPBXSYN_API __declspec(dllexport)
+#   if defined(BBXS_SHARED) && defined(BBXS_SHARED_IMPORT)
+#       define BBXS_API __declspec(dllimport)
+#   elif defined(BBXS_SHARED)
+#       define BBXS_API __declspec(dllexport)
 #   else
-#       define BPBXSYN_API
+#       define BBXS_API
 #   endif
 #else
-#   ifdef BPBXSYN_SHARED
-#       define BPBXSYN_API __attribute__((visibility("default")))
+#   ifdef BBXS_SHARED
+#       define BBXS_API __attribute__((visibility("default")))
 #   else
-#       define BPBXSYN_API
+#       define BBXS_API
 #   endif
 #endif
 // clang-format on
 
 #include "beepbox_instrument_data.h"
 
-#define BPBXSYN_VERSION_MAJOR 0
-#define BPBXSYN_VERSION_MINOR 2
-// to get the revision, call bpbxsyn_version
+#define BBXS_VERSION_MAJOR 0
+#define BBXS_VERSION_MINOR 2
+// to get the revision, call bbxs_version
 
-#define BPBXSYN_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box
-#define BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT 26
-#define BPBXSYN_FILTER_GROUP_COUNT 8
-#define BPBXSYN_FILTER_GAIN_CENTER 7
-#define BPBXSYN_FILTER_FREQ_REFERENCE_SETTING 28
-#define BPBXSYN_FILTER_FREQ_RANGE 34
-#define BPBXSYN_FILTER_GAIN_RANGE 15
-#define BPBXSYN_FILTER_FREQ_MAX ((BPBXSYN_FILTER_FREQ_RANGE - 1))
-#define BPBXSYN_FILTER_GAIN_MAX ((BPBXSYN_FILTER_GAIN_RANGE - 1))
+#define BBXS_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box
+#define BBXS_ENVELOPE_CURVE_PRESET_COUNT 26
+#define BBXS_FILTER_GROUP_COUNT 8
+#define BBXS_FILTER_GAIN_CENTER 7
+#define BBXS_FILTER_FREQ_REFERENCE_SETTING 28
+#define BBXS_FILTER_FREQ_RANGE 34
+#define BBXS_FILTER_GAIN_RANGE 15
+#define BBXS_FILTER_FREQ_MAX ((BBXS_FILTER_FREQ_RANGE - 1))
+#define BBXS_FILTER_GAIN_MAX ((BBXS_FILTER_GAIN_RANGE - 1))
 
-#define BPBXSYN_USE_NOTE_SIZE NAN
-#define BPBXSYN_NOTE_LENGTH_UNKNOWN -1
-
-typedef enum {
-    BPBXSYN_SYNTH_CHIP,
-    BPBXSYN_SYNTH_FM,
-    BPBXSYN_SYNTH_NOISE,
-    BPBXSYN_SYNTH_PULSE_WIDTH,
-    BPBXSYN_SYNTH_HARMONICS,
-    BPBXSYN_SYNTH_SPECTRUM,
-    BPBXSYN_SYNTH_PICKED_STRING,
-    BPBXSYN_SYNTH_SUPERSAW,
-    BPBXSYN_SYNTH_CUSTOM_CHIP,
-
-    BPBXSYN_SYNTH_COUNT,
-} bpbxsyn_synth_type_e;
+#define BBXS_USE_NOTE_SIZE NAN
+#define BBXS_NOTE_LENGTH_UNKNOWN -1
 
 typedef enum {
-    BPBXSYN_SYNTHFX_TRANSITION_TYPE,
-    BPBXSYN_SYNTHFX_CHORD_TYPE,
-    BPBXSYN_SYNTHFX_PITCH_SHIFT,
-    BPBXSYN_SYNTHFX_DETUNE,
-    BPBXSYN_SYNTHFX_VIBRATO,
-    BPBXSYN_SYNTHFX_NOTE_FILTER
-} bpbxsyn_synthfx_type_e;
+    BBXS_SYNTH_CHIP,
+    BBXS_SYNTH_FM,
+    BBXS_SYNTH_NOISE,
+    BBXS_SYNTH_PULSE_WIDTH,
+    BBXS_SYNTH_HARMONICS,
+    BBXS_SYNTH_SPECTRUM,
+    BBXS_SYNTH_PICKED_STRING,
+    BBXS_SYNTH_SUPERSAW,
+    BBXS_SYNTH_CUSTOM_CHIP,
+
+    BBXS_SYNTH_COUNT,
+} bbxs_synth_type_e;
 
 typedef enum {
-    BPBXSYN_TRANSITION_TYPE_NORMAL,
-    BPBXSYN_TRANSITION_TYPE_INTERRUPT,
-    BPBXSYN_TRANSITION_TYPE_CONTINUE,
-    BPBXSYN_TRANSITION_TYPE_SLIDE
-} bpbxsyn_transition_type_e;
+    BBXS_SYNTHFX_TRANSITION_TYPE,
+    BBXS_SYNTHFX_CHORD_TYPE,
+    BBXS_SYNTHFX_PITCH_SHIFT,
+    BBXS_SYNTHFX_DETUNE,
+    BBXS_SYNTHFX_VIBRATO,
+    BBXS_SYNTHFX_NOTE_FILTER
+} bbxs_synthfx_type_e;
 
 typedef enum {
-    BPBXSYN_CHORD_TYPE_SIMULTANEOUS,
-    BPBXSYN_CHORD_TYPE_STRUM,
-    BPBXSYN_CHORD_TYPE_ARPEGGIO,
-    BPBXSYN_CHORD_TYPE_CUSTOM_INTERVAL
-} bpbxsyn_chord_type_e;
+    BBXS_TRANSITION_TYPE_NORMAL,
+    BBXS_TRANSITION_TYPE_INTERRUPT,
+    BBXS_TRANSITION_TYPE_CONTINUE,
+    BBXS_TRANSITION_TYPE_SLIDE
+} bbxs_transition_type_e;
 
 typedef enum {
-    BPBXSYN_VIBRATO_PRESET_NONE,
-    BPBXSYN_VIBRATO_PRESET_LIGHT,
-    BPBXSYN_VIBRATO_PRESET_DELAYED,
-    BPBXSYN_VIBRATO_PRESET_HEAVY,
-    BPBXSYN_VIBRATO_PRESET_SHAKY,
-    BPBXSYN_VIBRATO_PRESET_CUSTOM
-} bpbxsyn_vibrato_preset_e;
+    BBXS_CHORD_TYPE_SIMULTANEOUS,
+    BBXS_CHORD_TYPE_STRUM,
+    BBXS_CHORD_TYPE_ARPEGGIO,
+    BBXS_CHORD_TYPE_CUSTOM_INTERVAL
+} bbxs_chord_type_e;
 
 typedef enum {
-    BPBXSYN_VIBRATO_TYPE_NORMAL,
-    BPBXSYN_VIBRATO_TYPE_SHAKY
-} bpbxsyn_vibrato_type_e;
+    BBXS_VIBRATO_PRESET_NONE,
+    BBXS_VIBRATO_PRESET_LIGHT,
+    BBXS_VIBRATO_PRESET_DELAYED,
+    BBXS_VIBRATO_PRESET_HEAVY,
+    BBXS_VIBRATO_PRESET_SHAKY,
+    BBXS_VIBRATO_PRESET_CUSTOM
+} bbxs_vibrato_preset_e;
 
 typedef enum {
-    BPBXSYN_CHIP_WAVE_ROUNDED,
-    BPBXSYN_CHIP_WAVE_TRIANGLE,
-    BPBXSYN_CHIP_WAVE_SQUARE,
-    BPBXSYN_CHIP_WAVE_PULSE4,
-    BPBXSYN_CHIP_WAVE_PULSE8,
-    BPBXSYN_CHIP_WAVE_SAWTOOTH,
-    BPBXSYN_CHIP_WAVE_DOUBLE_SAW,
-    BPBXSYN_CHIP_WAVE_DOUBLE_PULSE,
-    BPBXSYN_CHIP_WAVE_SPIKY,
-    BPBXSYN_CHIP_WAVE_SINE,
-    BPBXSYN_CHIP_WAVE_FLUTE,
-    BPBXSYN_CHIP_WAVE_HARP,
-    BPBXSYN_CHIP_WAVE_SHARP_CLARINET,
-    BPBXSYN_CHIP_WAVE_SOFT_CLARINET,
-    BPBXSYN_CHIP_WAVE_ALTO_SAX,
-    BPBXSYN_CHIP_WAVE_BASSOON,
-    BPBXSYN_CHIP_WAVE_TRUMPET,
-    BPBXSYN_CHIP_WAVE_ELECTRIC_GUITAR,
-    BPBXSYN_CHIP_WAVE_ORGAN,
-    BPBXSYN_CHIP_WAVE_PAN_FLUTE,
-    BPBXSYN_CHIP_WAVE_GLITCH,
-    BPBXSYN_CHIP_WAVE_COUNT
-} bpbxsyn_chip_wave_e;
+    BBXS_VIBRATO_TYPE_NORMAL,
+    BBXS_VIBRATO_TYPE_SHAKY
+} bbxs_vibrato_type_e;
 
 typedef enum {
-    BPBXSYN_UNISON_NONE,
-    BPBXSYN_UNISON_SHIMMER,
-    BPBXSYN_UNISON_HUM,
-    BPBXSYN_UNISON_HONKY_TONK,
-    BPBXSYN_UNISON_DISSONANT,
-    BPBXSYN_UNISON_FIFTH,
-    BPBXSYN_UNISON_OCTAVE,
-    BPBXSYN_UNISON_BOWED,
-    BPBXSYN_UNISON_PIANO,
-    BPBXSYN_UNISON_WARBLED,
-    BPBXSYN_UNISON_COUNT,
-} bpbxsyn_unsion_type_e;
+    BBXS_CHIP_WAVE_ROUNDED,
+    BBXS_CHIP_WAVE_TRIANGLE,
+    BBXS_CHIP_WAVE_SQUARE,
+    BBXS_CHIP_WAVE_PULSE4,
+    BBXS_CHIP_WAVE_PULSE8,
+    BBXS_CHIP_WAVE_SAWTOOTH,
+    BBXS_CHIP_WAVE_DOUBLE_SAW,
+    BBXS_CHIP_WAVE_DOUBLE_PULSE,
+    BBXS_CHIP_WAVE_SPIKY,
+    BBXS_CHIP_WAVE_SINE,
+    BBXS_CHIP_WAVE_FLUTE,
+    BBXS_CHIP_WAVE_HARP,
+    BBXS_CHIP_WAVE_SHARP_CLARINET,
+    BBXS_CHIP_WAVE_SOFT_CLARINET,
+    BBXS_CHIP_WAVE_ALTO_SAX,
+    BBXS_CHIP_WAVE_BASSOON,
+    BBXS_CHIP_WAVE_TRUMPET,
+    BBXS_CHIP_WAVE_ELECTRIC_GUITAR,
+    BBXS_CHIP_WAVE_ORGAN,
+    BBXS_CHIP_WAVE_PAN_FLUTE,
+    BBXS_CHIP_WAVE_GLITCH,
+    BBXS_CHIP_WAVE_COUNT
+} bbxs_chip_wave_e;
 
 typedef enum {
-    BPBXSYN_EFFECT_PANNING,
-    BPBXSYN_EFFECT_DISTORTION,
-    BPBXSYN_EFFECT_BITCRUSHER,
-    BPBXSYN_EFFECT_CHORUS,
-    BPBXSYN_EFFECT_ECHO,
-    BPBXSYN_EFFECT_REVERB,
-    BPBXSYN_EFFECT_EQ,
-    BPBXSYN_EFFECT_VOLUME,
-    BPBXSYN_EFFECT_LIMITER,
-
-    BPBXSYN_EFFECT_COUNT,
-} bpbxsyn_effect_type_e;
-
-typedef enum {
-    BPBXSYN_NOISE_RETRO,
-    BPBXSYN_NOISE_WHITE,
-    BPBXSYN_NOISE_CLANG,
-    BPBXSYN_NOISE_BUZZ,
-    BPBXSYN_NOISE_HOLLOW,
-    BPBXSYN_NOISE_SHINE,
-    BPBXSYN_NOISE_DEEP,
-    BPBXSYN_NOISE_CUTTER,
-    BPBXSYN_NOISE_METALLIC,
-    BPBXSYN_NOISE_COUNT
-} bpbxsyn_noise_type_e;
+    BBXS_UNISON_NONE,
+    BBXS_UNISON_SHIMMER,
+    BBXS_UNISON_HUM,
+    BBXS_UNISON_HONKY_TONK,
+    BBXS_UNISON_DISSONANT,
+    BBXS_UNISON_FIFTH,
+    BBXS_UNISON_OCTAVE,
+    BBXS_UNISON_BOWED,
+    BBXS_UNISON_PIANO,
+    BBXS_UNISON_WARBLED,
+    BBXS_UNISON_COUNT,
+} bbxs_unsion_type_e;
 
 typedef enum {
-    BPBXSYN_FILTER_TYPE_OFF,
-    BPBXSYN_FILTER_TYPE_LP,
-    BPBXSYN_FILTER_TYPE_HP,
-    BPBXSYN_FILTER_TYPE_NOTCH
-} bpbxsyn_filter_type_e;
+    BBXS_EFFECT_PANNING,
+    BBXS_EFFECT_DISTORTION,
+    BBXS_EFFECT_BITCRUSHER,
+    BBXS_EFFECT_CHORUS,
+    BBXS_EFFECT_ECHO,
+    BBXS_EFFECT_REVERB,
+    BBXS_EFFECT_EQ,
+    BBXS_EFFECT_VOLUME,
+    BBXS_EFFECT_LIMITER,
+
+    BBXS_EFFECT_COUNT,
+} bbxs_effect_type_e;
 
 typedef enum {
-    BPBXSYN_PARAM_UINT8,
-    BPBXSYN_PARAM_INT,
-    BPBXSYN_PARAM_DOUBLE
-} bpbxsyn_param_type_e;
-
-typedef enum { BPBXSYN_PARAM_FLAG_NO_AUTOMATION } bpbxsyn_param_flags_e;
-
-typedef enum {
-    BPBXSYN_ENV_INDEX_NONE,
-    BPBXSYN_ENV_INDEX_NOTE_VOLUME,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_ALL_FREQS,
-    BPBXSYN_ENV_INDEX_PULSE_WIDTH,
-    BPBXSYN_ENV_INDEX_STRING_SUSTAIN,
-    BPBXSYN_ENV_INDEX_UNISON,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ0,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ1,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ2,
-    BPBXSYN_ENV_INDEX_OPERATOR_FREQ3,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP0,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP1,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP2,
-    BPBXSYN_ENV_INDEX_OPERATOR_AMP3,
-    BPBXSYN_ENV_INDEX_FEEDBACK_AMP,
-    BPBXSYN_ENV_INDEX_PITCH_SHIFT,
-    BPBXSYN_ENV_INDEX_DETUNE,
-    BPBXSYN_ENV_INDEX_VIBRATO_DEPTH,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ0,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ1,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ2,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ3,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ4,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ5,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ6,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_FREQ7,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN0,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN1,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN2,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN3,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN4,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN5,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN6,
-    BPBXSYN_ENV_INDEX_NOTE_FILTER_GAIN7,
-    BPBXSYN_ENV_INDEX_SUPERSAW_DYNAMISM,
-    BPBXSYN_ENV_INDEX_SUPERSAW_SPREAD,
-    BPBXSYN_ENV_INDEX_SUPERSAW_SHAPE,
-    BPBXSYN_ENV_INDEX_COUNT
-} bpbxsyn_envelope_compute_index_e;
+    BBXS_NOISE_RETRO,
+    BBXS_NOISE_WHITE,
+    BBXS_NOISE_CLANG,
+    BBXS_NOISE_BUZZ,
+    BBXS_NOISE_HOLLOW,
+    BBXS_NOISE_SHINE,
+    BBXS_NOISE_DEEP,
+    BBXS_NOISE_CUTTER,
+    BBXS_NOISE_METALLIC,
+    BBXS_NOISE_COUNT
+} bbxs_noise_type_e;
 
 typedef enum {
-    BPBXSYN_SERIALIZE_STATUS_OK,
-    BPBXSYN_SERIALIZE_STATUS_NO_DATA,
-    BPBXSYN_SERIALIZE_STATUS_INVALID,
-    BPBXSYN_SERIALIZE_STATUS_IO_ERROR,
-} bpbxsyn_serialize_status_e;
+    BBXS_FILTER_TYPE_OFF,
+    BBXS_FILTER_TYPE_LP,
+    BBXS_FILTER_TYPE_HP,
+    BBXS_FILTER_TYPE_NOTCH
+} bbxs_filter_type_e;
+
+typedef enum {
+    BBXS_PARAM_UINT8,
+    BBXS_PARAM_INT,
+    BBXS_PARAM_DOUBLE
+} bbxs_param_type_e;
+
+typedef enum { BBXS_PARAM_FLAG_NO_AUTOMATION } bbxs_param_flags_e;
+
+typedef enum {
+    BBXS_ENV_INDEX_NONE,
+    BBXS_ENV_INDEX_NOTE_VOLUME,
+    BBXS_ENV_INDEX_NOTE_FILTER_ALL_FREQS,
+    BBXS_ENV_INDEX_PULSE_WIDTH,
+    BBXS_ENV_INDEX_STRING_SUSTAIN,
+    BBXS_ENV_INDEX_UNISON,
+    BBXS_ENV_INDEX_OPERATOR_FREQ0,
+    BBXS_ENV_INDEX_OPERATOR_FREQ1,
+    BBXS_ENV_INDEX_OPERATOR_FREQ2,
+    BBXS_ENV_INDEX_OPERATOR_FREQ3,
+    BBXS_ENV_INDEX_OPERATOR_AMP0,
+    BBXS_ENV_INDEX_OPERATOR_AMP1,
+    BBXS_ENV_INDEX_OPERATOR_AMP2,
+    BBXS_ENV_INDEX_OPERATOR_AMP3,
+    BBXS_ENV_INDEX_FEEDBACK_AMP,
+    BBXS_ENV_INDEX_PITCH_SHIFT,
+    BBXS_ENV_INDEX_DETUNE,
+    BBXS_ENV_INDEX_VIBRATO_DEPTH,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ0,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ1,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ2,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ3,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ4,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ5,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ6,
+    BBXS_ENV_INDEX_NOTE_FILTER_FREQ7,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN0,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN1,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN2,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN3,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN4,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN5,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN6,
+    BBXS_ENV_INDEX_NOTE_FILTER_GAIN7,
+    BBXS_ENV_INDEX_SUPERSAW_DYNAMISM,
+    BBXS_ENV_INDEX_SUPERSAW_SPREAD,
+    BBXS_ENV_INDEX_SUPERSAW_SHAPE,
+    BBXS_ENV_INDEX_COUNT
+} bbxs_envelope_compute_index_e;
+
+typedef enum {
+    BBXS_SERIALIZE_STATUS_OK,
+    BBXS_SERIALIZE_STATUS_NO_DATA,
+    BBXS_SERIALIZE_STATUS_INVALID,
+    BBXS_SERIALIZE_STATUS_IO_ERROR,
+} bbxs_serialize_status_e;
 
 typedef struct {
-    bpbxsyn_envelope_compute_index_e index;
+    bbxs_envelope_compute_index_e index;
     uint8_t curve_preset;
-} bpbxsyn_envelope_s;
+} bbxs_envelope_s;
 
 typedef struct {
-    bpbxsyn_param_type_e type;
-    uint32_t flags; // bpbxsyn_param_flags_e
+    bbxs_param_type_e type;
+    uint32_t flags; // bbxs_param_flags_e
 
     const char *name;
     const char *group;
@@ -275,14 +277,14 @@ typedef struct {
     double default_value;
 
     const char **enum_values;
-} bpbxsyn_param_info_s;
+} bbxs_param_info_s;
 
 typedef struct {
     double depth; // in beepbox code, this was quantized to increments of 0.04
     double speed;
     int delay; // in ticks, I think?
     uint8_t type;
-} bpbxsyn_vibrato_params_s;
+} bbxs_vibrato_params_s;
 
 typedef struct {
     /**
@@ -290,7 +292,7 @@ typedef struct {
      *
      * @important Do not set this to zero or a very low value! The rate at which
      *            certain computations are done depends on the transport's
-     *            tempo. See the documentation on @ref bpbxsyn_synth_tick for
+     *            tempo. See the documentation on @ref bbxs_synth_tick for
      *            more information.
      *
      * If you don't have tempo information, set it to a placeholder value like
@@ -310,7 +312,7 @@ typedef struct {
      * The MIDI pitch, in octave 0, of the current key of the song. That is, for
      * the key of C, the base pitch is C0 (12). If you do not have this
      * information, C will suffice.
-     * 
+     *
      * If this is zero, it will be treated as if it were 12.
      *
      * @note This is only used for the bitcrusher effect.
@@ -332,14 +334,14 @@ typedef struct {
      * @note This is only relevant when passed to a synth.
      **/
     double mod_wheel;
-} bpbxsyn_tick_ctx_s;
+} bbxs_tick_ctx_s;
 
 typedef struct {
     double real;
     double imag;
-} bpbxsyn_complex_s;
+} bbxs_complex_s;
 
-typedef struct bpbxsyn_waveform_data {
+typedef struct bbxs_waveform_data {
     /**
      * The expression (volume) of the waveform in the range [0, 1].
      */
@@ -356,33 +358,33 @@ typedef struct bpbxsyn_waveform_data {
      * The number of samples in the waveform.
      */
     size_t length;
-} bpbxsyn_waveform_data_s;
+} bbxs_waveform_data_s;
 
-typedef struct bpbxsyn_context bpbxsyn_context_s;
-typedef struct bpbxsyn_synth bpbxsyn_synth_s;
-typedef struct bpbxsyn_effect bpbxsyn_effect_s;
+typedef struct bbxs_context bbxs_context_s;
+typedef struct bbxs_synth bbxs_synth_s;
+typedef struct bbxs_effect bbxs_effect_s;
 
-typedef void *(*bpbxsyn_malloc_f)(size_t size, void *userdata);
-typedef void (*bpbxsyn_mfree_f)(void *ptr, void *userdata);
+typedef void *(*bbxs_malloc_f)(size_t size, void *userdata);
+typedef void (*bbxs_mfree_f)(void *ptr, void *userdata);
 
-typedef int8_t bpbxsyn_voice_id;
+typedef int8_t bbxs_voice_id;
 
-typedef struct bpbxsyn_allocator {
-    bpbxsyn_malloc_f alloc;
-    bpbxsyn_mfree_f free;
+typedef struct bbxs_allocator {
+    bbxs_malloc_f alloc;
+    bbxs_mfree_f free;
     void *userdata;
-} bpbxsyn_allocator_s;
+} bbxs_allocator_s;
 
 typedef enum {
-    BPBXSYN_LOG_DEBUG,
-    BPBXSYN_LOG_INFO,
-    BPBXSYN_LOG_WARNING,
-    BPBXSYN_LOG_ERROR,
-    BPBXSYN_LOG_FATAL,
-} bpbxsyn_log_severity_e;
+    BBXS_LOG_DEBUG,
+    BBXS_LOG_INFO,
+    BBXS_LOG_WARNING,
+    BBXS_LOG_ERROR,
+    BBXS_LOG_FATAL,
+} bbxs_log_severity_e;
 
-typedef void (*bpbxsyn_log_f)(bpbxsyn_log_severity_e severity, const char *msg,
-                              void *userdata);
+typedef void (*bbxs_log_f)(bbxs_log_severity_e severity, const char *msg,
+                           void *userdata);
 
 /**
  * @brief Callback to write to a stream.
@@ -392,7 +394,7 @@ typedef void (*bpbxsyn_log_f)(bpbxsyn_log_severity_e severity, const char *msg,
  * @param userdata An opaque pointer supplied by the user.
  * @return 0 to indicate success. Non-zero on failure.
  */
-typedef int (*bpbxsyn_writer_f)(const void *data, size_t size, void *userdata);
+typedef int (*bbxs_writer_f)(const void *data, size_t size, void *userdata);
 
 /**
  * @brief Callback to read from a stream.
@@ -403,7 +405,7 @@ typedef int (*bpbxsyn_writer_f)(const void *data, size_t size, void *userdata);
  * @return 0 to indicate that all bytes were successfully read.
            Non-zero otherwise.
  */
-typedef int (*bpbxsyn_reader_f)(void *data, size_t size, void *userdata);
+typedef int (*bbxs_reader_f)(void *data, size_t size, void *userdata);
 
 typedef struct {
     /**
@@ -411,8 +413,8 @@ typedef struct {
      * @param inst Pointer to the instrument.
      * @param id The ID of the voice.
      */
-    void (*voice_end)(bpbxsyn_synth_s *inst, bpbxsyn_voice_id id);
-} bpbxsyn_synth_callbacks_s;
+    void (*voice_end)(bbxs_synth_s *inst, bbxs_voice_id id);
+} bbxs_synth_callbacks_s;
 
 /**
  * @brief Obtain the version of the synth library.
@@ -424,8 +426,8 @@ typedef struct {
  * @param[out] minor Minor version number
  * @param[out] revision Revision version number
  */
-BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
-                                 uint32_t *revision);
+BBXS_API void bbxs_version(uint32_t *major, uint32_t *minor,
+                           uint32_t *revision);
 
 /**
  * @brief Create a new context.
@@ -435,34 +437,34 @@ BPBXSYN_API void bpbxsyn_version(uint32_t *major, uint32_t *minor,
  * allocator, and a copy of the allocator structure will be kept in the context
  * structure for any further allocations. If NULL is given instead, it will use
  * the allocators from the C standard library. A pointer to the newly allocated
- * bpbxsyn_context struct will be returned, or NULL if there was an error.
+ * bbxs_context struct will be returned, or NULL if there was an error.
  *
  * Other than this function, there are a couple of others where allocation or
  * freeing may occur:
- *   - bpbxsyn_synth_new
- *   - bpbxsyn_effect_new
- *   - bpbxsyn_synth_destroy
- *   - bpbxsyn_effect_destroy
- *   - bpbxsyn_synth_set_sample_rate
- *   - bpbxsyn_effect_set_sample_rate
+ *   - bbxs_synth_new
+ *   - bbxs_effect_new
+ *   - bbxs_synth_destroy
+ *   - bbxs_effect_destroy
+ *   - bbxs_synth_set_sample_rate
+ *   - bbxs_effect_set_sample_rate
  *
  * @param alloc Pointer to the allocator.
  * @param wavetable_init_seed Seed for the noise wavetable PRNG.
- * @return Pointer to the newly created bpbxsyn_context struct.
+ * @return Pointer to the newly created bbxs_context struct.
  * */
-BPBXSYN_API bpbxsyn_context_s* bpbxsyn_context_new(
-    const bpbxsyn_allocator_s *alloc, uint64_t wavetable_init_seed);
+BBXS_API bbxs_context_s *bbxs_context_new(const bbxs_allocator_s *alloc,
+                                          uint64_t wavetable_init_seed);
 
 /**
  * @brief Destroy a context.
  *
- * Destroys and deallocates a given bpbxsyn_context. Afterwards, all remaining
+ * Destroys and deallocates a given bbxs_context. Afterwards, all remaining
  * instruments or effects created with this context may produce undefined
  * behavior when interacted with.
  *
  * @param ctx The context to destroy.
  */
-BPBXSYN_API void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx);
+BBXS_API void bbxs_context_destroy(bbxs_context_s *ctx);
 
 /**
  * @brief Set the log function for the context.
@@ -473,28 +475,28 @@ BPBXSYN_API void bpbxsyn_context_destroy(bpbxsyn_context_s *ctx);
  * @param log_func The log function to use.
  * @param userdata An opaque pointer to be passed to the given log function.
  */
-BPBXSYN_API void bpbxsyn_set_log_func(bpbxsyn_context_s *ctx,
-                                      bpbxsyn_log_f log_func, void *userdata);
+BBXS_API void bbxs_set_log_func(bbxs_context_s *ctx, bbxs_log_f log_func,
+                                void *userdata);
 
 /**
  * @brief Obtain the number of parameters for a given instrument type.
  *
- * @param type The BPBXSYN_SYNTH_* enum that identifies the instrument type.
+ * @param type The BBXS_SYNTH_* enum that identifies the instrument type.
  * @return The number of parameters the instrument type has.
  */
-BPBXSYN_API unsigned int bpbxsyn_synth_param_count(bpbxsyn_synth_type_e type);
+BBXS_API unsigned int bbxs_synth_param_count(bbxs_synth_type_e type);
 
 /**
  * @brief Obtain information for a specific parameter of an instrument type.
  *
- * @param type  The BPBXSYN_SYNTH_* enum that identifies the instrument type.
- * @param index The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
+ * @param type  The BBXS_SYNTH_* enum that identifies the instrument type.
+ * @param index The BBXS_PARAM_* or BBXS_{inst}_PARAM_* enum that
  *              identifies the parameter.
- * @return The bpbxsyn_param_info_s struct containing information about the
+ * @return The bbxs_param_info_s struct containing information about the
  * parameter.
  */
-BPBXSYN_API const bpbxsyn_param_info_s *
-bpbxsyn_synth_param_info(bpbxsyn_synth_type_e type, unsigned int index);
+BBXS_API const bbxs_param_info_s *bbxs_synth_param_info(bbxs_synth_type_e type,
+                                                        unsigned int index);
 
 /**
  * @brief Allocate a new synth instance of a given type.
@@ -503,12 +505,12 @@ bpbxsyn_synth_param_info(bpbxsyn_synth_type_e type, unsigned int index);
  * allocation functions, this function may return a failure notice.
  *
  * @param ctx       The context to create the synth instance with.
- * @param inst_type The BPBXSYN_SYNTH_* enum that identifies the instrument
+ * @param inst_type The BBXS_SYNTH_* enum that identifies the instrument
  *                  type.
  * @return Pointer to the newly allocated instrument. NULL on error.
  */
-BPBXSYN_API bpbxsyn_synth_s *bpbxsyn_synth_new(bpbxsyn_context_s *ctx,
-                                               bpbxsyn_synth_type_e inst_type);
+BBXS_API bbxs_synth_s *bbxs_synth_new(bbxs_context_s *ctx,
+                                      bbxs_synth_type_e inst_type);
 
 /**
  * @brief Free a previously allocated instrument.
@@ -516,16 +518,15 @@ BPBXSYN_API bpbxsyn_synth_s *bpbxsyn_synth_new(bpbxsyn_context_s *ctx,
  * @param inst Pointer to the instrument struct to free. Does nothing if NULL is
  *             passed.
  */
-BPBXSYN_API void bpbxsyn_synth_destroy(bpbxsyn_synth_s *inst);
+BBXS_API void bbxs_synth_destroy(bbxs_synth_s *inst);
 
 /**
  * @brief Obtains the type of an instrument.
  *
  * @param inst Pointer to the instrument.
- * @return The BPBXSYN_SYNTH_* enum that identifies the instrument type.
+ * @return The BBXS_SYNTH_* enum that identifies the instrument type.
  */
-BPBXSYN_API bpbxsyn_synth_type_e
-bpbxsyn_synth_type(const bpbxsyn_synth_s *inst);
+BBXS_API bbxs_synth_type_e bbxs_synth_type(const bbxs_synth_s *inst);
 
 /**
  * @brief Get the callback table of the instrument.
@@ -534,10 +535,10 @@ bpbxsyn_synth_type(const bpbxsyn_synth_s *inst);
  * These functions are called during inst_tick or inst_run.
  *
  * @param inst Pointer to the instrument.
- * @return Pointer to the bpbxsyn_synth_callbacks_s structure.
+ * @return Pointer to the bbxs_synth_callbacks_s structure.
  */
-BPBXSYN_API bpbxsyn_synth_callbacks_s *
-bpbxsyn_synth_get_callback_table(bpbxsyn_synth_s *inst);
+BBXS_API bbxs_synth_callbacks_s *
+bbxs_synth_get_callback_table(bbxs_synth_s *inst);
 
 /**
  * @brief Obtain the user-set opaque pointer associated with an instrument.
@@ -545,7 +546,7 @@ bpbxsyn_synth_get_callback_table(bpbxsyn_synth_s *inst);
  * @param inst Pointer to the instrument.
  * @return The user-set opaque pointer, or NULL if it was not set.
  */
-BPBXSYN_API void *bpbxsyn_synth_get_userdata(bpbxsyn_synth_s *inst);
+BBXS_API void *bbxs_synth_get_userdata(bbxs_synth_s *inst);
 
 /**
  * @brief Associate an instrument with an opaque pointer.
@@ -553,8 +554,7 @@ BPBXSYN_API void *bpbxsyn_synth_get_userdata(bpbxsyn_synth_s *inst);
  * @param inst Pointer to the instrument.
  * @param userdata The pointer to associate with the instrument.
  */
-BPBXSYN_API void bpbxsyn_synth_set_userdata(bpbxsyn_synth_s *inst,
-                                            void *userdata);
+BBXS_API void bbxs_synth_set_userdata(bbxs_synth_s *inst, void *userdata);
 
 /**
  * @brief Set or change the sample rate of a synthesizer instance. May
@@ -566,8 +566,8 @@ BPBXSYN_API void bpbxsyn_synth_set_userdata(bpbxsyn_synth_s *inst,
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
  */
-BPBXSYN_API void bpbxsyn_synth_set_sample_rate(bpbxsyn_synth_s *inst,
-                                               double sample_rate);
+BBXS_API void bbxs_synth_set_sample_rate(bbxs_synth_s *inst,
+                                         double sample_rate);
 
 /**
  * @brief Signal to an instrument that transport playback has started.
@@ -581,8 +581,8 @@ BPBXSYN_API void bpbxsyn_synth_set_sample_rate(bpbxsyn_synth_s *inst,
  * @param beat The beat that the transport started on.
  * @param bpm  The tempo of the transport, in beats per minute.
  */
-BPBXSYN_API void bpbxsyn_synth_begin_transport(bpbxsyn_synth_s *inst,
-                                               double beat, double bpm);
+BBXS_API void bbxs_synth_begin_transport(bbxs_synth_s *inst, double beat,
+                                         double bpm);
 
 /**
  * @brief Set an instrument's parameter to an integer value.
@@ -593,13 +593,13 @@ BPBXSYN_API void bpbxsyn_synth_begin_transport(bpbxsyn_synth_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param inst  Pointer to the instrument.
- * @param param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
+ * @param param The BBXS_PARAM_* or BBXS_{inst}_PARAM_* enum that
  * identifies the parameter.
  * @param value The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_synth_set_param_int(bpbxsyn_synth_s *inst,
-                                            uint32_t param, int value);
+BBXS_API int bbxs_synth_set_param_int(bbxs_synth_s *inst, uint32_t param,
+                                      int value);
 
 /**
  * @brief Set an instrument's parameter to a floating-point value.
@@ -611,13 +611,13 @@ BPBXSYN_API int bpbxsyn_synth_set_param_int(bpbxsyn_synth_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param inst  Pointer to the instrument.
- * @param param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
+ * @param param The BBXS_PARAM_* or BBXS_{inst}_PARAM_* enum that
  * identifies the parameter.
  * @param value The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s *inst,
-                                               uint32_t param, double value);
+BBXS_API int bbxs_synth_set_param_double(bbxs_synth_s *inst, uint32_t param,
+                                         double value);
 
 /**
  * @brief Get the value of an instrument's parameter as an integer value.
@@ -629,13 +629,13 @@ BPBXSYN_API int bpbxsyn_synth_set_param_double(bpbxsyn_synth_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param      inst  Pointer to the instrument.
- * @param      param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
+ * @param      param The BBXS_PARAM_* or BBXS_{inst}_PARAM_* enum that
  *                   identifies the parameter.
  * @param[out] value The output value.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s *inst,
-                                            uint32_t param, int *value);
+BBXS_API int bbxs_synth_get_param_int(const bbxs_synth_s *inst, uint32_t param,
+                                      int *value);
 
 /**
  * @brief Get the value of an instrument's parameter as a double-precision
@@ -644,13 +644,13 @@ BPBXSYN_API int bpbxsyn_synth_get_param_int(const bpbxsyn_synth_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param      inst  Pointer to the instrument.
- * @param      param The BPBXSYN_PARAM_* or BPBXSYN_{inst}_PARAM_* enum that
+ * @param      param The BBXS_PARAM_* or BBXS_{inst}_PARAM_* enum that
  *                   identifies the parameter.
  * @param[out] value The output value.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_synth_get_param_double(const bpbxsyn_synth_s *inst,
-                                               uint32_t param, double *value);
+BBXS_API int bbxs_synth_get_param_double(const bbxs_synth_s *inst,
+                                         uint32_t param, double *value);
 
 /**
  * @brief Get the parameter index of a note effect toggle.
@@ -658,22 +658,21 @@ BPBXSYN_API int bpbxsyn_synth_get_param_double(const bpbxsyn_synth_s *inst,
  * This returns the instrument index of the toggle parameter for a given note
  * effect.
  *
- * @param type The BPBXSYN_SYNTHFX_* enum that identifies the note effect type.
+ * @param type The BBXS_SYNTHFX_* enum that identifies the note effect type.
  * @return The parameter index on success, and UINT32_MAX on failure.
  */
-BPBXSYN_API uint32_t
-bpbxsyn_synth_effect_toggle_param(bpbxsyn_synthfx_type_e type);
+BBXS_API uint32_t bbxs_synth_effect_toggle_param(bbxs_synthfx_type_e type);
 
 /**
  * @brief Get the list of possible envelope targets for a given instrument type.
  *
- * @param      type The BPBXSYN_SYNTH_* enum that identifies the instrument
+ * @param      type The BBXS_SYNTH_* enum that identifies the instrument
  *                  type.
  * @param[out] size Output parameter, giving the size of the output list.
  * @return List of envelope target indices.
  */
-BPBXSYN_API const bpbxsyn_envelope_compute_index_e *
-bpbxsyn_synth_envelope_targets(bpbxsyn_synth_type_e type, int *size);
+BBXS_API const bbxs_envelope_compute_index_e *
+bbxs_synth_envelope_targets(bbxs_synth_type_e type, int *size);
 
 /**
  * @brief Get the number of active envelopes for an instrument.
@@ -681,7 +680,7 @@ bpbxsyn_synth_envelope_targets(bpbxsyn_synth_type_e type, int *size);
  * @param inst Pointer to the instrument.
  * @return The number of active envelopes.
  */
-BPBXSYN_API uint8_t bpbxsyn_synth_envelope_count(const bpbxsyn_synth_s *inst);
+BBXS_API uint8_t bbxs_synth_envelope_count(const bbxs_synth_s *inst);
 // note: envelopes are stored contiguously and in order, so it is valid to treat
 // the return value as an array.
 
@@ -699,8 +698,8 @@ BPBXSYN_API uint8_t bpbxsyn_synth_envelope_count(const bpbxsyn_synth_s *inst);
  * @param inst  Pointer to the instrument.
  * @param index The index to the envelope configuration.
  */
-BPBXSYN_API bpbxsyn_envelope_s *
-bpbxsyn_synth_get_envelope(bpbxsyn_synth_s *inst, uint8_t index);
+BBXS_API bbxs_envelope_s *bbxs_synth_get_envelope(bbxs_synth_s *inst,
+                                                  uint8_t index);
 
 /**
  * @brief Add a new envelope to an instrument.
@@ -709,7 +708,7 @@ bpbxsyn_synth_get_envelope(bpbxsyn_synth_s *inst, uint8_t index);
  * to its configuration structure.
  *
  * This function will return a failure notice if the number of envelopes will
- * exceed BPBXSYN_MAX_ENVELOPE_COUNT.
+ * exceed BBXS_MAX_ENVELOPE_COUNT.
  *
  * @note It is only safe to call this function from the audio thread.
  *
@@ -717,8 +716,7 @@ bpbxsyn_synth_get_envelope(bpbxsyn_synth_s *inst, uint8_t index);
  * @return On success, pointer to the envelope configuration structure. NULL on
  * failure.
  */
-BPBXSYN_API bpbxsyn_envelope_s *
-bpbxsyn_synth_add_envelope(bpbxsyn_synth_s *inst);
+BBXS_API bbxs_envelope_s *bbxs_synth_add_envelope(bbxs_synth_s *inst);
 
 /**
  * @brief Removes an instrument's envelope.
@@ -731,8 +729,7 @@ bpbxsyn_synth_add_envelope(bpbxsyn_synth_s *inst);
  * @param inst  Pointer to the instrument.
  * @param index The index of the envelope to remove
  */
-BPBXSYN_API void bpbxsyn_synth_remove_envelope(bpbxsyn_synth_s *inst,
-                                               uint8_t index);
+BBXS_API void bbxs_synth_remove_envelope(bbxs_synth_s *inst, uint8_t index);
 
 /**
  * @brief Clears all the active envelopes of an instrument.
@@ -741,7 +738,7 @@ BPBXSYN_API void bpbxsyn_synth_remove_envelope(bpbxsyn_synth_s *inst,
  *
  * @param inst Pointer to the instrument.
  */
-BPBXSYN_API void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst);
+BBXS_API void bbxs_synth_clear_envelopes(bbxs_synth_s *inst);
 
 /**
  * @brief Obtain the size of the exstate for a given synth type.
@@ -749,7 +746,7 @@ BPBXSYN_API void bpbxsyn_synth_clear_envelopes(bpbxsyn_synth_s *inst);
  * @return The exstate size, in bytes. Returns 0 if the instrument type has no
  *         exstate.
  */
-BPBXSYN_API size_t bpbxsyn_synth_get_exstate_size(bpbxsyn_synth_type_e type);
+BBXS_API size_t bbxs_synth_get_exstate_size(bbxs_synth_type_e type);
 
 /**
  * @brief Copy the exstate of the synth into the provided buffer
@@ -757,11 +754,11 @@ BPBXSYN_API size_t bpbxsyn_synth_get_exstate_size(bpbxsyn_synth_type_e type);
  * @note There are no guarantees of atomicity between threads.
  *
  * @param inst         Pointer to the synth instance.
- * @param [out] buffer Pointer to the buffer to write into. Passing in NULL is safe: no writes will occur.
+ * @param [out] buffer Pointer to the buffer to write into. Passing in NULL is
+ *                     safe: no writes will occur.
  * @return             The size of the synth's exstate.
  **/
-BPBXSYN_API size_t bpbxsyn_synth_get_exstate(bpbxsyn_synth_s *inst,
-                                             void *buffer);
+BBXS_API size_t bbxs_synth_get_exstate(bbxs_synth_s *inst, void *buffer);
 
 /**
  * @brief Apply exstate data to the given synth.
@@ -771,8 +768,7 @@ BPBXSYN_API size_t bpbxsyn_synth_get_exstate(bpbxsyn_synth_s *inst,
  * @param inst Pointer to the synth instance.
  * @param buffer Pointer to the buffer to read from.
  */
-BPBXSYN_API void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst,
-                                           const void *buffer);
+BBXS_API void bbxs_synth_set_exstate(bbxs_synth_s *inst, const void *buffer);
 
 /**
  * @brief Serialize exstate and write it to a stream.
@@ -784,8 +780,8 @@ BPBXSYN_API void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst,
  * @param userdata Opaque pointer to pass to the writer function.
  * @return Non-zero on success, and zero on failure.
  */
-BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_serialize_exstate(
-    bpbxsyn_synth_s *inst, bpbxsyn_writer_f writer, void *userdata);
+BBXS_API bbxs_serialize_status_e bbxs_synth_serialize_exstate(
+    bbxs_synth_s *inst, bbxs_writer_f writer, void *userdata);
 
 /**
  * @brief Deserialize exstate from a stream.
@@ -795,21 +791,21 @@ BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_serialize_exstate(
  * @param userdata Opaque pointer to pass to the reader function.
  * @return Non-zero on success, and zero on failure.
  */
-BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_deserialize_exstate(
-    bpbxsyn_synth_s *inst, bpbxsyn_reader_f reader, void *userdata);
+BBXS_API bbxs_serialize_status_e bbxs_synth_deserialize_exstate(
+    bbxs_synth_s *inst, bbxs_reader_f reader, void *userdata);
 
 /**
  * @brief Send a note on event to an instrument.
  *
  * Sends a note on event to an instrument.
  *
- * To have the note use "note size" data passed into @ref bpbxsyn_synth_tick,
- * pass in the constant BPBXSYN_USE_NOTE_SIZE as the velocity parameter.
+ * To have the note use "note size" data passed into @ref bbxs_synth_tick,
+ * pass in the constant BBXS_USE_NOTE_SIZE as the velocity parameter.
  * Otherwise, the size of the note will be dictated by the given velocity, and
  * will be constant throughout its duration.
  *
- * If the length given is BPBXSYN_NOTE_LENGTH_UNKNOWN, then the note will
- * play until @ref bpbxsyn_synth_end_note is called for the given voice id.
+ * If the length given is BBXS_NOTE_LENGTH_UNKNOWN, then the note will
+ * play until @ref bbxs_synth_end_note is called for the given voice id.
  * Otherwise, the note will end automatically based on the given length.
  *
  * @note It is only safe to call this function from the audio thread.
@@ -817,25 +813,23 @@ BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_deserialize_exstate(
  * @param inst     Pointer to the instrument.
  * @param key      The MIDI key of the note.
  * @param velocity The velocity of the note, from 0-1, or the constant
- *                 BPBXSYN_USE_NOTE_SIZE.
- * @param length   The length of the note, in ticks. BPBXSYN_NOTE_LENGTH_UNKNOWN
+ *                 BBXS_USE_NOTE_SIZE.
+ * @param length   The length of the note, in ticks. BBXS_NOTE_LENGTH_UNKNOWN
  *                 if unknown.
  * @returns The ID of the newly created voice.
  */
-BPBXSYN_API bpbxsyn_voice_id bpbxsyn_synth_begin_note(bpbxsyn_synth_s *inst,
-                                                      int key, double velocity,
-                                                      int32_t length);
+BBXS_API bbxs_voice_id bbxs_synth_begin_note(bbxs_synth_s *inst, int key,
+                                             double velocity, int32_t length);
 
 /**
  * @brief Send a note off event to an instrument.
  *
  * @note It is only safe to call this function from the audio thread.
- * 
+ *
  * @param inst Pointer to the instrument.
  * @param id The ID of the note to end.
  */
-BPBXSYN_API void bpbxsyn_synth_end_note(bpbxsyn_synth_s *inst,
-                                        bpbxsyn_voice_id id);
+BBXS_API void bbxs_synth_end_note(bbxs_synth_s *inst, bbxs_voice_id id);
 
 /**
  * @brief Turn off all active notes of an instrument.
@@ -844,7 +838,7 @@ BPBXSYN_API void bpbxsyn_synth_end_note(bpbxsyn_synth_s *inst,
  *
  * @param inst Pointer to the instrument.
  */
-BPBXSYN_API void bpbxsyn_synth_end_all_notes(bpbxsyn_synth_s *inst);
+BBXS_API void bbxs_synth_end_all_notes(bbxs_synth_s *inst);
 
 /**
  * @brief Choke all active notes.
@@ -853,7 +847,7 @@ BPBXSYN_API void bpbxsyn_synth_end_all_notes(bpbxsyn_synth_s *inst);
  *
  * @param inst Pointer to the instrument.
  */
-BPBXSYN_API void bpbxsyn_synth_stop(bpbxsyn_synth_s *inst);
+BBXS_API void bbxs_synth_stop(bbxs_synth_s *inst);
 
 /**
  * @brief Tick an instrument.
@@ -863,15 +857,15 @@ BPBXSYN_API void bpbxsyn_synth_stop(bpbxsyn_synth_s *inst);
  * envelope/automation values will be calculated, and interpolated across the
  * frames of an audio render.
  *
- * To get the tick rate, use the @ref bpbxsyn_calc_samples_per_tick function.
+ * To get the tick rate, use the @ref bbxs_calc_samples_per_tick function.
  *
  * @note It is only safe to call this function from the audio thread.
  *
  * @param inst Pointer to the instrument.
  * @param sample_rate The sample rate in Hz.
  */
-BPBXSYN_API void bpbxsyn_synth_tick(bpbxsyn_synth_s *inst,
-                                    const bpbxsyn_tick_ctx_s *tick_ctx);
+BBXS_API void bbxs_synth_tick(bbxs_synth_s *inst,
+                              const bbxs_tick_ctx_s *tick_ctx);
 
 /**
  * @brief Render the audio of an instrument.
@@ -885,16 +879,16 @@ BPBXSYN_API void bpbxsyn_synth_tick(bpbxsyn_synth_s *inst,
  * @param output      The mono audio output buffer.
  * @param frame_count The number of frames to render to the output buffer.
  */
-BPBXSYN_API void bpbxsyn_synth_run(bpbxsyn_synth_s *inst, float *output,
-                                   size_t frame_count);
+BBXS_API void bbxs_synth_run(bbxs_synth_s *inst, float *output,
+                             size_t frame_count);
 
 /**
  * @brief Obtain the number of parameters for a given effect type.
  *
- * @param type The BPBXSYN_EFFECT_* enum that identifies the effect type.
+ * @param type The BBXS_EFFECT_* enum that identifies the effect type.
  * @return The number of parameters the effect type has.
  */
-BPBXSYN_API unsigned int bpbxsyn_effect_param_count(bpbxsyn_effect_type_e type);
+BBXS_API unsigned int bbxs_effect_param_count(bbxs_effect_type_e type);
 
 /**
  * @brief Get channel count info for a given effect type.
@@ -902,23 +896,23 @@ BPBXSYN_API unsigned int bpbxsyn_effect_param_count(bpbxsyn_effect_type_e type);
  * Obtains the number channels that an effect type receives and outputs,
  * respectively. 1 is mono, and 2 is stereo.
  *
- * @param      type The BPBXSYN_EFFECT_* enum that identifies the effect type.
+ * @param      type The BBXS_EFFECT_* enum that identifies the effect type.
  * @param[out] inputs The number of input channels for the given type.
  * @param[out] outputs The number of output channels for the given type.
  */
-BPBXSYN_API void bpbxsyn_effect_channel_info(bpbxsyn_effect_type_e type,
-                                             int *inputs, int *outputs);
+BBXS_API void bbxs_effect_channel_info(bbxs_effect_type_e type, int *inputs,
+                                       int *outputs);
 
 /**
  * @brief Obtain information for a specific parameter of an effect type.
  *
- * @param type  The BPBXSYN_EFFECT_* enum that identifies the instrument type.
- * @param index The BPBXSYN_{effect}_PARAM_* enum that identifies the parameter.
- * @return The bpbxsyn_param_info_s struct containing information about the
+ * @param type  The BBXS_EFFECT_* enum that identifies the instrument type.
+ * @param index The BBXS_{effect}_PARAM_* enum that identifies the parameter.
+ * @return The bbxs_param_info_s struct containing information about the
  * parameter.
  */
-BPBXSYN_API const bpbxsyn_param_info_s *
-bpbxsyn_effect_param_info(bpbxsyn_effect_type_e type, unsigned int index);
+BBXS_API const bbxs_param_info_s *
+bbxs_effect_param_info(bbxs_effect_type_e type, unsigned int index);
 
 /**
  * @brief Allocate a new effect instance of a given type.
@@ -927,11 +921,11 @@ bpbxsyn_effect_param_info(bpbxsyn_effect_type_e type, unsigned int index);
  * allocation functions, this function may return a failure notice.
  *
  * @param ctx The context to create the effect instance with.
- * @param effect_type The BPBXSYN_EFFECT_* enum that identifies the effect type.
+ * @param effect_type The BBXS_EFFECT_* enum that identifies the effect type.
  * @return Pointer to the newly allocated effect instance. NULL on error.
  */
-BPBXSYN_API bpbxsyn_effect_s *
-bpbxsyn_effect_new(bpbxsyn_context_s *ctx, bpbxsyn_effect_type_e effect_type);
+BBXS_API bbxs_effect_s *bbxs_effect_new(bbxs_context_s *ctx,
+                                        bbxs_effect_type_e effect_type);
 
 /**
  * @brief Free a previously allocated effect instance.
@@ -939,16 +933,15 @@ bpbxsyn_effect_new(bpbxsyn_context_s *ctx, bpbxsyn_effect_type_e effect_type);
  * @param effect Pointer to the effect instance struct to free. Does nothing if
  *               NULL is passed.
  */
-BPBXSYN_API void bpbxsyn_effect_destroy(bpbxsyn_effect_s *effect);
+BBXS_API void bbxs_effect_destroy(bbxs_effect_s *effect);
 
 /**
  * @brief Obtains the type of an effect instance.
  *
  * @param effect Pointer to the effect instance.
- * @return The BPBXSYN_EFFECT_* enum that identifies the instrument type.
+ * @return The BBXS_EFFECT_* enum that identifies the instrument type.
  */
-BPBXSYN_API bpbxsyn_effect_type_e
-bpbxsyn_effect_type(const bpbxsyn_effect_s *effect);
+BBXS_API bbxs_effect_type_e bbxs_effect_type(const bbxs_effect_s *effect);
 
 /**
  * Obtain the user-set opaque pointer associated with an effect instance.
@@ -956,7 +949,7 @@ bpbxsyn_effect_type(const bpbxsyn_effect_s *effect);
  * @param effect Pointer to the effect instance.
  * @return The user-set opaque pointer, or NULL if it was not set.
  */
-BPBXSYN_API void *bpbxsyn_effect_get_userdata(bpbxsyn_effect_s *effect);
+BBXS_API void *bbxs_effect_get_userdata(bbxs_effect_s *effect);
 
 /**
  * Associate an instrument with an opaque pointer.
@@ -964,8 +957,7 @@ BPBXSYN_API void *bpbxsyn_effect_get_userdata(bpbxsyn_effect_s *effect);
  * @param effect   Pointer to the effect instance.
  * @param userdata The pointer to associate with the effect instance.
  */
-BPBXSYN_API void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
-                                             void *userdata);
+BBXS_API void bbxs_effect_set_userdata(bbxs_effect_s *effect, void *userdata);
 
 /**
  * @brief Set or change the sample rate of an effect instance. May cause
@@ -977,20 +969,20 @@ BPBXSYN_API void bpbxsyn_effect_set_userdata(bpbxsyn_effect_s *effect,
  * @param effect      Pointer to the effect instance.
  * @param sample_rate The sample rate in Hz.
  */
-BPBXSYN_API void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
-                                                double sample_rate);
+BBXS_API void bbxs_effect_set_sample_rate(bbxs_effect_s *effect,
+                                          double sample_rate);
 
 // /**
 //  * @brief Signal to an effect instance that transport playback has started.
 //  *
-//  * This function should be called whenever transport begins. Or in other words,
-//  * whenever the song's track has started being played.
+//  * This function should be called whenever transport begins. Or in other
+//  * words, whenever the song's track has started being played.
 //  *
 //  * @param effect Pointer to the effect instance.
 //  * @param beat   The beat that the transport started on.
 //  * @param bpm    The tempo of the transport, in beats per minute.
 //  */
-// BPBXSYN_API void bpbxsyn_effect_begin_transport(bpbxsyn_effect_s *effect,
+// BBXS_API void bbxs_effect_begin_transport(bbxs_effect_s *effect,
 //                                                 double beat, double bpm);
 
 /**
@@ -1002,13 +994,13 @@ BPBXSYN_API void bpbxsyn_effect_set_sample_rate(bpbxsyn_effect_s *effect,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param effect Pointer to the effect instance.
- * @param param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
+ * @param param  The BBXS_{effect}_PARAM_* enum that identifies the
  * parameter.
  * @param value  The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_effect_set_param_int(bpbxsyn_effect_s *effect,
-                                             uint32_t param, int value);
+BBXS_API int bbxs_effect_set_param_int(bbxs_effect_s *effect, uint32_t param,
+                                       int value);
 
 /**
  * @brief Set an effect's parameter to a floating-point value.
@@ -1020,13 +1012,13 @@ BPBXSYN_API int bpbxsyn_effect_set_param_int(bpbxsyn_effect_s *effect,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param effect Pointer to the effect instance.
- * @param param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
+ * @param param  The BBXS_{effect}_PARAM_* enum that identifies the
  * parameter.
  * @param value  The value to set the parameter to.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_effect_set_param_double(bpbxsyn_effect_s *inst,
-                                                uint32_t param, double value);
+BBXS_API int bbxs_effect_set_param_double(bbxs_effect_s *inst, uint32_t param,
+                                          double value);
 
 /**
  * @brief Get the value of an effect instance's parameter as an integer value.
@@ -1038,13 +1030,13 @@ BPBXSYN_API int bpbxsyn_effect_set_param_double(bpbxsyn_effect_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param      effect Pointer to the effect instance.
- * @param      param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
+ * @param      param  The BBXS_{effect}_PARAM_* enum that identifies the
  *                    parameter.
  * @param[out] value  The output value.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_effect_get_param_int(const bpbxsyn_effect_s *inst,
-                                             uint32_t param, int *value);
+BBXS_API int bbxs_effect_get_param_int(const bbxs_effect_s *inst,
+                                       uint32_t param, int *value);
 
 /**
  * @brief Get the value of an effect instance's parameter as a floating-point
@@ -1056,13 +1048,13 @@ BPBXSYN_API int bpbxsyn_effect_get_param_int(const bpbxsyn_effect_s *inst,
  * @note It is only safe to call this function from the audio thread.
  *
  * @param      effect Pointer to the effect instance.
- * @param      param  The BPBXSYN_{effect}_PARAM_* enum that identifies the
+ * @param      param  The BBXS_{effect}_PARAM_* enum that identifies the
  * parameter.
  * @param[out] value  The output value.
  * @return 0 on success, and 1 on failure.
  */
-BPBXSYN_API int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *effect,
-                                                uint32_t param, double *value);
+BBXS_API int bbxs_effect_get_param_double(const bbxs_effect_s *effect,
+                                          uint32_t param, double *value);
 
 /**
  * @brief Clear any feedback/delay systems.
@@ -1072,10 +1064,10 @@ BPBXSYN_API int bpbxsyn_effect_get_param_double(const bpbxsyn_effect_s *effect,
  * the moment of the call.
  *
  * @note It is only safe to call this function from the audio thread.
- * 
+ *
  * @param inst Pointer to the instrument.
  */
-BPBXSYN_API void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst);
+BBXS_API void bbxs_effect_stop(bbxs_effect_s *inst);
 
 /**
  * @brief Tick an effect instance.
@@ -1084,15 +1076,15 @@ BPBXSYN_API void bpbxsyn_effect_stop(bpbxsyn_effect_s *inst);
  * on the tempo of the song. Values will be calculated on each tick and
  * interpolated along the individual frames of an audio render.
  *
- * To get the tick rate, use the @ref bpbxsyn_calc_samples_per_tick function.
+ * To get the tick rate, use the @ref bbxs_calc_samples_per_tick function.
  *
  * @note It is only safe to call this function from the audio thread.
  *
  * @param inst     Pointer to the instrument.
- * @param tick_ctx Pointer to a bpbxsyn_tick_ctx structure.
+ * @param tick_ctx Pointer to a bbxs_tick_ctx structure.
  */
-BPBXSYN_API void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
-                                     const bpbxsyn_tick_ctx_s *tick_ctx);
+BBXS_API void bbxs_effect_tick(bbxs_effect_s *effect,
+                               const bbxs_tick_ctx_s *tick_ctx);
 // mono output
 
 /**
@@ -1109,8 +1101,8 @@ BPBXSYN_API void bpbxsyn_effect_tick(bpbxsyn_effect_s *effect,
                       channels respectively.
  * @param frame_count The number of frames in both the input and output buffer.
  */
-BPBXSYN_API void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **buffer,
-                                    size_t frame_count);
+BBXS_API void bbxs_effect_run(bbxs_effect_s *effect, float **buffer,
+                              size_t frame_count);
 
 /**
  * @brief Get the name of an envelope.
@@ -1119,11 +1111,11 @@ BPBXSYN_API void bpbxsyn_effect_run(bpbxsyn_effect_s *effect, float **buffer,
  * a pointer to a a null-terminated UTF8-encoded string. The caller must not
  * modify this string.
  *
- * @param inst The BPBXSYN_ENV_INDEX_* enum that identifies the envelope target.
+ * @param inst The BBXS_ENV_INDEX_* enum that identifies the envelope target.
  * @return The C string on success, and NULL on error.
  */
-BPBXSYN_API const char *
-bpbxsyn_envelope_index_name(bpbxsyn_envelope_compute_index_e index);
+BBXS_API const char *
+bbxs_envelope_index_name(bbxs_envelope_compute_index_e index);
 
 /**
  * @brief Get the null-terminated list of names for each curve preset.
@@ -1135,13 +1127,13 @@ bpbxsyn_envelope_index_name(bpbxsyn_envelope_compute_index_e index);
  *
  * @return The null-terminated list of names.
  */
-BPBXSYN_API const char **bpbxsyn_envelope_curve_preset_names(void);
+BBXS_API const char **bbxs_envelope_curve_preset_names(void);
 
 /**
  * @brief Calculates the number of audio frames per tick.
  *
  * This calculates the number of audio frames that need to be computed
- * in-between each call to bpbxsyn_synth_tick, given the tempo of the transport
+ * in-between each call to bbxs_synth_tick, given the tempo of the transport
  * and the audio output's sample rate.
  *
  * If you do not have a transport, or do not know its tempo, it is fine to use a
@@ -1152,8 +1144,7 @@ BPBXSYN_API const char **bpbxsyn_envelope_curve_preset_names(void);
  * @param sample_rate The sample rate of the audio output.
  * @return The samples per tick, as a double.
  */
-BPBXSYN_API double bpbxsyn_calc_samples_per_tick(double bpm,
-                                                 double sample_rate);
+BBXS_API double bbxs_calc_samples_per_tick(double bpm, double sample_rate);
 
 /**
  * @brief Get the number of ticks it takes for an instrument to fade out.
@@ -1162,7 +1153,7 @@ BPBXSYN_API double bpbxsyn_calc_samples_per_tick(double bpm,
  * given the value of the fade out parameter of an instrument.
  *
  * If you know the length of each note, and the result of this is a negative
- * value, call bpbxsyn_synth_end_note that positive number of ticks before the
+ * value, call bbxs_synth_end_note that positive number of ticks before the
  * note actually ends.
  *
  * @param inst    Pointer to the instrument.
@@ -1170,19 +1161,18 @@ BPBXSYN_API double bpbxsyn_calc_samples_per_tick(double bpm,
  * instrument.
  * @return The signed fade-out length in ticks, as a double.
  */
-BPBXSYN_API double bpbxsyn_ticks_fade_out(double setting);
+BBXS_API double bbxs_ticks_fade_out(double setting);
 
 /**
  * @brief Get the vibrato parameters of a vibrato preset.
  *
- * @param      preset The BPBXSYN_VIBRATO_PRESET_* enum that identifies the
+ * @param      preset The BBXS_VIBRATO_PRESET_* enum that identifies the
  * vibrato preset.
  * @param[out] params Pointer to an output structure where the vibrato
  * parameters will be written.
  */
-BPBXSYN_API void
-bpbxsyn_vibrato_preset_params(bpbxsyn_vibrato_preset_e preset,
-                              bpbxsyn_vibrato_params_s *params);
+BBXS_API void bbxs_vibrato_preset_params(bbxs_vibrato_preset_e preset,
+                                         bbxs_vibrato_params_s *params);
 
 /**
  * @brief Convert the frequency setting of a hypothetical filter to Hz.
@@ -1192,7 +1182,7 @@ bpbxsyn_vibrato_preset_params(bpbxsyn_vibrato_preset_e preset,
  * @param freq_setting The frequency setting of a hypothetical BeepBox filter.
  * @return The frequency in Hz.
  */
-BPBXSYN_API double bpbxsyn_freq_setting_to_hz(double freq_setting);
+BBXS_API double bbxs_freq_setting_to_hz(double freq_setting);
 
 /**
  * @brief Convert a linear gain value to the units for the gain/volume setting
@@ -1204,7 +1194,7 @@ BPBXSYN_API double bpbxsyn_freq_setting_to_hz(double freq_setting);
  * @param gain Linear gain.
  * @return The same gain represented in the unit of the gain/volume of a filter.
  */
-BPBXSYN_API double bpbxsyn_linear_gain_to_setting(double gain);
+BBXS_API double bbxs_linear_gain_to_setting(double gain);
 
 /**
  * @brief Analyze the frequency response of a filter.
@@ -1213,7 +1203,7 @@ BPBXSYN_API double bpbxsyn_linear_gain_to_setting(double gain);
  * filter effect at the given frequency, as a complex number. The linear gain at
  * that frequency is then represented by the magnitude of that complex number.
  *
- * @param      filter_type  The BPBXSYN_FILTER_TYPE_* enum identifying the type
+ * @param      filter_type  The BBXS_FILTER_TYPE_* enum identifying the type
  *                          of the filter control point.
  * @param      freq_setting The frequency of the control point in the BeepBox
  *                          setting unit.
@@ -1223,9 +1213,11 @@ BPBXSYN_API double bpbxsyn_linear_gain_to_setting(double gain);
  * @param      sample_rate  The sample rate to reference with.
  * @param[out] out          The output complex number
  */
-BPBXSYN_API void bpbxsyn_analyze_freq_response(
-    bpbxsyn_filter_type_e filter_type, double freq_setting, double gain_setting,
-    double hz, double sample_rate, bpbxsyn_complex_s *out);
+BBXS_API void bbxs_analyze_freq_response(bbxs_filter_type_e filter_type,
+                                         double freq_setting,
+                                         double gain_setting, double hz,
+                                         double sample_rate,
+                                         bbxs_complex_s *out);
 
 /**
  * @brief Obtain a null-terminated array of chip waveform names.
@@ -1233,7 +1225,7 @@ BPBXSYN_API void bpbxsyn_analyze_freq_response(
  * @return The array of chip waveform names. The last element will always be
  *         NULL.
  */
-BPBXSYN_API const char *const *bpbxsyn_get_chip_waveform_names(void);
+BBXS_API const char *const *bbxs_get_chip_waveform_names(void);
 
 /**
  * @brief Obtain a null-terminated array of noise waveform names.
@@ -1241,7 +1233,7 @@ BPBXSYN_API const char *const *bpbxsyn_get_chip_waveform_names(void);
  * @return The array of noise waveform names. The last element will always be
  *         NULL.
  */
-BPBXSYN_API const char *const *bpbxsyn_get_noise_waveform_names(void);
+BBXS_API const char *const *bbxs_get_noise_waveform_names(void);
 
 /**
  * @brief Obtain the data for a chip waveform.
@@ -1255,9 +1247,9 @@ BPBXSYN_API const char *const *bpbxsyn_get_noise_waveform_names(void);
  * @param [out] data       Pointer to waveform data structure which will be
  *                         filled.
  */
-BPBXSYN_API void bpbxsyn_get_chip_waveform(bpbxsyn_context_s *ctx, int index,
-                                           int integrated,
-                                           bpbxsyn_waveform_data_s *data);
+BBXS_API void bbxs_get_chip_waveform(bbxs_context_s *ctx, int index,
+                                     int integrated,
+                                     bbxs_waveform_data_s *data);
 
 /**
  * @brief Obtain the data for a noise waveform.
@@ -1269,8 +1261,8 @@ BPBXSYN_API void bpbxsyn_get_chip_waveform(bpbxsyn_context_s *ctx, int index,
  * @param [out] data       Pointer to waveform data structure which will be
  *                         filled.
  */
-BPBXSYN_API void bpbxsyn_get_noise_waveform(bpbxsyn_context_s* ctx, int index,
-                                            bpbxsyn_waveform_data_s *data);
+BBXS_API void bbxs_get_noise_waveform(bbxs_context_s *ctx, int index,
+                                      bbxs_waveform_data_s *data);
 
 #ifdef __cplusplus
 }

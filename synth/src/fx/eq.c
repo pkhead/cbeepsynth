@@ -1,14 +1,14 @@
-#include <stdbool.h>
 #include <math.h>
+#include <stdbool.h>
 
-#include "effect.h"
 #include "../audio.h"
 #include "../filtering.h"
 #include "../param_util.h"
+#include "effect.h"
 
 typedef struct {
-    bpbxsyn_effect_s base;
-    
+    bbxs_effect_s base;
+
     // current state of the note filter
     filter_group_s params;
 
@@ -20,26 +20,21 @@ typedef struct {
     double filter_input[2];
 } eq_effect_s;
 
-static void eq_init(bpbxsyn_context_s *ctx, bpbxsyn_effect_s *p_inst) {
-    eq_effect_s *inst = (eq_effect_s*)p_inst;
-    *inst = (eq_effect_s) {
-        .base.type = BPBXSYN_EFFECT_EQ,
-        .base.ctx = ctx
-    };
+static void eq_init(bbxs_context_s *ctx, bbxs_effect_s *p_inst) {
+    eq_effect_s *inst = (eq_effect_s *)p_inst;
+    *inst = (eq_effect_s){.base.type = BBXS_EFFECT_EQ, .base.ctx = ctx};
 }
 
-static void eq_destroy(bpbxsyn_effect_s *inst) {
-    (void)inst;
-}
+static void eq_destroy(bbxs_effect_s *inst) { (void)inst; }
 
-static void eq_stop(bpbxsyn_effect_s *p_inst) {
-    eq_effect_s *const inst = (eq_effect_s*)p_inst;
+static void eq_stop(bbxs_effect_s *p_inst) {
+    eq_effect_s *const inst = (eq_effect_s *)p_inst;
     inst->filter_input[0] = 0.0;
     inst->filter_input[1] = 0.0;
 }
 
-static void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
-    eq_effect_s *const inst = (eq_effect_s*)p_inst;
+static void eq_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
+    eq_effect_s *const inst = (eq_effect_s *)p_inst;
 
     const double sample_rate = inst->base.sample_rate;
     const double rounded_samples_per_tick =
@@ -50,47 +45,42 @@ static void eq_tick(bpbxsyn_effect_s *p_inst, const bpbxsyn_tick_ctx_s *ctx) {
         const filter_group_s *filter_group_start = &inst->old_params;
         const filter_group_s *filter_group_end = &inst->params;
 
-        // If switching dot type, do it all at once and do not try to interpolate since no valid interpolation exists.
+        // If switching dot type, do it all at once and do not try to
+        // interpolate since no valid interpolation exists.
         if (filter_group_start->type[i] != filter_group_end->type[i]) {
             filter_group_start = filter_group_end;
         }
 
-        if (filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_OFF) {
+        if (filter_group_start->type[i] == BBXS_FILTER_TYPE_OFF) {
             inst->filters[i].enabled = false;
         } else {
             inst->filters[i].enabled = true;
 
             filter_coefs_s start_coefs = bbsyn_filter_to_coefficients(
-                filter_group_start, i,
-                sample_rate,
-                1.0,
-                1.0);
+                filter_group_start, i, sample_rate, 1.0, 1.0);
 
             filter_coefs_s end_coefs = bbsyn_filter_to_coefficients(
-                filter_group_end, i,
-                sample_rate,
-                1.0,
-                1.0);
-            
-            bbsyn_dyn_biquad_load(&inst->filters[i],
-                start_coefs, end_coefs, 1.0 / rounded_samples_per_tick,
-                filter_group_start->type[i] == BPBXSYN_FILTER_TYPE_LP);
+                filter_group_end, i, sample_rate, 1.0, 1.0);
 
-            eq_filter_volume *= bbsyn_filter_get_volume_compensation_mult(filter_group_start, i);
+            bbsyn_dyn_biquad_load(&inst->filters[i], start_coefs, end_coefs,
+                                  1.0 / rounded_samples_per_tick,
+                                  filter_group_start->type[i] ==
+                                      BBXS_FILTER_TYPE_LP);
+
+            eq_filter_volume *= bbsyn_filter_get_volume_compensation_mult(
+                filter_group_start, i);
         }
     }
 
-    if (eq_filter_volume > 3.0)
-        eq_filter_volume = 3.0;
+    if (eq_filter_volume > 3.0) eq_filter_volume = 3.0;
 
     // in synth.ts, volume appears to follow the interpolation "formula", but
     // the start and end values are always the same..? what's the point?
     inst->filter_volume = eq_filter_volume;
 }
 
-static void eq_run(bpbxsyn_effect_s *p_inst, float **buffer,
-                   size_t frame_count) {
-    eq_effect_s *const inst = (eq_effect_s*)p_inst;
+static void eq_run(bbxs_effect_s *p_inst, float **buffer, size_t frame_count) {
+    eq_effect_s *const inst = (eq_effect_s *)p_inst;
 
     float *const audio = buffer[0];
 
@@ -116,17 +106,15 @@ static void eq_run(bpbxsyn_effect_s *p_inst, float **buffer,
     bbsyn_sanitize_filters(inst->filters, FILTER_GROUP_COUNT);
 }
 
-
-
-
+// clang-format off
 /*
 local template = [[{
     .id = "inEqTp@",
     .name = "EQ # Type",
     .group = "Effects/EQ",
-    .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-    
-    .type = BPBXSYN_PARAM_UINT8,
+    .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+    .type = BBXS_PARAM_UINT8,
     .min_value = 0,
     .max_value = 3,
     .enum_values = filt_type_enum,
@@ -135,19 +123,19 @@ local template = [[{
     .id = "inEqHz@",
     .name = "EQ # Freq.",
     .group = "Effects/EQ",
-    
-    .type = BPBXSYN_PARAM_DOUBLE,
+
+    .type = BBXS_PARAM_DOUBLE,
     .min_value = 0,
-    .max_value = BPBXSYN_FILTER_FREQ_MAX,
+    .max_value = BBXS_FILTER_FREQ_MAX,
 },
 {
     .id = "inEqDb@",
     .name = "EQ # Gain",
     .group = "Effects/EQ",
-    
-    .type = BPBXSYN_PARAM_DOUBLE,
+
+    .type = BBXS_PARAM_DOUBLE,
     .min_value = 0,
-    .max_value = BPBXSYN_FILTER_GAIN_MAX,
+    .max_value = BBXS_FILTER_GAIN_MAX,
 },
 ]]
 
@@ -163,14 +151,15 @@ local p = assert(io.popen("clip.exe", "w"))
 p:write(str)
 p:close()
 */
-static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
+// clang-format on
+static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
     {
         .id = "inEqTp01",
         .name = "EQ 1 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -179,27 +168,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz01",
         .name = "EQ 1 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb01",
         .name = "EQ 1 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp02",
         .name = "EQ 2 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -208,27 +197,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz02",
         .name = "EQ 2 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb02",
         .name = "EQ 2 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp03",
         .name = "EQ 3 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -237,27 +226,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz03",
         .name = "EQ 3 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb03",
         .name = "EQ 3 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp04",
         .name = "EQ 4 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -266,27 +255,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz04",
         .name = "EQ 4 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb04",
         .name = "EQ 4 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp05",
         .name = "EQ 5 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -295,27 +284,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz05",
         .name = "EQ 5 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb05",
         .name = "EQ 5 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp06",
         .name = "EQ 6 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -324,27 +313,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz06",
         .name = "EQ 6 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb06",
         .name = "EQ 6 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp07",
         .name = "EQ 7 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -353,27 +342,27 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz07",
         .name = "EQ 7 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb07",
         .name = "EQ 7 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
+        .max_value = BBXS_FILTER_GAIN_MAX,
     },
     {
         .id = "inEqTp08",
         .name = "EQ 8 Type",
         .group = "Effects/EQ",
-        .flags = BPBXSYN_PARAM_FLAG_NO_AUTOMATION,
-        
-        .type = BPBXSYN_PARAM_UINT8,
+        .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
+
+        .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
         .enum_values = bbsyn_filter_type_enum_values,
@@ -382,46 +371,45 @@ static const bpbxsyn_param_info_s param_info[BPBXSYN_EQ_PARAM_COUNT] = {
         .id = "inEqHz08",
         .name = "EQ 8 Freq.",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
+
+        .type = BBXS_PARAM_DOUBLE,
         .min_value = 0,
-        .max_value = BPBXSYN_FILTER_FREQ_MAX,
+        .max_value = BBXS_FILTER_FREQ_MAX,
     },
     {
         .id = "inEqDb08",
         .name = "EQ 8 Gain",
         .group = "Effects/EQ",
-        
-        .type = BPBXSYN_PARAM_DOUBLE,
-        .min_value = 0,
-        .max_value = BPBXSYN_FILTER_GAIN_MAX,
-    },
 
+        .type = BBXS_PARAM_DOUBLE,
+        .min_value = 0,
+        .max_value = BBXS_FILTER_GAIN_MAX,
+    },
 };
 
-static const size_t param_addresses[BPBXSYN_EQ_PARAM_COUNT] = {
-    offsetof(eq_effect_s, params.type    [0]),
+static const size_t param_addresses[BBXS_EQ_PARAM_COUNT] = {
+    offsetof(eq_effect_s, params.type[0]),
     offsetof(eq_effect_s, params.freq_idx[0]),
     offsetof(eq_effect_s, params.gain_idx[0]),
-    offsetof(eq_effect_s, params.type    [1]),
+    offsetof(eq_effect_s, params.type[1]),
     offsetof(eq_effect_s, params.freq_idx[1]),
     offsetof(eq_effect_s, params.gain_idx[1]),
-    offsetof(eq_effect_s, params.type    [2]),
+    offsetof(eq_effect_s, params.type[2]),
     offsetof(eq_effect_s, params.freq_idx[2]),
     offsetof(eq_effect_s, params.gain_idx[2]),
-    offsetof(eq_effect_s, params.type    [3]),
+    offsetof(eq_effect_s, params.type[3]),
     offsetof(eq_effect_s, params.freq_idx[3]),
     offsetof(eq_effect_s, params.gain_idx[3]),
-    offsetof(eq_effect_s, params.type    [4]),
+    offsetof(eq_effect_s, params.type[4]),
     offsetof(eq_effect_s, params.freq_idx[4]),
     offsetof(eq_effect_s, params.gain_idx[4]),
-    offsetof(eq_effect_s, params.type    [5]),
+    offsetof(eq_effect_s, params.type[5]),
     offsetof(eq_effect_s, params.freq_idx[5]),
     offsetof(eq_effect_s, params.gain_idx[5]),
-    offsetof(eq_effect_s, params.type    [6]),
+    offsetof(eq_effect_s, params.type[6]),
     offsetof(eq_effect_s, params.freq_idx[6]),
     offsetof(eq_effect_s, params.gain_idx[6]),
-    offsetof(eq_effect_s, params.type    [7]),
+    offsetof(eq_effect_s, params.type[7]),
     offsetof(eq_effect_s, params.freq_idx[7]),
     offsetof(eq_effect_s, params.gain_idx[7]),
 };
@@ -434,11 +422,11 @@ const effect_vtable_s bbsyn_effect_eq_vtable = {
     .input_channel_count = 1,
     .output_channel_count = 1,
 
-    .param_count = BPBXSYN_EQ_PARAM_COUNT,
+    .param_count = BBXS_EQ_PARAM_COUNT,
     .param_info = param_info,
     .param_addresses = param_addresses,
 
     .effect_stop = eq_stop,
     .effect_tick = eq_tick,
-    .effect_run = eq_run
+    .effect_run = eq_run,
 };

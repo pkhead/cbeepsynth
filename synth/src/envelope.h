@@ -1,8 +1,9 @@
 #ifndef _envelope_h_
 #define _envelope_h_
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+
 #include "../include/beepbox_synth.h"
 
 #define FADE_OUT_RANGE 11
@@ -11,15 +12,15 @@
 #define NOTE_SLIDE_TICKS 6
 
 enum {
-    ENV_COMPUTER_FLAG_DO_RESET      = (1 << 0),
-    ENV_COMPUTER_FLAG_IS_SLIDING    = (1 << 1),
+    ENV_COMPUTER_FLAG_DO_RESET   = (1 << 0),
+    ENV_COMPUTER_FLAG_IS_SLIDING = (1 << 1),
 };
 
 typedef struct {
     uint8_t flags;
 
-    double envelope_starts[BPBXSYN_ENV_INDEX_COUNT];
-    double envelope_ends[BPBXSYN_ENV_INDEX_COUNT];
+    double envelope_starts[BBXS_ENV_INDEX_COUNT];
+    double envelope_ends[BBXS_ENV_INDEX_COUNT];
     double tick;
     double note_secs_start;
     double note_secs_end;
@@ -72,12 +73,14 @@ void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
                                       double note_size, double mod_x,
                                       double mod_y, double mod_w);
 
-void bbsyn_compute_envelopes(const bpbxsyn_synth_s *instrument,
+void bbsyn_compute_envelopes(const bbxs_synth_s *instrument,
                              envelope_computer_s *env_computer,
                              double beat_start, double tick_time_start,
                              double secs_per_tick);
 
-extern const envelope_curve_preset_s bbsyn_envelope_curve_presets[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT];
-extern const char *bbsyn_envelope_curve_preset_names[BPBXSYN_ENVELOPE_CURVE_PRESET_COUNT+1];
+extern const envelope_curve_preset_s
+    bbsyn_envelope_curve_presets[BBXS_ENVELOPE_CURVE_PRESET_COUNT];
+extern const char
+    *bbsyn_envelope_curve_preset_names[BBXS_ENVELOPE_CURVE_PRESET_COUNT + 1];
 
 #endif

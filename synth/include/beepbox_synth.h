@@ -246,6 +246,13 @@ typedef enum {
     BPBXSYN_ENV_INDEX_COUNT
 } bpbxsyn_envelope_compute_index_e;
 
+typedef enum {
+    BPBXSYN_SERIALIZE_STATUS_OK,
+    BPBXSYN_SERIALIZE_STATUS_NO_DATA,
+    BPBXSYN_SERIALIZE_STATUS_INVALID,
+    BPBXSYN_SERIALIZE_STATUS_IO_ERROR,
+} bpbxsyn_serialize_status_e;
+
 typedef struct {
     bpbxsyn_envelope_compute_index_e index;
     uint8_t curve_preset;
@@ -357,6 +364,27 @@ typedef enum {
 
 typedef void (*bpbxsyn_log_f)(bpbxsyn_log_severity_e severity, const char *msg,
                               void *userdata);
+
+/**
+ * @brief Callback to write to a stream.
+ *
+ * @param data     Pointer to the data which should be written to the stream.
+ * @param size     The number of bytes to write.
+ * @param userdata An opaque pointer supplied by the user.
+ * @return 0 to indicate success. Non-zero on failure.
+ */
+typedef int (*bpbxsyn_writer_f)(const void *data, size_t size, void *userdata);
+
+/**
+ * @brief Callback to read from a stream.
+ *
+ * @param [in] data Pointer to the buffer which will be written to.
+ * @param size      The number of bytes to read.
+ * @param userdata  An opaque pointer supplied by the user.
+ * @return 0 to indicate that all bytes were successfully read.
+           Non-zero otherwise.
+ */
+typedef int (*bpbxsyn_reader_f)(void *data, size_t size, void *userdata);
 
 typedef struct {
     /**
@@ -726,6 +754,30 @@ BPBXSYN_API size_t bpbxsyn_synth_get_exstate(bpbxsyn_synth_s *inst,
  */
 BPBXSYN_API void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst,
                                            const void *buffer);
+
+/**
+ * @brief Serialize exstate and write it to a stream.
+ *
+ * The written data will be platform-agnostic.
+ *
+ * @param inst     Pointer to the synth instance.
+ * @param writer   Writer callback function.
+ * @param userdata Opaque pointer to pass to the writer function.
+ * @return Non-zero on success, and zero on failure.
+ */
+BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_serialize_exstate(
+    bpbxsyn_synth_s *inst, bpbxsyn_writer_f writer, void *userdata);
+
+/**
+ * @brief Deserialize exstate from a stream.
+ *
+ * @param inst     Pointer to the synth instance.
+ * @param reader   Reader callback function.
+ * @param userdata Opaque pointer to pass to the reader function.
+ * @return Non-zero on success, and zero on failure.
+ */
+BPBXSYN_API bpbxsyn_serialize_status_e bpbxsyn_synth_deserialize_exstate(
+    bpbxsyn_synth_s *inst, bpbxsyn_reader_f reader, void *userdata);
 
 /**
  * @brief Send a note on event to an instrument.

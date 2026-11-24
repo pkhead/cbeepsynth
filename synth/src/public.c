@@ -463,6 +463,28 @@ void bpbxsyn_synth_set_exstate(bpbxsyn_synth_s *inst, const void *buffer) {
         vtable->inst_set_exstate(inst, buffer);
 }
 
+bpbxsyn_serialize_status_e bpbxsyn_synth_serialize_exstate(
+    bpbxsyn_synth_s *inst, bpbxsyn_writer_f writer, void *userdata) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    if (vtable->inst_serialize_exstate)
+        return vtable->inst_serialize_exstate(inst, writer, userdata);
+
+    return BPBXSYN_SERIALIZE_STATUS_NO_DATA;
+}
+
+bpbxsyn_serialize_status_e bpbxsyn_synth_deserialize_exstate(
+    bpbxsyn_synth_s *inst, bpbxsyn_reader_f reader, void *userdata) {
+    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    assert(vtable);
+
+    if (vtable->inst_deserialize_exstate)
+        return vtable->inst_deserialize_exstate(inst, reader, userdata);
+
+    return BPBXSYN_SERIALIZE_STATUS_NO_DATA;
+}
+
 
 bpbxsyn_voice_id bpbxsyn_synth_begin_note(bpbxsyn_synth_s *inst, int key, double velocity, int32_t length) {
     const inst_vtable_s *vtable = inst_vtables[inst->type];

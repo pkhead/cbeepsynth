@@ -104,6 +104,10 @@ typedef struct {
     
     void (*const inst_get_exstate)(bpbxsyn_synth_s *inst, void *out);
     void (*const inst_set_exstate)(bpbxsyn_synth_s *inst, const void *in);
+    int (*const inst_serialize_exstate)(bpbxsyn_synth_s *inst,
+                                        bpbxsyn_writer_f writer, void *ud);
+    int (*const inst_deserialize_exstate)(bpbxsyn_synth_s *inst,
+                                          bpbxsyn_reader_f reader, void *ud);
 } inst_vtable_s;
 // (for c, at least)
 // was using a switch statement cus i was lazy and thought "eh maybe it won't be that bad"

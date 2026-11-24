@@ -31,6 +31,7 @@ set(SOURCES
     src/context.c
     src/util.c
     src/param_util.c
+    src/stream.c
 )
 
 set(TARGET_PROPERTIES

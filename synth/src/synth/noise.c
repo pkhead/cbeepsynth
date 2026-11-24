@@ -47,10 +47,10 @@ typedef struct noise_inst {
 static void noise_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     noise_inst_s *inst = (noise_inst_s *)p_inst;
     *inst = (noise_inst_s){0};
-    bbsyn_inst_init(ctx, p_inst, BBXS_SYNTH_NOISE);
+    bbxs__inst_init(ctx, p_inst, BBXS_SYNTH_NOISE);
 
     inst->noise_type = BBXS_NOISE_RETRO;
-    inst->prng_state = bbsyn_random_seeded_state((uint64_t)clock());
+    inst->prng_state = bbxs__random_seeded_state((uint64_t)clock());
 }
 
 static bbxs_voice_id noise_note_on(bbxs_synth_s *p_inst, int key,
@@ -61,7 +61,7 @@ static bbxs_voice_id noise_note_on(bbxs_synth_s *p_inst, int key,
 
     bool continuation;
     bbxs_voice_id id =
-        bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
+        bbxs__trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
     if (!continuation) {
@@ -77,7 +77,7 @@ static void noise_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst->type == BBXS_SYNTH_NOISE);
     noise_inst_s *inst = (noise_inst_s *)p_inst;
 
-    bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
+    bbxs__release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
 static void noise_note_all_off(bbxs_synth_s *p_inst) {
@@ -85,7 +85,7 @@ static void noise_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst->type == BBXS_SYNTH_NOISE);
     noise_inst_s *inst = (noise_inst_s *)p_inst;
 
-    bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
+    bbxs__release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
 static void compute_voice(const bbxs_synth_s *const base_inst,
@@ -99,7 +99,7 @@ static void compute_voice(const bbxs_synth_s *const base_inst,
         compute_data->varying.rounded_samples_per_tick;
 
     voice_compute_varying_s *const varying = &compute_data->varying;
-    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
+    const unison_desc_s unison = bbxs__unison_info[inst->unison_type];
 
     int base_pitch = inst->wavetable->base_pitch;
     if (!inst->is_noise_channel) base_pitch -= 12;
@@ -182,7 +182,7 @@ static void noise_tick(bbxs_synth_s *p_inst, const bbxs_tick_ctx_s *tick_ctx) {
     inst->wavetable =
         &inst->base.ctx->wavetables.noise_wavetables[inst->noise_type];
 
-    bbsyn_inst_tick(p_inst, tick_ctx,
+    bbxs__inst_tick(p_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = inst->voices,
                                        .sizeof_voice = sizeof(*inst->voices),
                                        .compute_voice = compute_voice,
@@ -199,7 +199,7 @@ void noise_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
 
     const float *wave = inst->wavetable->samples;
     const double pitch_filter_mult = inst->wavetable->pitch_filter_mult;
-    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
+    const unison_desc_s unison = bbxs__unison_info[inst->unison_type];
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
         noise_voice_s *voice = &inst->voices[i];
@@ -229,7 +229,7 @@ void noise_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
                 // Zero phase means the tone was reset, just give noise a random
                 // start phase instead.
                 phase[v] =
-                    bbsyn_frandom(&inst->prng_state) * NOISE_WAVETABLE_LENGTH;
+                    bbxs__frandom(&inst->prng_state) * NOISE_WAVETABLE_LENGTH;
             }
 
             noise_sample[v] = voice->noise_sample[v];
@@ -254,7 +254,7 @@ void noise_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
 
             const double input_sample =
                 noise_sample[0] + noise_sample[1] * unison.sign;
-            const double sample = bbsyn_apply_filters(input_sample, x0, x1,
+            const double sample = bbxs__apply_filters(input_sample, x0, x1,
                                                       voice->base.note_filters);
             x1 = x0;
             x0 = input_sample;
@@ -280,7 +280,7 @@ void noise_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
 
         voice->base.expression_delta = expression_delta;
 
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x0;
         voice->base.note_filter_input[1] = x1;
     }
@@ -299,7 +299,7 @@ static const bbxs_param_info_s noise_param_info[BBXS_NOISE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bbsyn_yes_no_enum_values,
+        .enum_values = bbxs__yes_no_enum_values,
     },
     {
         .type = BBXS_PARAM_UINT8,
@@ -310,7 +310,7 @@ static const bbxs_param_info_s noise_param_info[BBXS_NOISE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = BBXS_NOISE_COUNT - 1,
         .default_value = BBXS_NOISE_RETRO,
-        .enum_values = bbsyn_noise_waveform_names,
+        .enum_values = bbxs__noise_waveform_names,
     },
     {
         .type = BBXS_PARAM_UINT8,
@@ -321,7 +321,7 @@ static const bbxs_param_info_s noise_param_info[BBXS_NOISE_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = BBXS_UNISON_COUNT - 1,
         .default_value = BBXS_UNISON_NONE,
-        .enum_values = bbsyn_unison_enum_values,
+        .enum_values = bbxs__unison_enum_values,
     },
 };
 
@@ -331,7 +331,7 @@ static const size_t noise_param_addresses[BBXS_NOISE_PARAM_COUNT] = {
     offsetof(noise_inst_s, unison_type),
 };
 
-const inst_vtable_s bbsyn_inst_noise_vtable = {
+const inst_vtable_s bbxs__inst_noise_vtable = {
     .struct_size = sizeof(noise_inst_s),
 
     .param_count = BBXS_NOISE_PARAM_COUNT,

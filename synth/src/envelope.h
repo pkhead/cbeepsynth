@@ -56,8 +56,8 @@ typedef enum {
     ENV_CURVE_MOD_WHEEL // MIDI CC 1 (Modulation wheel)
 } envelope_curve_type_e;
 
-double bbsyn_secs_fade_in(double setting);
-double bbsyn_ticks_fade_out(double setting);
+double bbxs__secs_fade_in(double setting);
+double bbxs__ticks_fade_out(double setting);
 
 typedef struct {
     const char *name;
@@ -65,22 +65,22 @@ typedef struct {
     double speed;
 } envelope_curve_preset_s;
 
-void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
+void bbxs__envelope_computer_init(envelope_computer_s *env_computer,
                                   double note_size, double mod_x, double mod_y,
                                   double mod_w);
 
-void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
+void bbxs__update_envelope_modulation(envelope_computer_s *env_computer,
                                       double note_size, double mod_x,
                                       double mod_y, double mod_w);
 
-void bbsyn_compute_envelopes(const bbxs_synth_s *instrument,
+void bbxs__compute_envelopes(const bbxs_synth_s *instrument,
                              envelope_computer_s *env_computer,
                              double beat_start, double tick_time_start,
                              double secs_per_tick);
 
 extern const envelope_curve_preset_s
-    bbsyn_envelope_curve_presets[BBXS_ENVELOPE_CURVE_PRESET_COUNT];
+    bbxs__envelope_curve_presets[BBXS_ENVELOPE_CURVE_PRESET_COUNT];
 extern const char
-    *bbsyn_envelope_curve_preset_names[BBXS_ENVELOPE_CURVE_PRESET_COUNT + 1];
+    *bbxs__envelope_curve_preset_names[BBXS_ENVELOPE_CURVE_PRESET_COUNT + 1];
 
 #endif

@@ -103,7 +103,7 @@ static void setup_algorithm(fm_inst_s *inst) {
 static void fm_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     fm_inst_s *inst = (fm_inst_s *)p_inst;
     *inst = (fm_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_FM);
+    bbxs__inst_init(ctx, &inst->base, BBXS_SYNTH_FM);
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -131,7 +131,7 @@ static bbxs_voice_id fm_note_on(bbxs_synth_s *inst, int key, double velocity,
     fm_inst_s *const fm = (fm_inst_s *)inst;
 
     bool continuation;
-    bbxs_voice_id voice_id = bbsyn_trigger_voice(
+    bbxs_voice_id voice_id = bbxs__trigger_voice(
         inst, GENERIC_LIST(fm->voices), key, velocity, length, &continuation);
 
     if (!continuation) {
@@ -156,7 +156,7 @@ static void fm_note_off(bbxs_synth_s *inst, bbxs_voice_id id) {
     assert(inst->type == BBXS_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s *)inst;
 
-    bbsyn_release_voice(inst, GENERIC_LIST(fm->voices), id);
+    bbxs__release_voice(inst, GENERIC_LIST(fm->voices), id);
 }
 
 static void fm_note_all_off(bbxs_synth_s *inst) {
@@ -164,7 +164,7 @@ static void fm_note_all_off(bbxs_synth_s *inst) {
     assert(inst->type == BBXS_SYNTH_FM);
     fm_inst_s *const fm = (fm_inst_s *)inst;
 
-    bbsyn_release_all_voices(inst, GENERIC_LIST(fm->voices));
+    bbxs__release_all_voices(inst, GENERIC_LIST(fm->voices));
 }
 
 static void compute_fm_voice(const bbxs_synth_s *const base_inst,
@@ -310,7 +310,7 @@ static void fm_tick(bbxs_synth_s *src_inst, const bbxs_tick_ctx_s *tick_ctx) {
         .fm = fm,
     };
 
-    bbsyn_inst_tick(src_inst, tick_ctx,
+    bbxs__inst_tick(src_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = fm->voices,
                                        .sizeof_voice = sizeof(*fm->voices),
 
@@ -328,7 +328,7 @@ static void fm_run(bbxs_synth_s *src_inst, float *samples, size_t frame_count) {
     setup_algorithm(fm);
 
     fm_algo_f algo_func =
-        bbsyn_fm_algorithm_table[fm->algorithm * BBXS_FM_FEEDBACK_TYPE_COUNT +
+        bbxs__fm_algorithm_table[fm->algorithm * BBXS_FM_FEEDBACK_TYPE_COUNT +
                                  fm->feedback_type];
 
     memset(samples, 0, frame_count * sizeof(float));
@@ -362,7 +362,7 @@ static void fm_run(bbxs_synth_s *src_inst, float *samples, size_t frame_count) {
 
             float sample;
             if (voice->base.filters_enabled) {
-                sample = (float)bbsyn_apply_filters(x0, x1, x2,
+                sample = (float)bbxs__apply_filters(x0, x1, x2,
                                                     voice->base.note_filters);
             } else {
                 sample = (float)x0;
@@ -403,7 +403,7 @@ static void fm_run(bbxs_synth_s *src_inst, float *samples, size_t frame_count) {
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
 
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
 
         // convert from operable values
         for (int op = 0; op < FM_OP_COUNT; op++) {
@@ -705,7 +705,7 @@ static const int algo_associated_carriers[BBXS_FM_ALGORITHM_COUNT][4] = {
 
 static const double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
 
-const inst_vtable_s bbsyn_inst_fm_vtable = {
+const inst_vtable_s bbxs__inst_fm_vtable = {
     .struct_size = sizeof(fm_inst_s),
 
     .param_count = BBXS_FM_PARAM_COUNT,

@@ -182,7 +182,7 @@ static const size_t param_addresses[BBXS_LIMITER_PARAM_COUNT] = {
     offsetof(limiter_effect_s, limit_ratio),
 };
 
-const effect_vtable_s bbsyn_effect_limiter_vtable = {
+const effect_vtable_s bbxs__effect_limiter_vtable = {
     .struct_size = sizeof(limiter_effect_s),
     .effect_init = limiter_init,
     .effect_destroy = limiter_destroy,

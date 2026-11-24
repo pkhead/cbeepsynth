@@ -40,7 +40,7 @@ typedef struct pwm_inst {
 static void pwm_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     pwm_inst_s *inst = (pwm_inst_s *)p_inst;
     *inst = (pwm_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_PULSE_WIDTH);
+    bbxs__inst_init(ctx, &inst->base, BBXS_SYNTH_PULSE_WIDTH);
 
     inst->pulse_width_param[0] = BBXS_PULSE_WIDTH_MAX;
     inst->pulse_width_param[1] = inst->pulse_width_param[0];
@@ -54,7 +54,7 @@ static bbxs_voice_id pwm_note_on(bbxs_synth_s *p_inst, int key, double velocity,
 
     bool continuation;
     bbxs_voice_id id =
-        bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
+        bbxs__trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
     if (!continuation) {
@@ -70,7 +70,7 @@ static void pwm_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
-    bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
+    bbxs__release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
 static void pwm_note_all_off(bbxs_synth_s *p_inst) {
@@ -78,7 +78,7 @@ static void pwm_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
-    bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
+    bbxs__release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
 static void compute_voice(const bbxs_synth_s *const base_inst,
@@ -143,7 +143,7 @@ static void pwm_tick(bbxs_synth_s *p_inst, const bbxs_tick_ctx_s *tick_ctx) {
     assert(p_inst->type == BBXS_SYNTH_PULSE_WIDTH);
     pwm_inst_s *inst = (pwm_inst_s *)p_inst;
 
-    bbsyn_inst_tick(p_inst, tick_ctx,
+    bbxs__inst_tick(p_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = inst->voices,
                                        .sizeof_voice = sizeof(*inst->voices),
                                        .compute_voice = compute_voice,
@@ -203,7 +203,7 @@ static void pwm_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
 
             const double x0 = pulse_wave;
             double sample =
-                bbsyn_apply_filters(x0, x1, x2, voice->base.note_filters);
+                bbxs__apply_filters(x0, x1, x2, voice->base.note_filters);
             x2 = x1;
             x1 = x0;
 
@@ -223,7 +223,7 @@ static void pwm_run(bbxs_synth_s *p_inst, float *samples, size_t frame_count) {
         voice->base.expression = expression;
         voice->pulse_width = pulse_width;
 
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
     }
@@ -252,7 +252,7 @@ static const bbxs_param_info_s pwm_param_info[BBXS_PULSE_WIDTH_PARAM_COUNT] = {
         .min_value = 0,
         .max_value = 1,
         .default_value = 0,
-        .enum_values = bbsyn_yes_no_enum_values,
+        .enum_values = bbxs__yes_no_enum_values,
     },
 };
 
@@ -265,7 +265,7 @@ static const bbxs_envelope_compute_index_e pwm_env_targets[PWM_MOD_COUNT] = {
     BBXS_ENV_INDEX_PULSE_WIDTH,
 };
 
-const inst_vtable_s bbsyn_inst_pwm_vtable = {
+const inst_vtable_s bbxs__inst_pwm_vtable = {
     .struct_size = sizeof(pwm_inst_s),
 
     .param_count = BBXS_PULSE_WIDTH_PARAM_COUNT,

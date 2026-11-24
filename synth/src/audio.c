@@ -4,14 +4,14 @@
 #include <math.h>
 #include "util.h"
 
-double bbsyn_calc_samples_per_tick(double bpm, double sample_rate) {
+double bbxs__calc_samples_per_tick(double bpm, double sample_rate) {
     const double beats_per_sec = bpm / 60.0;
     const double parts_per_sec = PARTS_PER_BEAT * beats_per_sec;
     const double ticks_per_sec = TICKS_PER_PART * parts_per_sec;
     return sample_rate / ticks_per_sec;
 }
 
-void bbsyn_sanitize_delay_line(float *buffer, int last_index, int mask) {
+void bbxs__sanitize_delay_line(float *buffer, int last_index, int mask) {
     while (1) {
         int index = (--last_index) & mask;
         float sample = fabsf(buffer[index]);
@@ -22,7 +22,7 @@ void bbsyn_sanitize_delay_line(float *buffer, int last_index, int mask) {
     }
 }
 
-void bbsyn_sanitize_delay_line_mod(float *buffer, int last_index, int wrap) {
+void bbxs__sanitize_delay_line_mod(float *buffer, int last_index, int wrap) {
     while (1) {
         int index = (--last_index) % wrap;
         float sample = fabsf(buffer[index]);
@@ -33,11 +33,11 @@ void bbsyn_sanitize_delay_line_mod(float *buffer, int last_index, int wrap) {
     }
 }
 
-double bbsyn_find_random_zero_crossing(prng_state_s *rng_state, float *wave,
+double bbxs__find_random_zero_crossing(prng_state_s *rng_state, float *wave,
                                        int wave_length) {
     assert(is_power_of_two(wave_length) && "wave length must be a power of 2!");
 
-    double phase = bbsyn_frandom(rng_state) * wave_length;
+    double phase = bbxs__frandom(rng_state) * wave_length;
     const int phaseMask = wave_length - 1;
 
     // Spectrum and drumset waves sounds best when they start at a zero

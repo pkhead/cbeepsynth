@@ -20,7 +20,7 @@ static int count_bits(unsigned int n) {
     return ret;
 }
 
-void bbsyn_fft_scale_array(float *array, size_t length, double factor) {
+void bbxs__fft_scale_array(float *array, size_t length, double factor) {
 	const float factor_f = (float)factor;
 
     // i wonder if the compiler will vectorize this
@@ -52,7 +52,7 @@ static void reverse_index_bits(float *array, unsigned int array_length) {
     }
 }
 
-void bbsyn_fft_inverse_real_fourier_transform(float *array,
+void bbxs__fft_inverse_real_fourier_transform(float *array,
 											  unsigned int array_length) {
     assert(array_length >= 4 && "FFT array length must be at least 4.");
 	const int total_passes = count_bits(array_length);

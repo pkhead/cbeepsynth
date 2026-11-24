@@ -1,6 +1,6 @@
 #include "util.h"
 
-prng_state_s bbsyn_random_seeded_state(uint64_t seed) {
+prng_state_s bbxs__random_seeded_state(uint64_t seed) {
     return (prng_state_s) {
         .s[0] = seed,
         .s[1] = seed
@@ -9,7 +9,7 @@ prng_state_s bbsyn_random_seeded_state(uint64_t seed) {
 
 // implementation taken from the code snippet in this paper
 // https://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf
-uint64_t bbsyn_random(prng_state_s *state) {
+uint64_t bbxs__random(prng_state_s *state) {
     uint64_t s1 = state->s[0];
     const uint64_t s0 = state->s[1];
     const uint64_t result = s0 + s1;
@@ -20,6 +20,6 @@ uint64_t bbsyn_random(prng_state_s *state) {
 }
 
 #define RAND_PRECISION 0xffffffff
-double bbsyn_frandom(prng_state_s *state) {
-    return (double)(bbsyn_random(state) % RAND_PRECISION) / RAND_PRECISION;
+double bbxs__frandom(prng_state_s *state) {
+    return (double)(bbxs__random(state) % RAND_PRECISION) / RAND_PRECISION;
 }

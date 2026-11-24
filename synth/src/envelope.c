@@ -5,7 +5,7 @@
 #include "synth/synth.h"
 #include "util.h"
 
-double bbsyn_secs_fade_in(double setting) {
+double bbxs__secs_fade_in(double setting) {
     return 0.0125 * (0.95 * setting + 0.05 * setting * setting);
 }
 
@@ -13,7 +13,7 @@ double bbsyn_secs_fade_in(double setting) {
 static const double fade_out_ticks[] = {-24.0, -12.0, -6.0, -3.0, -1.0, 6.0,
                                         12.0,  24.0,  48.0, 72.0, 96.0};
 
-double bbsyn_ticks_fade_out(double setting) {
+double bbxs__ticks_fade_out(double setting) {
     setting += 4.0;
 
     // not possible in normal beepbox; extrapolation
@@ -55,7 +55,7 @@ static double compute_envelope(const envelope_curve_preset_s *curve,
 
     switch (curve->curve_type) {
     case ENV_CURVE_NOTE_SIZE:
-        return bbsyn_note_size_to_volume_mult(note_size);
+        return bbxs__note_size_to_volume_mult(note_size);
     case ENV_CURVE_NONE:
         return 1.0;
     case ENV_CURVE_TWANG:
@@ -92,7 +92,7 @@ static double compute_envelope(const envelope_curve_preset_s *curve,
     }
 }
 
-void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
+void bbxs__envelope_computer_init(envelope_computer_s *env_computer,
                                   double note_size, double mod_x, double mod_y,
                                   double mod_w) {
     for (int i = 0; i < BBXS_ENV_INDEX_COUNT; i++) {
@@ -113,7 +113,7 @@ void bbsyn_envelope_computer_init(envelope_computer_s *env_computer,
     env_computer->mod_wheel[1] = mod_w;
 }
 
-void bbsyn_update_envelope_modulation(envelope_computer_s *env_computer,
+void bbxs__update_envelope_modulation(envelope_computer_s *env_computer,
                                       double note_size, double mod_x,
                                       double mod_y, double mod_w) {
     env_computer->note_size[0] = env_computer->note_size[1];
@@ -164,7 +164,7 @@ static int get_filter_target(bbxs_envelope_compute_index_e index) {
     }
 }
 
-void bbsyn_compute_envelopes(const bbxs_synth_s *inst,
+void bbxs__compute_envelopes(const bbxs_synth_s *inst,
                              envelope_computer_s *env_computer,
                              double beat_start, double tick_time_start,
                              double secs_per_tick) {
@@ -231,7 +231,7 @@ void bbsyn_compute_envelopes(const bbxs_synth_s *inst,
         }
 
         const envelope_curve_preset_s curve =
-            bbsyn_envelope_curve_presets[env.curve_preset];
+            bbxs__envelope_curve_presets[env.curve_preset];
 
         if (i != env_count && curve.curve_type == ENV_CURVE_NOTE_SIZE)
             used_note_size = true;
@@ -279,7 +279,7 @@ void bbsyn_compute_envelopes(const bbxs_synth_s *inst,
 ////////////
 
 const envelope_curve_preset_s
-    bbsyn_envelope_curve_presets[BBXS_ENVELOPE_CURVE_PRESET_COUNT] = {
+    bbxs__envelope_curve_presets[BBXS_ENVELOPE_CURVE_PRESET_COUNT] = {
         {
             .name = "none",
             .curve_type = ENV_CURVE_NONE,
@@ -323,7 +323,7 @@ const envelope_curve_preset_s
 };
 
 const char
-    *bbsyn_envelope_curve_preset_names[BBXS_ENVELOPE_CURVE_PRESET_COUNT + 1] = {
+    *bbxs__envelope_curve_preset_names[BBXS_ENVELOPE_CURVE_PRESET_COUNT + 1] = {
         "none",      "note size", "mod x",     "mod y",     "punch",
         "flare 1",   "flare 2",   "flare 3",   "twang 1",   "twang 2",
         "twang 3",   "swell 1",   "swell 2",   "swell 3",   "tremolo 1",

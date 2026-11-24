@@ -32,7 +32,7 @@ static const double arpeggio_speed_scale[ARPEGGIO_SPEED_SETTING_COUNT + 1] = {
     8.0 // dummy value in edge case for interpolation
 };
 
-void bbsyn_inst_init(bbxs_context_s *ctx, bbxs_synth_s *inst,
+void bbxs__inst_init(bbxs_context_s *ctx, bbxs_synth_s *inst,
                      bbxs_synth_type_e type) {
     *inst = (bbxs_synth_s){.type = type,
                            .ctx = ctx,
@@ -55,7 +55,7 @@ void bbsyn_inst_init(bbxs_context_s *ctx, bbxs_synth_s *inst,
 //     return pow(2.0, -(pitch - EXPRESSION_REFERENCE_PITCH) / PITCH_DAMPING);
 // }
 
-double bbsyn_note_size_to_volume_mult(double size) {
+double bbxs__note_size_to_volume_mult(double size) {
     return pow(max(0.0, size) / NOTE_SIZE_MAX, 1.5);
 }
 
@@ -72,7 +72,7 @@ static const vibrato_type_def_s vibrato_types[2] = {
     {.size_periods_secs = 1, .periods_secs = vibrato_normal_periods_secs},
     {.size_periods_secs = 3, .periods_secs = vibrato_shaky_periods_secs}};
 
-double bbsyn_get_lfo_amplitude(bbxs_vibrato_type_e type, double secs_into_bar) {
+double bbxs__get_lfo_amplitude(bbxs_vibrato_type_e type, double secs_into_bar) {
     assert(0 <= type && type <= 1);
 
     double effect = 0.0;
@@ -113,7 +113,7 @@ get_chord_list(inst_base_voice_s voices[BBXS_SYNTH_MAX_VOICES],
     return length;
 }
 
-bbxs_voice_id bbsyn_trigger_voice(bbxs_synth_s *inst, void *voices,
+bbxs_voice_id bbxs__trigger_voice(bbxs_synth_s *inst, void *voices,
                                   size_t sizeof_voice, int key, double velocity,
                                   int32_t length, bool *continuation) {
     if (key < 0) key = 0;
@@ -281,17 +281,17 @@ bbxs_voice_id bbsyn_trigger_voice(bbxs_synth_s *inst, void *voices,
         if (use_note_size) voice->flags |= VOICE_FLAG_USE_NOTE_SIZE;
 
         for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
-            bbsyn_dyn_biquad_reset_output(voice->note_filters + i);
+            bbxs__dyn_biquad_reset_output(voice->note_filters + i);
         }
 
-        bbsyn_envelope_computer_init(&voice->env_computer, velocity,
+        bbxs__envelope_computer_init(&voice->env_computer, velocity,
                                      inst->mod_x, inst->mod_y, inst->mod_wheel);
     }
 
     return (bbxs_voice_id)voice_index;
 }
 
-void bbsyn_release_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
+void bbxs__release_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
                          bbxs_voice_id id) {
     inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, id);
     if (voice_is_triggered(voice) && voice_is_active(voice) &&
@@ -316,13 +316,13 @@ void bbsyn_release_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
     }
 }
 
-void bbsyn_release_all_voices(bbxs_synth_s *inst, void *voices,
+void bbxs__release_all_voices(bbxs_synth_s *inst, void *voices,
                               size_t sizeof_voice) {
     for (bbxs_voice_id i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst_base_voice_s *voice = GET_VOICE(voices, sizeof_voice, i);
         if ((voice_is_triggered(voice) || voice_is_active(voice)) &&
             !voice_is_releasedt(voice)) {
-            bbsyn_release_voice(inst, voices, sizeof_voice, i);
+            bbxs__release_voice(inst, voices, sizeof_voice, i);
         }
     }
 }
@@ -360,10 +360,10 @@ static void compute_voice_pre(inst_base_voice_s *const voice,
             compute_data->note_size;
     }
 
-    bbsyn_update_envelope_modulation(
+    bbxs__update_envelope_modulation(
         &voice->env_computer, compute_data->note_size, compute_data->mod_x,
         compute_data->mod_y, compute_data->mod_w);
-    bbsyn_compute_envelopes(inst, &voice->env_computer, compute_data->cur_beat,
+    bbxs__compute_envelopes(inst, &voice->env_computer, compute_data->cur_beat,
                             voice->time_secs, samples_per_tick * sample_len);
 
     double interval_start = 0.0;
@@ -386,14 +386,14 @@ static void compute_voice_pre(inst_base_voice_s *const voice,
     }
 
     // fade in/out
-    const double fade_in_secs = bbsyn_secs_fade_in(compute_data->fade_in);
+    const double fade_in_secs = bbxs__secs_fade_in(compute_data->fade_in);
     const uint8_t released = compute_struct->_released =
         voice->time_secs >= fade_in_secs && voice_is_releasedt(voice);
     if (released) {
-        const double ticks = fabs(bbsyn_ticks_fade_out(compute_data->fade_out));
-        fade_expr_start = bbsyn_note_size_to_volume_mult(
+        const double ticks = fabs(bbxs__ticks_fade_out(compute_data->fade_out));
+        fade_expr_start = bbxs__note_size_to_volume_mult(
             (1.0 - voice->ticks_since_release / ticks) * NOTE_SIZE_MAX);
-        fade_expr_end = bbsyn_note_size_to_volume_mult(
+        fade_expr_end = bbxs__note_size_to_volume_mult(
             (1.0 - (voice->ticks_since_release + 1.0) / ticks) * NOTE_SIZE_MAX);
 
         // code should be voice->ticks_since_release + 1 >= ticks
@@ -452,7 +452,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice,
         if (voice->flags & VOICE_FLAG_HAS_PREV_VIBRATO) {
             vibrato_start = voice->prev_vibrato;
         } else {
-            double lfo_start = bbsyn_get_lfo_amplitude(vibrato_params.type,
+            double lfo_start = bbxs__get_lfo_amplitude(vibrato_params.type,
                                                        vibrato_time_start);
             const double vibrato_depth_envelope_start =
                 voice->env_computer
@@ -469,7 +469,7 @@ static void compute_voice_pre(inst_base_voice_s *const voice,
         }
 
         double lfo_end =
-            bbsyn_get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
+            bbxs__get_lfo_amplitude(vibrato_params.type, vibrato_time_end);
         const double vibrato_depth_envelope_end =
             voice->env_computer.envelope_ends[BBXS_ENV_INDEX_VIBRATO_DEPTH];
         double vibrato_end =
@@ -532,23 +532,23 @@ static void compute_voice_pre(inst_base_voice_s *const voice,
 
                 voice->note_filters[i].enabled = TRUE;
 
-                filter_coefs_s start_coefs = bbsyn_filter_to_coefficients(
+                filter_coefs_s start_coefs = bbxs__filter_to_coefficients(
                     filter_group_start, i, compute_data->sample_rate,
                     note_all_freqs_envelope_start * note_freq_envelope_start,
                     note_peak_envelope_start);
 
-                filter_coefs_s end_coefs = bbsyn_filter_to_coefficients(
+                filter_coefs_s end_coefs = bbxs__filter_to_coefficients(
                     filter_group_end, i, compute_data->sample_rate,
                     note_all_freqs_envelope_end * note_freq_envelope_end,
                     note_peak_envelope_end);
 
-                bbsyn_dyn_biquad_load(&voice->note_filters[i], start_coefs,
+                bbxs__dyn_biquad_load(&voice->note_filters[i], start_coefs,
                                       end_coefs, 1.0 / rounded_samples_per_tick,
                                       filter_group_start->type[i] ==
                                           BBXS_FILTER_TYPE_LP);
 
                 note_filter_expression *=
-                    bbsyn_filter_get_volume_compensation_mult(
+                    bbxs__filter_get_volume_compensation_mult(
                         filter_group_start, i);
             }
         }
@@ -577,14 +577,14 @@ static void compute_voice_post(inst_base_voice_s *const voice,
     }
 }
 
-void bbsyn_inst_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *run_ctx,
+void bbxs__inst_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *run_ctx,
                      const audio_compute_s *params) {
     const double sample_rate = inst->sample_rate;
     const double sample_len = 1.0 / sample_rate;
     const double beat = run_ctx->beat;
 
     const double samples_per_tick =
-        bbsyn_calc_samples_per_tick(run_ctx->bpm, sample_rate);
+        bbxs__calc_samples_per_tick(run_ctx->bpm, sample_rate);
 
     // if chord type is disabled, set chord type to simultaneous
     if (!inst->active_effects[BBXS_SYNTHFX_CHORD_TYPE]) {
@@ -787,10 +787,10 @@ void bbsyn_inst_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *run_ctx,
     inst->last_active_chord_id = inst->active_chord_id;
 
     // update arpeggio time
-    inst->arp_time += bbsyn_inst_calc_arp_speed(inst->arpeggio_speed);
+    inst->arp_time += bbxs__inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
-double bbsyn_inst_calc_arp_speed(double speed_setting) {
+double bbxs__inst_calc_arp_speed(double speed_setting) {
     // uses linear interpolation between array elements for non-integer values
     speed_setting =
         clampd(speed_setting, 0.0, ARPEGGIO_SPEED_SETTING_COUNT - 1);
@@ -841,7 +841,7 @@ static const char *arpeggio_speed_values[ARPEGGIO_SPEED_SETTING_COUNT] = {
 #define FILTER_MAX_FREQ BBXS_FILTER_FREQ_MAX
 #define FILTER_MAX_GAIN BBXS_FILTER_GAIN_MAX
 
-const unison_desc_s bbsyn_unison_info[BBXS_UNISON_COUNT] = {
+const unison_desc_s bbxs__unison_info[BBXS_UNISON_COUNT] = {
     // none
     {.voices = 1, .spread = 0.0, .offset = 0.0, .expression = 1.4, .sign = 1.0},
     // shimmer
@@ -892,7 +892,7 @@ const unison_desc_s bbsyn_unison_info[BBXS_UNISON_COUNT] = {
      .sign = -0.8},
 };
 
-bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
+bbxs_param_info_s bbxs__base_param_info[BBXS_BASE_PARAM_COUNT] = {
     // general
     {.id = "inFadeIn",
      .name = "Fade In",
@@ -939,7 +939,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 1,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {.id = "inTrnsTy",
      .name = "Transition Type",
      .group = "Effects/Transition Type",
@@ -961,7 +961,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 1,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {.id = "inChdTyp",
      .name = "Chord Type",
      .group = "Effects/Chord Type",
@@ -991,7 +991,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .max_value = 1,
      .default_value = 0,
 
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {.id = "inStrmSp",
      .name = "Strum Speed",
      .group = "Effects/Chord Type",
@@ -1011,7 +1011,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 1,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {
         .id = "inPtSfVl",
         .name = "Pitch Shift (st)",
@@ -1033,7 +1033,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 1,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {
         .id = "inCntsVl",
         .name = "Detune (c)",
@@ -1055,7 +1055,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 1,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {.id = "inVibPrs",
      .name = "Vibrato Preset",
      .group = "Effects/Vibrato",
@@ -1075,7 +1075,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
      .min_value = 0,
      .max_value = 2,
      .default_value = 0,
-     .enum_values = bbsyn_bool_enum_values},
+     .enum_values = bbxs__bool_enum_values},
     {
         .id = "inVibSpd",
         .name = "Vibrato Speed",
@@ -1160,7 +1160,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 1,
-        .enum_values = bbsyn_bool_enum_values,
+        .enum_values = bbxs__bool_enum_values,
     },
     {
         .id = "inFlTp01",
@@ -1171,7 +1171,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz01",
@@ -1200,7 +1200,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz02",
@@ -1229,7 +1229,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz03",
@@ -1258,7 +1258,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz04",
@@ -1287,7 +1287,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz05",
@@ -1316,7 +1316,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz06",
@@ -1345,7 +1345,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz07",
@@ -1374,7 +1374,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inFlHz08",
@@ -1647,7 +1647,7 @@ bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT] = {
     // },
 };
 
-size_t bbsyn_base_param_offsets[BBXS_BASE_PARAM_COUNT] = {
+size_t bbxs__base_param_offsets[BBXS_BASE_PARAM_COUNT] = {
     // general
     offsetof(bbxs_synth_s, fade_in),
     offsetof(bbxs_synth_s, fade_out),

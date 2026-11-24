@@ -19,7 +19,7 @@ void bbxs_free(const bbxs_context_s *ctx, void *ptr) {
     if (ptr) ctx->alloc.free(ptr, ctx->alloc.userdata);
 }
 
-void bbsyn_logmsgf(const bbxs_context_s *ctx, bbxs_log_severity_e severity,
+void bbxs__logmsgf(const bbxs_context_s *ctx, bbxs_log_severity_e severity,
                    const char *msg, ...) {
     if (ctx->log_func == NULL) return;
 

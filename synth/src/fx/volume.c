@@ -30,7 +30,7 @@ static void volume_destroy(bbxs_effect_s *inst) { (void)inst; }
 static void volume_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     volume_effect_s *const inst = (volume_effect_s *)p_inst;
     const double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     const double volume_start = inst_volume_to_mult(inst->param[0]);
     const double volume_end = inst_volume_to_mult(inst->param[1]);
@@ -79,7 +79,7 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(volume_effect_s, param[1]),
 };
 
-const effect_vtable_s bbsyn_effect_volume_vtable = {
+const effect_vtable_s bbxs__effect_volume_vtable = {
     .struct_size = sizeof(volume_effect_s),
     .effect_init = volume_init,
     .effect_destroy = volume_destroy,

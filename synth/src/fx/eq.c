@@ -38,7 +38,7 @@ static void eq_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
 
     const double sample_rate = inst->base.sample_rate;
     const double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, sample_rate));
 
     double eq_filter_volume = 1.0;
     for (int i = 0; i < FILTER_GROUP_COUNT; i++) {
@@ -56,18 +56,18 @@ static void eq_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
         } else {
             inst->filters[i].enabled = true;
 
-            filter_coefs_s start_coefs = bbsyn_filter_to_coefficients(
+            filter_coefs_s start_coefs = bbxs__filter_to_coefficients(
                 filter_group_start, i, sample_rate, 1.0, 1.0);
 
-            filter_coefs_s end_coefs = bbsyn_filter_to_coefficients(
+            filter_coefs_s end_coefs = bbxs__filter_to_coefficients(
                 filter_group_end, i, sample_rate, 1.0, 1.0);
 
-            bbsyn_dyn_biquad_load(&inst->filters[i], start_coefs, end_coefs,
+            bbxs__dyn_biquad_load(&inst->filters[i], start_coefs, end_coefs,
                                   1.0 / rounded_samples_per_tick,
                                   filter_group_start->type[i] ==
                                       BBXS_FILTER_TYPE_LP);
 
-            eq_filter_volume *= bbsyn_filter_get_volume_compensation_mult(
+            eq_filter_volume *= bbxs__filter_get_volume_compensation_mult(
                 filter_group_start, i);
         }
     }
@@ -92,7 +92,7 @@ static void eq_run(bbxs_effect_s *p_inst, float **buffer, size_t frame_count) {
         double sample = (double)audio[frame];
 
         double x0 = sample;
-        sample = bbsyn_apply_filters(sample, x1, x2, inst->filters);
+        sample = bbxs__apply_filters(sample, x1, x2, inst->filters);
         x2 = x1;
         x1 = x0;
 
@@ -103,7 +103,7 @@ static void eq_run(bbxs_effect_s *p_inst, float **buffer, size_t frame_count) {
 
     inst->filter_input[0] = x1;
     inst->filter_input[1] = x2;
-    bbsyn_sanitize_filters(inst->filters, FILTER_GROUP_COUNT);
+    bbxs__sanitize_filters(inst->filters, FILTER_GROUP_COUNT);
 }
 
 // clang-format off
@@ -162,7 +162,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz01",
@@ -191,7 +191,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz02",
@@ -220,7 +220,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz03",
@@ -249,7 +249,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz04",
@@ -278,7 +278,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz05",
@@ -307,7 +307,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz06",
@@ -336,7 +336,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz07",
@@ -365,7 +365,7 @@ static const bbxs_param_info_s param_info[BBXS_EQ_PARAM_COUNT] = {
         .type = BBXS_PARAM_UINT8,
         .min_value = 0,
         .max_value = 3,
-        .enum_values = bbsyn_filter_type_enum_values,
+        .enum_values = bbxs__filter_type_enum_values,
     },
     {
         .id = "inEqHz08",
@@ -414,7 +414,7 @@ static const size_t param_addresses[BBXS_EQ_PARAM_COUNT] = {
     offsetof(eq_effect_s, params.gain_idx[7]),
 };
 
-const effect_vtable_s bbsyn_effect_eq_vtable = {
+const effect_vtable_s bbxs__effect_eq_vtable = {
     .struct_size = sizeof(eq_effect_s),
     .effect_init = eq_init,
     .effect_destroy = eq_destroy,

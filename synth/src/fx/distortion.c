@@ -35,7 +35,7 @@ static void distortion_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     distortion_effect_s *const inst = (distortion_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_distortion_start = inst->param[0];
     double use_distortion_end   = inst->param[1];
@@ -181,7 +181,7 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(distortion_effect_s, param[1]),
 };
 
-const effect_vtable_s bbsyn_effect_distortion_vtable = {
+const effect_vtable_s bbxs__effect_distortion_vtable = {
     .struct_size    = sizeof(distortion_effect_s),
     .effect_init    = distortion_init,
     .effect_destroy = distortion_destroy,

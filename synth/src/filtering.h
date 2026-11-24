@@ -49,56 +49,56 @@ typedef struct {
     uint8_t enabled;
 } dyn_biquad_s;
 
-filter_coefs_s bbsyn_filter_to_coefficients(const filter_group_s *group,
+filter_coefs_s bbxs__filter_to_coefficients(const filter_group_s *group,
                                             int index, double sample_rate,
                                             double freq_mult, double peak_mult);
 
-double bbsyn_filter_get_volume_compensation_mult(const filter_group_s *group,
+double bbxs__filter_get_volume_compensation_mult(const filter_group_s *group,
                                                  int index);
 
 // low-pass 2nd-order butterworth
-void bbsyn_filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
+void bbxs__filter_lp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
                         double peak_linear_gain);
 // high-pass 2nd-order butterworth
-void bbsyn_filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
+void bbxs__filter_hp2bw(filter_coefs_s *coefs, double corner_radians_per_sample,
                         double linear_gain);
 // peak 2nd-order
-void bbsyn_filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample,
+void bbxs__filter_peak2(filter_coefs_s *coefs, double corner_radians_per_sample,
                         double linear_gain, double bw_scale);
 // high-shelf 1st order
-void bbsyn_filter_hshelf1(filter_coefs_s *coefs,
+void bbxs__filter_hshelf1(filter_coefs_s *coefs,
                           double corner_radians_per_sample,
                           double shelf_linear_gain);
 
 // high-shelf 2nd order
-void bbsyn_filter_hshelf2(filter_coefs_s *coefs,
+void bbxs__filter_hshelf2(filter_coefs_s *coefs,
                           double corner_radians_per_sample,
                           double shelf_linear_gain, double slope);
 
 // all-pass 1st order invert phase above
-void bbsyn_filter_ap1ipa(filter_coefs_s *coefs,
+void bbxs__filter_ap1ipa(filter_coefs_s *coefs,
                          double corner_radians_per_sample);
 
-void bbsyn_dyn_biquad_reset_output(dyn_biquad_s *self);
+void bbxs__dyn_biquad_reset_output(dyn_biquad_s *self);
 // loadCoefficientsWithGradient
-void bbsyn_dyn_biquad_load(dyn_biquad_s *self, filter_coefs_s start,
+void bbxs__dyn_biquad_load(dyn_biquad_s *self, filter_coefs_s start,
                            filter_coefs_s end, double delta_rate,
                            uint8_t use_multiplicative_input_coefficients);
 
-double bbsyn_get_hz_from_setting_value(double value);
+double bbxs__get_hz_from_setting_value(double value);
 
 // compute group of 2nd-order filters
 // input0: current sample (x[0])
 // input1: last sample (x[-1])
 // input2: sample before input1 (x[-2])
-double bbsyn_apply_filters(double input0, double input1, double input2,
+double bbxs__apply_filters(double input0, double input1, double input2,
                            dyn_biquad_s filters[FILTER_GROUP_COUNT]);
 
-void bbsyn_sanitize_filters(dyn_biquad_s *filters, int count);
+void bbxs__sanitize_filters(dyn_biquad_s *filters, int count);
 
-bbxs_complex_s bbsyn_filter_analyze_complex(filter_coefs_s coefs, double real,
+bbxs_complex_s bbxs__filter_analyze_complex(filter_coefs_s coefs, double real,
                                             double imag);
-bbxs_complex_s bbsyn_filter_analyze(filter_coefs_s coefs,
+bbxs_complex_s bbxs__filter_analyze(filter_coefs_s coefs,
                                     double radians_per_sample);
 
 // Filters are typically designed as analog filters first, then converted to
@@ -108,11 +108,11 @@ bbxs_complex_s bbsyn_filter_analyze(filter_coefs_s coefs,
 // range such that the nyquist frequency of the digital filter (π) maps to the
 // infinity frequency of the analog filter. You can use the below functions to
 // manually perform this warping in either direction.
-static inline double bbsyn_warp_nyquist_to_inf(double radians) {
+static inline double bbxs__warp_nyquist_to_inf(double radians) {
     return 2.0 * tan(radians * 0.5);
 }
 
-static inline double bbsyn_warp_inf_to_nyquist(double radians) {
+static inline double bbxs__warp_inf_to_nyquist(double radians) {
     return 2.0 * atan(radians * 0.5);
 }
 

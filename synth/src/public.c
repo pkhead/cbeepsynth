@@ -21,44 +21,44 @@
 
 static const inst_vtable_s *inst_vtables[BBXS_SYNTH_COUNT] = {
     // BBXS_SYNTH_CHIP
-    &bbsyn_inst_chip_vtable,
+    &bbxs__inst_chip_vtable,
     // BBXS_SYNTH_FM
-    &bbsyn_inst_fm_vtable,
+    &bbxs__inst_fm_vtable,
     // BBXS_SYNTH_NOISE
-    &bbsyn_inst_noise_vtable,
+    &bbxs__inst_noise_vtable,
     // BBXS_SYNTH_PULSE_WIDTH
-    &bbsyn_inst_pwm_vtable,
+    &bbxs__inst_pwm_vtable,
     // BBXS_SYNTH_HARMONICS
-    &bbsyn_inst_harmonics_vtable,
+    &bbxs__inst_harmonics_vtable,
     // BBXS_SYNTH_SPECTRUM
-    &bbsyn_inst_spectrum_vtable,
+    &bbxs__inst_spectrum_vtable,
     // BBXS_SYNTH_PICKED_STRING
-    &bbsyn_inst_picked_vtable,
+    &bbxs__inst_picked_vtable,
     // BBXS_SYNTH_SUPERSAW
     NULL,
     // BBXS_SYNTH_CUSTOM_CHIP
-    &bbsyn_inst_custom_chip_vtable,
+    &bbxs__inst_custom_chip_vtable,
 };
 
 static const effect_vtable_s *effect_vtables[BBXS_EFFECT_COUNT] = {
     // BBXS_EFFECT_PANNING,
-    &bbsyn_effect_panning_vtable,
+    &bbxs__effect_panning_vtable,
     // BBXS_EFFECT_DISTORTION,
-    &bbsyn_effect_distortion_vtable,
+    &bbxs__effect_distortion_vtable,
     // BBXS_EFFECT_BITCRUSHER,
-    &bbsyn_effect_bitcrusher_vtable,
+    &bbxs__effect_bitcrusher_vtable,
     // BBXS_EFFECT_CHORUS,
-    &bbsyn_effect_chorus_vtable,
+    &bbxs__effect_chorus_vtable,
     // BBXS_EFFECT_ECHO,
-    &bbsyn_effect_echo_vtable,
+    &bbxs__effect_echo_vtable,
     // BBXS_EFFECT_REVERB,
-    &bbsyn_effect_reverb_vtable,
+    &bbxs__effect_reverb_vtable,
     // BBXS_EFFECT_EQ,
-    &bbsyn_effect_eq_vtable,
+    &bbxs__effect_eq_vtable,
     // BBXS_EFFECT_VOLUME,
-    &bbsyn_effect_volume_vtable,
+    &bbxs__effect_volume_vtable,
     // BBXS_EFFECT_LIMITER
-    &bbsyn_effect_limiter_vtable,
+    &bbxs__effect_limiter_vtable,
 };
 
 void bbxs_version(uint32_t *major, uint32_t *minor, uint32_t *revision) {
@@ -106,7 +106,7 @@ bbxs_context_s *bbxs_context_new(const bbxs_allocator_s *p_alloc,
 
     ctx->alloc = alloc;
 
-    if (!bbsyn_init_wavetables_for_context(ctx, wavetable_init_seed)) {
+    if (!bbxs__init_wavetables_for_context(ctx, wavetable_init_seed)) {
         bbxs_context_destroy(ctx);
         return NULL;
     }
@@ -141,7 +141,7 @@ unsigned int bbxs_synth_param_count(bbxs_synth_type_e type) {
 
 const bbxs_param_info_s *bbxs_synth_param_info(bbxs_synth_type_e type,
                                                unsigned int index) {
-    if (index < BBXS_BASE_PARAM_COUNT) return &bbsyn_base_param_info[index];
+    if (index < BBXS_BASE_PARAM_COUNT) return &bbxs__base_param_info[index];
 
     assert(inst_vtables[type]);
     assert(
@@ -250,14 +250,14 @@ void bbxs_synth_begin_transport(bbxs_synth_s *inst, double beat, double bpm) {
     const double time_secs = bpm / 60.0 * beat;
     inst->vibrato_time_start = time_secs * vibrato_params.speed;
     inst->vibrato_time_end = inst->vibrato_time_start + sec_per_tick;
-    inst->arp_time = beat * bbsyn_inst_calc_arp_speed(inst->arpeggio_speed);
+    inst->arp_time = beat * bbxs__inst_calc_arp_speed(inst->arpeggio_speed);
 }
 
 static int synth_param_helper(const bbxs_synth_s *inst, uint32_t index,
                               void **addr, bbxs_param_info_s *info) {
     if (index < BBXS_BASE_PARAM_COUNT) {
-        *info = bbsyn_base_param_info[index];
-        *addr = (void *)(((uint8_t *)inst) + bbsyn_base_param_offsets[index]);
+        *info = bbxs__base_param_info[index];
+        *addr = (void *)(((uint8_t *)inst) + bbxs__base_param_offsets[index]);
         return 0;
     }
 
@@ -505,11 +505,11 @@ void bbxs_synth_run(bbxs_synth_s *inst, float *out_samples,
 }
 
 double bbxs_calc_samples_per_tick(double bpm, double sample_rate) {
-    return bbsyn_calc_samples_per_tick(bpm, sample_rate);
+    return bbxs__calc_samples_per_tick(bpm, sample_rate);
 }
 
 double bbxs_ticks_fade_out(double setting) {
-    return bbsyn_ticks_fade_out(setting);
+    return bbxs__ticks_fade_out(setting);
 }
 
 const char *env_index_names[] = {
@@ -561,7 +561,7 @@ const char *bbxs_envelope_index_name(bbxs_envelope_compute_index_e index) {
 }
 
 const char **bbxs_envelope_curve_preset_names(void) {
-    return bbsyn_envelope_curve_preset_names;
+    return bbxs__envelope_curve_preset_names;
 }
 
 const bbxs_envelope_compute_index_e *
@@ -777,7 +777,7 @@ void bbxs_vibrato_preset_params(bbxs_vibrato_preset_e preset,
 }
 
 double bbxs_freq_setting_to_hz(double freq_setting) {
-    return bbsyn_get_hz_from_setting_value(freq_setting);
+    return bbxs__get_hz_from_setting_value(freq_setting);
 }
 
 double bbxs_linear_gain_to_setting(double gain) {
@@ -794,17 +794,17 @@ void bbxs_analyze_freq_response(bbxs_filter_type_e filter_type,
     temp_group.gain_idx[0] = gain_setting;
 
     filter_coefs_s coefs =
-        bbsyn_filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
+        bbxs__filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
     double corner_rads_per_sample = PI2 * hz / sample_rate;
-    *out = bbsyn_filter_analyze(coefs, corner_rads_per_sample);
+    *out = bbxs__filter_analyze(coefs, corner_rads_per_sample);
 }
 
 const char *const *bbxs_get_chip_waveform_names(void) {
-    return bbsyn_chip_waveform_names;
+    return bbxs__chip_waveform_names;
 }
 
 const char *const *bbxs_get_noise_waveform_names(void) {
-    return bbsyn_noise_waveform_names;
+    return bbxs__noise_waveform_names;
 }
 
 void bbxs_get_chip_waveform(bbxs_context_s *ctx, int index, int integrated,

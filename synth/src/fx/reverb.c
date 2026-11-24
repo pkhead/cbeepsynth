@@ -84,7 +84,7 @@ static void reverb_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     memset(inst->delay_line, 0, alloc_size);
 
     if (!inst->delay_line) {
-        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
+        bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
                       "Could not allocate reverb delay line");
     }
 }
@@ -93,7 +93,7 @@ static void reverb_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     reverb_effect_s *const inst = (reverb_effect_s *)p_inst;
 
     const double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_reverb_start = inst->param[0];
     double use_reverb_end = inst->param[1];
@@ -109,7 +109,7 @@ static void reverb_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
 
     double shelf_radians = 2.0 * PI * REVERB_SHELF_HZ / inst->base.sample_rate;
     filter_coefs_s coefs;
-    bbsyn_filter_hshelf1(&coefs, shelf_radians, REVERB_SHELF_GAIN);
+    bbxs__filter_hshelf1(&coefs, shelf_radians, REVERB_SHELF_GAIN);
 
     inst->shelf_a1 = coefs.a[1];
     inst->shelf_b0 = coefs.b[0];
@@ -209,10 +209,10 @@ static void reverb_run(bbxs_effect_s *p_inst, float **buffer,
         right[frame] = (float)sample_r;
     }
 
-    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos, wrap);
-    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[0], wrap);
-    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[1], wrap);
-    bbsyn_sanitize_delay_line_mod(delay_line, delay_pos + offset[2], wrap);
+    bbxs__sanitize_delay_line_mod(delay_line, delay_pos, wrap);
+    bbxs__sanitize_delay_line_mod(delay_line, delay_pos + offset[0], wrap);
+    bbxs__sanitize_delay_line_mod(delay_line, delay_pos + offset[1], wrap);
+    bbxs__sanitize_delay_line_mod(delay_line, delay_pos + offset[2], wrap);
     inst->delay_pos = delay_pos;
     inst->mult = reverb;
 
@@ -268,7 +268,7 @@ static const size_t param_addresses[BBXS_REVERB_PARAM_COUNT] = {
     offsetof(reverb_effect_s, param[1]),
 };
 
-const effect_vtable_s bbsyn_effect_reverb_vtable = {
+const effect_vtable_s bbxs__effect_reverb_vtable = {
     .struct_size = sizeof(reverb_effect_s),
     .effect_init = reverb_init,
     .effect_destroy = reverb_destroy,

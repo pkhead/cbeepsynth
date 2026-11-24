@@ -3509,7 +3509,7 @@ static double fm_algo1217(fm_voice_s *voice, const float sine_wave[SINE_WAVE_LEN
     ));
     return op0_scaled + op1_scaled + op2_scaled + op3_scaled;
 }
-fm_algo_f bbsyn_fm_algorithm_table[234] = {
+fm_algo_f bbxs__fm_algorithm_table[234] = {
     fm_algo0000,
     fm_algo0001,
     fm_algo0002,

@@ -21,7 +21,7 @@ static void harmonics_perform_integral(float *wave, size_t length) {
     }
 }
 
-void bbsyn_generate_harmonics(const wavetables_s *tables,
+void bbxs__generate_harmonics(const wavetables_s *tables,
                               uint8_t controls[BBXS_HARMONICS_CONTROL_COUNT],
                               int harmonics_rendered,
                               float wave[HARMONICS_WAVE_LENGTH + 1]) {
@@ -65,7 +65,7 @@ void bbsyn_generate_harmonics(const wavetables_s *tables,
         wave[HARMONICS_WAVE_LENGTH - harmonic_freq] = (float)(amplitude);
     }
 
-    bbsyn_fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
+    bbxs__fft_inverse_real_fourier_transform(wave, HARMONICS_WAVE_LENGTH);
 
     // Limit the maximum wave amplitude
     const float mult = (float)(1.0 / pow(combined_control_point_amp, 0.7));
@@ -124,7 +124,7 @@ static double control_point_to_octave(int point, const double *pitch_tweak,
                        SPECTRUM_CONTROL_POINTS_PER_OCTAVE];
 }
 
-void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
+void bbxs__generate_spectrum_wave(const wavetables_s *tables,
                                   uint8_t controls[BBXS_SPECTRUM_CONTROL_COUNT],
                                   double lowest_octave,
                                   float wave[SPECTRUM_WAVE_LENGTH + 1]) {
@@ -181,8 +181,8 @@ void bbsyn_generate_spectrum_wave(const wavetables_s *tables,
                                        -0.5);
     }
 
-    bbsyn_fft_inverse_real_fourier_transform(wave, SPECTRUM_WAVE_LENGTH);
-    bbsyn_fft_scale_array(
+    bbxs__fft_inverse_real_fourier_transform(wave, SPECTRUM_WAVE_LENGTH);
+    bbxs__fft_scale_array(
         wave, SPECTRUM_WAVE_LENGTH + 1,
         5.0 / (sqrt(SPECTRUM_WAVE_LENGTH) * pow(combined_amplitude, 0.75)));
 
@@ -265,7 +265,7 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
+bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     wavetables_s *const wavetables = &ctx->wavetables;
 
     // init sine wavetable
@@ -383,8 +383,8 @@ bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     // clang-format on
 
     // generate noise wavetables
-    prng_state_s prng_state = bbsyn_random_seeded_state(seed);
-#define RANDOM() (float)(bbsyn_frandom(&prng_state))
+    prng_state_s prng_state = bbxs__random_seeded_state(seed);
+#define RANDOM() (float)(bbxs__frandom(&prng_state))
 
     // there is an extra 0 at the end of each wavetable.
     // This is just for interpolation purposes.
@@ -488,8 +488,8 @@ bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
                             11.0, 1.0, 1.0, 0.0);
         draw_noise_spectrum(wavetables, wave, NOISE_WAVETABLE_LENGTH, 11.0,
                             14.0, 0.6578, 0.6578, 0.0);
-        bbsyn_fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
-        bbsyn_fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
+        bbxs__fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
+        bbxs__fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
                               1.0 / sqrt(NOISE_WAVETABLE_LENGTH));
     }
 
@@ -530,8 +530,8 @@ bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
                             1.0, 1.0, 0.0);
         draw_noise_spectrum(wavetables, wave, NOISE_WAVETABLE_LENGTH, 20.0,
                             14.0, -2.0, -2.0, 0.0);
-        bbsyn_fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
-        bbsyn_fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
+        bbxs__fft_inverse_real_fourier_transform(wave, NOISE_WAVETABLE_LENGTH);
+        bbxs__fft_scale_array(wave, NOISE_WAVETABLE_LENGTH,
                               1.0 / sqrt(NOISE_WAVETABLE_LENGTH));
     }
 
@@ -582,13 +582,13 @@ bool bbsyn_init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
 #undef RANDOM
 }
 
-const char *bbsyn_chip_waveform_names[BBXS_CHIP_WAVE_COUNT + 1] = {
+const char *bbxs__chip_waveform_names[BBXS_CHIP_WAVE_COUNT + 1] = {
     "rounded",  "triangle",   "square",          "1/4 pulse",     "1/8 pulse",
     "sawtooth", "double saw", "double pulse",    "spiky",         "sine",
     "flute",    "harp",       "sharp clarinet",  "soft clarinet", "alto sax",
     "bassoon",  "trumpet",    "electric guitar", "organ",         "pan flute",
     "glitch",   NULL};
 
-const char *bbsyn_noise_waveform_names[BBXS_NOISE_COUNT + 1] = {
+const char *bbxs__noise_waveform_names[BBXS_NOISE_COUNT + 1] = {
     "retro", "white", "clang",  "buzz",     "hollow",
     "shine", "deep",  "cutter", "metallic", NULL};

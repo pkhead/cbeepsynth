@@ -239,42 +239,42 @@ typedef struct {
     double sign;
 } unison_desc_s;
 
-void bbsyn_inst_init(bbxs_context_s *ctx, bbxs_synth_s *inst,
+void bbxs__inst_init(bbxs_context_s *ctx, bbxs_synth_s *inst,
                      bbxs_synth_type_e type);
 
-bbxs_voice_id bbsyn_trigger_voice(bbxs_synth_s *inst, void *voices,
+bbxs_voice_id bbxs__trigger_voice(bbxs_synth_s *inst, void *voices,
                                   size_t sizeof_voice, int key, double velocity,
                                   int32_t length, bool *continuation);
-void bbsyn_release_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
+void bbxs__release_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
                          bbxs_voice_id id);
 // void choke_voice(bbxs_synth_s *inst, void *voices, size_t sizeof_voice,
 // bbxs_voice_id id);
-void bbsyn_release_all_voices(bbxs_synth_s *inst, void *voices,
+void bbxs__release_all_voices(bbxs_synth_s *inst, void *voices,
                               size_t sizeof_voice);
-void bbsyn_inst_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *run_ctx,
+void bbxs__inst_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *run_ctx,
                      const audio_compute_s *params);
-double bbsyn_inst_calc_arp_speed(double arp_speed_setting);
+double bbxs__inst_calc_arp_speed(double arp_speed_setting);
 
 #define GENERIC_LIST(list) (list), sizeof(*(list))
 
-double bbsyn_note_size_to_volume_mult(double size);
-double bbsyn_get_lfo_amplitude(bbxs_vibrato_type_e type, double secs_into_bar);
+double bbxs__note_size_to_volume_mult(double size);
+double bbxs__get_lfo_amplitude(bbxs_vibrato_type_e type, double secs_into_bar);
 #define calc_pitch_expression_ex(pitch, refpitch, damping)                     \
     (pow(2.0, -((pitch) - (refpitch)) / (damping)))
 #define calc_pitch_expression(pitch)                                           \
     calc_pitch_expression_ex(pitch, EXPRESSION_REFERENCE_PITCH, PITCH_DAMPING)
 
-extern bbxs_param_info_s bbsyn_base_param_info[BBXS_BASE_PARAM_COUNT];
-extern size_t bbsyn_base_param_offsets[BBXS_BASE_PARAM_COUNT];
-extern const unison_desc_s bbsyn_unison_info[BBXS_UNISON_COUNT];
+extern bbxs_param_info_s bbxs__base_param_info[BBXS_BASE_PARAM_COUNT];
+extern size_t bbxs__base_param_offsets[BBXS_BASE_PARAM_COUNT];
+extern const unison_desc_s bbxs__unison_info[BBXS_UNISON_COUNT];
 
-extern const inst_vtable_s bbsyn_inst_fm_vtable;
-extern const inst_vtable_s bbsyn_inst_chip_vtable;
-extern const inst_vtable_s bbsyn_inst_pwm_vtable;
-extern const inst_vtable_s bbsyn_inst_harmonics_vtable;
-extern const inst_vtable_s bbsyn_inst_spectrum_vtable;
-extern const inst_vtable_s bbsyn_inst_noise_vtable;
-extern const inst_vtable_s bbsyn_inst_picked_vtable;
-extern const inst_vtable_s bbsyn_inst_custom_chip_vtable;
+extern const inst_vtable_s bbxs__inst_fm_vtable;
+extern const inst_vtable_s bbxs__inst_chip_vtable;
+extern const inst_vtable_s bbxs__inst_pwm_vtable;
+extern const inst_vtable_s bbxs__inst_harmonics_vtable;
+extern const inst_vtable_s bbxs__inst_spectrum_vtable;
+extern const inst_vtable_s bbxs__inst_noise_vtable;
+extern const inst_vtable_s bbxs__inst_picked_vtable;
+extern const inst_vtable_s bbxs__inst_custom_chip_vtable;
 
 #endif

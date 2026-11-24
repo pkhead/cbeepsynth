@@ -65,12 +65,12 @@ static void panning_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     bbxs_free(ctx, inst->delay_line);
 
     inst->delay_line_size =
-        bbsyn_fitting_power_of_two((int)ceil(new_sr * PAN_DELAY_SECS_MAX));
+        bbxs__fitting_power_of_two((int)ceil(new_sr * PAN_DELAY_SECS_MAX));
     inst->delay_line = bbxs_malloc(ctx, inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
 
     if (!inst->delay_line)
-        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
+        bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
                       "Could not allocate panning delay line");
 }
 
@@ -78,7 +78,7 @@ static void panning_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_pan_start = inst->pan[0];
     double use_pan_end = inst->pan[1];
@@ -179,7 +179,7 @@ static void panning_run(bbxs_effect_s *p_inst, float **buffer,
         right[frame] = (float)sample_r;
     }
 
-    bbsyn_sanitize_delay_line(delay_line, delay_pos, mask);
+    bbxs__sanitize_delay_line(delay_line, delay_pos, mask);
     inst->delay_pos = delay_pos;
     for (int i = 0; i < 2; ++i) {
         inst->volume[i] = volume[i];
@@ -217,7 +217,7 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(panning_effect_s, pan_delay[1]),
 };
 
-const effect_vtable_s bbsyn_effect_panning_vtable = {
+const effect_vtable_s bbxs__effect_panning_vtable = {
     .struct_size = sizeof(panning_effect_s),
     .effect_init = panning_init,
     .effect_destroy = panning_destroy,

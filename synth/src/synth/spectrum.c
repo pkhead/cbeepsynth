@@ -42,7 +42,7 @@ typedef struct spectrum_inst {
 static int
 hash_spectrum_controls(const uint8_t controls[BBXS_SPECTRUM_CONTROL_COUNT]) {
     const int hash_mult =
-        bbsyn_fitting_power_of_two(BBXS_SPECTRUM_CONTROL_MAX + 2) - 1;
+        bbxs__fitting_power_of_two(BBXS_SPECTRUM_CONTROL_MAX + 2) - 1;
 
     int hash = 0;
     for (int i = 0; i < BBXS_SPECTRUM_CONTROL_COUNT; ++i) {
@@ -55,7 +55,7 @@ hash_spectrum_controls(const uint8_t controls[BBXS_SPECTRUM_CONTROL_COUNT]) {
 static void spectrum_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     spectrum_inst_s *inst = (spectrum_inst_s *)p_inst;
     *inst = (spectrum_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_SPECTRUM);
+    bbxs__inst_init(ctx, &inst->base, BBXS_SYNTH_SPECTRUM);
 
     // this is the default spectrum configuration for pitch channels
     for (int i = 0; i < BBXS_SPECTRUM_CONTROL_COUNT; ++i) {
@@ -69,10 +69,10 @@ static void spectrum_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     }
 
     inst->control_hash = hash_spectrum_controls(inst->controls);
-    bbsyn_generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls,
+    bbxs__generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls,
                                  8.0, inst->wave);
 
-    inst->prng_state = bbsyn_random_seeded_state((uint64_t)clock());
+    inst->prng_state = bbxs__random_seeded_state((uint64_t)clock());
 }
 
 static bbxs_voice_id spectrum_note_on(bbxs_synth_s *p_inst, int key,
@@ -83,7 +83,7 @@ static bbxs_voice_id spectrum_note_on(bbxs_synth_s *p_inst, int key,
 
     bool continuation;
     bbxs_voice_id voice_id =
-        bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
+        bbxs__trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
     if (!continuation) {
@@ -99,7 +99,7 @@ static void spectrum_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst->type == BBXS_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s *)p_inst;
 
-    bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
+    bbxs__release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
 static void spectrum_note_all_off(bbxs_synth_s *p_inst) {
@@ -107,7 +107,7 @@ static void spectrum_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst->type == BBXS_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s *)p_inst;
 
-    bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
+    bbxs__release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
 static void compute_voice(const bbxs_synth_s *const base_inst,
@@ -169,7 +169,7 @@ static void spectrum_tick(bbxs_synth_s *p_inst,
     assert(p_inst->type == BBXS_SYNTH_SPECTRUM);
     spectrum_inst_s *inst = (spectrum_inst_s *)p_inst;
 
-    bbsyn_inst_tick(p_inst, tick_ctx,
+    bbxs__inst_tick(p_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = inst->voices,
                                        .sizeof_voice = sizeof(*inst->voices),
                                        .compute_voice = compute_voice,
@@ -179,7 +179,7 @@ static void spectrum_tick(bbxs_synth_s *p_inst,
     int new_hash = hash_spectrum_controls(inst->controls);
     if (new_hash != inst->control_hash) {
         inst->control_hash = new_hash;
-        bbsyn_generate_spectrum_wave(&inst->base.ctx->wavetables,
+        bbxs__generate_spectrum_wave(&inst->base.ctx->wavetables,
                                      inst->controls, 8.0, inst->wave);
     }
 }
@@ -214,7 +214,7 @@ static void spectrum_run(bbxs_synth_s *p_inst, float *samples,
         // Zero phase means the tone was reset, just give noise a random start
         // phase instead.
         if (voice->phase == 0.0)
-            phase = bbsyn_find_random_zero_crossing(
+            phase = bbxs__find_random_zero_crossing(
                         &inst->prng_state, inst->wave, SPECTRUM_WAVE_LENGTH) +
                     phase_delta;
 
@@ -237,7 +237,7 @@ static void spectrum_run(bbxs_synth_s *p_inst, float *samples,
 
             const double x0 = noise_sample;
             double sample =
-                bbsyn_apply_filters(x0, x1, x2, voice->base.note_filters);
+                bbxs__apply_filters(x0, x1, x2, voice->base.note_filters);
             x2 = x1;
             x1 = x0;
 
@@ -255,7 +255,7 @@ static void spectrum_run(bbxs_synth_s *p_inst, float *samples,
         voice->base.expression = expression;
         voice->noise_sample = noise_sample;
 
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
     }
@@ -313,7 +313,7 @@ static const bbxs_param_info_s spectrum_param_info[BBXS_SPECTRUM_PARAM_COUNT] =
             .max_value = 1,
             .default_value = 0,
 
-            .enum_values = bbsyn_yes_no_enum_values,
+            .enum_values = bbxs__yes_no_enum_values,
         },
         {
             .type = BBXS_PARAM_UINT8,
@@ -651,7 +651,7 @@ static const size_t spectrum_param_addresses[BBXS_SPECTRUM_PARAM_COUNT] = {
     offsetof(spectrum_inst_s, controls[29]),
 };
 
-const inst_vtable_s bbsyn_inst_spectrum_vtable = {
+const inst_vtable_s bbxs__inst_spectrum_vtable = {
     .struct_size = sizeof(spectrum_inst_s),
 
     .param_count = BBXS_SPECTRUM_PARAM_COUNT,

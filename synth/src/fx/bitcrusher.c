@@ -40,7 +40,7 @@ static void bitcrusher_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
 
     const double samples_per_second = inst->base.sample_rate;
     const double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double freq_setting_start = inst->freq_crush[0];
     double freq_setting_end   = inst->freq_crush[1];
@@ -197,7 +197,7 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(bitcrusher_effect_s, freq_crush[1]),
 };
 
-const effect_vtable_s bbsyn_effect_bitcrusher_vtable = {
+const effect_vtable_s bbxs__effect_bitcrusher_vtable = {
     .struct_size    = sizeof(bitcrusher_effect_s),
     .effect_init    = bitcrusher_init,
     .effect_destroy = bitcrusher_destroy,

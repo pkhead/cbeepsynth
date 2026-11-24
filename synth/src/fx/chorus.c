@@ -95,7 +95,7 @@ static void chorus_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     bbxs_free(ctx, inst->delay_line_alloc);
 
     inst->delay_line_size =
-        bbsyn_fitting_power_of_two((int)(new_sr * chorus_max_delay()));
+        bbxs__fitting_power_of_two((int)(new_sr * chorus_max_delay()));
     inst->delay_line_mask = inst->delay_line_size - 1;
 
     inst->delay_line_alloc_size = (size_t)inst->delay_line_size * 2;
@@ -106,7 +106,7 @@ static void chorus_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     if (!inst->delay_line_alloc) {
         inst->delay_line[0] = NULL;
         inst->delay_line[1] = NULL;
-        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
+        bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
                       "Could not allocate chorus delay line");
         return;
     }
@@ -121,7 +121,7 @@ static void chorus_tick(bbxs_effect_s *p_inst, const bbxs_tick_ctx_s *ctx) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
 
     double rounded_samples_per_tick =
-        ceil(bbsyn_calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
+        ceil(bbxs__calc_samples_per_tick(ctx->bpm, inst->base.sample_rate));
 
     double use_chorus_start = inst->param[0];
     double use_chorus_end   = inst->param[1];
@@ -273,8 +273,8 @@ static void chorus_run(bbxs_effect_s *p_inst, float **buffer,
         right[frame] = (float)sample_r;
     }
 
-    bbsyn_sanitize_delay_line(delay_line_l, delay_pos, mask);
-    bbsyn_sanitize_delay_line(delay_line_r, delay_pos, mask);
+    bbxs__sanitize_delay_line(delay_line_l, delay_pos, mask);
+    bbxs__sanitize_delay_line(delay_line_r, delay_pos, mask);
     inst->phase         = phase;
     inst->delay_pos     = delay_pos;
     inst->voice_mult    = voice_mult;
@@ -298,7 +298,7 @@ static const size_t param_addresses[BBXS_PANNING_PARAM_COUNT] = {
     offsetof(chorus_effect_s, param[1]),
 };
 
-const effect_vtable_s bbsyn_effect_chorus_vtable = {
+const effect_vtable_s bbxs__effect_chorus_vtable = {
     .struct_size    = sizeof(chorus_effect_s),
     .effect_init    = chorus_init,
     .effect_destroy = chorus_destroy,

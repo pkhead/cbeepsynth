@@ -94,7 +94,7 @@ static inline bbxs_voice_id wave_note_on(bbxs_synth_s *inst,
                                          wave_voice_s *voice_list, int key,
                                          double velocity, int32_t length) {
     bool continuation;
-    bbxs_voice_id voice_index = bbsyn_trigger_voice(
+    bbxs_voice_id voice_index = bbxs__trigger_voice(
         inst, GENERIC_LIST(voice_list), key, velocity, length, &continuation);
 
     if (!continuation) {
@@ -107,7 +107,7 @@ static inline bbxs_voice_id wave_note_on(bbxs_synth_s *inst,
 
 static inline void wave_note_off(bbxs_synth_s *inst, wave_voice_s *voice_list,
                                  bbxs_voice_id id) {
-    bbsyn_release_voice(inst, GENERIC_LIST(voice_list), id);
+    bbxs__release_voice(inst, GENERIC_LIST(voice_list), id);
 }
 
 static void compute_wave_voice(const base_chip_inst_s *inst,
@@ -122,7 +122,7 @@ static void compute_wave_voice(const base_chip_inst_s *inst,
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
+    const unison_desc_s unison = bbxs__unison_info[inst->unison_type];
 
     double settings_expression_mult = base_expression;
     settings_expression_mult *= unison.expression * unison.voices / 2.0;
@@ -266,7 +266,7 @@ wave_audio_render_callback(const wave_audio_render_params_s *params) {
 
             float final_sample;
             if (voice->base.filters_enabled) {
-                final_sample = (float)bbsyn_apply_filters(
+                final_sample = (float)bbxs__apply_filters(
                     x0_sum, x1, x2, voice->base.note_filters);
             } else {
                 final_sample = (float)x0_sum;
@@ -284,7 +284,7 @@ wave_audio_render_callback(const wave_audio_render_params_s *params) {
         voice->base.note_filter_input[0] = x1;
         voice->base.note_filter_input[1] = x2;
 
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
 
         for (int i = 0; i < UNISON_MAX_VOICES; i++) {
             voice->phase[i] = phase[i] / wave_length;
@@ -302,7 +302,7 @@ wave_audio_render_callback(const wave_audio_render_params_s *params) {
 static void chip_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     chip_inst_s *inst = (chip_inst_s *)p_inst;
     *inst = (chip_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base.base, BBXS_SYNTH_CHIP);
+    bbxs__inst_init(ctx, &inst->base.base, BBXS_SYNTH_CHIP);
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -331,7 +331,7 @@ static void chip_note_all_off(bbxs_synth_s *inst) {
     assert(inst);
     assert(inst->type == BBXS_SYNTH_CHIP);
     chip_inst_s *const chip = (chip_inst_s *)inst;
-    bbsyn_release_all_voices(inst, GENERIC_LIST(chip->voices));
+    bbxs__release_all_voices(inst, GENERIC_LIST(chip->voices));
 }
 
 static void compute_chip_voice(const bbxs_synth_s *const base_inst,
@@ -354,7 +354,7 @@ static void chip_tick(bbxs_synth_s *src_inst, const bbxs_tick_ctx_s *tick_ctx) {
 
     chip_inst_s *const chip = (chip_inst_s *)src_inst;
 
-    bbsyn_inst_tick(src_inst, tick_ctx,
+    bbxs__inst_tick(src_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = chip->voices,
                                        .sizeof_voice = sizeof(*chip->voices),
                                        .compute_voice = compute_chip_voice,
@@ -374,7 +374,7 @@ static void chip_run(bbxs_synth_s *src_inst, float *samples,
         wavetable = src_inst->ctx->wavetables.chip_wavetables[chip->waveform];
     }
 
-    unison_desc_s unison = bbsyn_unison_info[chip->base.unison_type];
+    unison_desc_s unison = bbxs__unison_info[chip->base.unison_type];
 
     wave_audio_render_callback(
         &(wave_audio_render_params_s){.output_buffer = samples,
@@ -428,7 +428,7 @@ static void custom_chip_prepare_wave(custom_chip_inst_s *inst) {
 static void custom_chip_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     custom_chip_inst_s *inst = (custom_chip_inst_s *)p_inst;
     *inst = (custom_chip_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base.base, BBXS_SYNTH_CUSTOM_CHIP);
+    bbxs__inst_init(ctx, &inst->base.base, BBXS_SYNTH_CUSTOM_CHIP);
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -467,7 +467,7 @@ static void custom_chip_note_all_off(bbxs_synth_s *inst) {
     assert(inst->type == BBXS_SYNTH_CUSTOM_CHIP);
     custom_chip_inst_s *const chip = (custom_chip_inst_s *)inst;
 
-    bbsyn_release_all_voices(inst, chip->voices, sizeof(*chip->voices));
+    bbxs__release_all_voices(inst, chip->voices, sizeof(*chip->voices));
 }
 
 static void compute_custom_chip_voice(const bbxs_synth_s *const inst,
@@ -487,7 +487,7 @@ static void custom_chip_tick(bbxs_synth_s *src_inst,
     assert(src_inst->type == BBXS_SYNTH_CUSTOM_CHIP);
     custom_chip_inst_s *const chip = (custom_chip_inst_s *)src_inst;
 
-    bbsyn_inst_tick(
+    bbxs__inst_tick(
         src_inst, tick_ctx,
         &(audio_compute_s){.voice_list = chip->voices,
                            .sizeof_voice = sizeof(*chip->voices),
@@ -500,7 +500,7 @@ static void custom_chip_run(bbxs_synth_s *src_inst, float *samples,
     custom_chip_inst_s *const chip = (custom_chip_inst_s *)src_inst;
 
     bool aliases = chip->aliases;
-    unison_desc_s unison = bbsyn_unison_info[chip->base.unison_type];
+    unison_desc_s unison = bbxs__unison_info[chip->base.unison_type];
 
     float *wave;
     if (aliases) {
@@ -544,7 +544,7 @@ static int custom_chip_serialize_exstate(bbxs_synth_s *inst,
     assert(inst->type == BBXS_SYNTH_CUSTOM_CHIP);
     custom_chip_inst_s *const chip = (custom_chip_inst_s *)inst;
 
-    int stat = bbsyn_stream_write_int(
+    int stat = bbxs__stream_write_int(
         writer, userdata, sizeof(chip->exstate.wave), sizeof(size_t));
     if (stat) return stat;
 
@@ -564,11 +564,11 @@ static int custom_chip_deserialize_exstate(bbxs_synth_s *inst,
 
     size_t read_size;
     int stat =
-        bbsyn_stream_read_int(reader, userdata, &read_size, sizeof(read_size));
+        bbxs__stream_read_int(reader, userdata, &read_size, sizeof(read_size));
     if (stat) return stat;
 
     if (read_size != sizeof(chip->exstate.wave)) {
-        bbsyn_logmsgf(inst->ctx, BBXS_LOG_ERROR,
+        bbxs__logmsgf(inst->ctx, BBXS_LOG_ERROR,
                       "error deserializing custom chip: expected %zu for size, "
                       "but got %zu instead",
                       sizeof(chip->exstate.wave), read_size);
@@ -592,7 +592,7 @@ static int custom_chip_deserialize_exstate(bbxs_synth_s *inst,
 static void harmonics_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     harmonics_inst_s *inst = (harmonics_inst_s *)p_inst;
     *inst = (harmonics_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base.base, BBXS_SYNTH_HARMONICS);
+    bbxs__inst_init(ctx, &inst->base.base, BBXS_SYNTH_HARMONICS);
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; i++) {
         inst->voices[i].base.flags = 0;
@@ -601,7 +601,7 @@ static void harmonics_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     inst->base.unison_type = BBXS_UNISON_NONE;
     inst->controls[0] = BBXS_HARMONICS_CONTROL_MAX;
 
-    bbsyn_generate_harmonics(&inst->base.base.ctx->wavetables, inst->controls,
+    bbxs__generate_harmonics(&inst->base.base.ctx->wavetables, inst->controls,
                              64, inst->wave);
 
     memcpy(inst->last_controls, inst->controls, sizeof(inst->controls));
@@ -628,7 +628,7 @@ static void harmonics_note_all_off(bbxs_synth_s *inst) {
     assert(inst->type == BBXS_SYNTH_HARMONICS);
     harmonics_inst_s *const harmonics = (harmonics_inst_s *)inst;
 
-    bbsyn_release_all_voices(inst, harmonics->voices,
+    bbxs__release_all_voices(inst, harmonics->voices,
                              sizeof(*harmonics->voices));
 }
 
@@ -650,7 +650,7 @@ static void harmonics_tick(bbxs_synth_s *src_inst,
 
     harmonics_inst_s *const harmonics = (harmonics_inst_s *)src_inst;
 
-    bbsyn_inst_tick(
+    bbxs__inst_tick(
         src_inst, tick_ctx,
         &(audio_compute_s){.voice_list = harmonics->voices,
                            .sizeof_voice = sizeof(*harmonics->voices),
@@ -663,14 +663,14 @@ static void harmonics_run(bbxs_synth_s *src_inst, float *samples,
     harmonics_inst_s *const harmonics = (harmonics_inst_s *)src_inst;
     const bool aliases = FALSE;
 
-    unison_desc_s unison = bbsyn_unison_info[harmonics->base.unison_type];
+    unison_desc_s unison = bbxs__unison_info[harmonics->base.unison_type];
 
     // if harmonic controls changed, rebuild the wave
     if (memcmp(harmonics->controls, harmonics->last_controls,
                sizeof(harmonics->controls))) {
         memcpy(harmonics->last_controls, harmonics->controls,
                sizeof(harmonics->controls));
-        bbsyn_generate_harmonics(&src_inst->ctx->wavetables,
+        bbxs__generate_harmonics(&src_inst->ctx->wavetables,
                                  harmonics->controls, 64, harmonics->wave);
     }
 
@@ -701,7 +701,7 @@ static const bbxs_param_info_s chip_param_info[BBXS_CHIP_PARAM_COUNT] = {
      .max_value = BBXS_CHIP_WAVE_COUNT - 1,
      .default_value = BBXS_CHIP_WAVE_SQUARE,
 
-     .enum_values = bbsyn_chip_waveform_names},
+     .enum_values = bbxs__chip_waveform_names},
 
     {.type = BBXS_PARAM_UINT8,
      .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
@@ -713,7 +713,7 @@ static const bbxs_param_info_s chip_param_info[BBXS_CHIP_PARAM_COUNT] = {
      .max_value = BBXS_UNISON_COUNT - 1,
      .default_value = BBXS_UNISON_NONE,
 
-     .enum_values = bbsyn_unison_enum_values},
+     .enum_values = bbxs__unison_enum_values},
 };
 
 static const bbxs_envelope_compute_index_e chip_env_targets[CHIP_MOD_COUNT] = {
@@ -734,7 +734,7 @@ static const bbxs_param_info_s
          .max_value = BBXS_UNISON_COUNT - 1,
          .default_value = BBXS_UNISON_NONE,
 
-         .enum_values = bbsyn_unison_enum_values},
+         .enum_values = bbxs__unison_enum_values},
         {
             .type = BBXS_PARAM_UINT8,
             .flags = BBXS_PARAM_FLAG_NO_AUTOMATION,
@@ -746,7 +746,7 @@ static const bbxs_param_info_s
             .max_value = 1,
             .default_value = 0,
 
-            .enum_values = bbsyn_yes_no_enum_values,
+            .enum_values = bbxs__yes_no_enum_values,
         }};
 
 static const bbxs_envelope_compute_index_e
@@ -792,7 +792,7 @@ static const bbxs_param_info_s harmonics_param_info[] = {
      .max_value = BBXS_UNISON_COUNT - 1,
      .default_value = BBXS_UNISON_NONE,
 
-     .enum_values = bbsyn_unison_enum_values},
+     .enum_values = bbxs__unison_enum_values},
 
     {
         .type = BBXS_PARAM_UINT8,
@@ -1153,7 +1153,7 @@ static const size_t harmonics_param_addresses[] = {
     offsetof(harmonics_inst_s, controls[27]),
 };
 
-const inst_vtable_s bbsyn_inst_chip_vtable = {
+const inst_vtable_s bbxs__inst_chip_vtable = {
     .struct_size = sizeof(chip_inst_s),
 
     .param_count = BBXS_CHIP_PARAM_COUNT,
@@ -1171,7 +1171,7 @@ const inst_vtable_s bbsyn_inst_chip_vtable = {
     .inst_tick = chip_tick,
     .inst_run = chip_run};
 
-const inst_vtable_s bbsyn_inst_custom_chip_vtable = {
+const inst_vtable_s bbxs__inst_custom_chip_vtable = {
     .struct_size = sizeof(custom_chip_inst_s),
 
     .param_count = BBXS_CUSTOM_CHIP_PARAM_COUNT,
@@ -1196,7 +1196,7 @@ const inst_vtable_s bbsyn_inst_custom_chip_vtable = {
     .inst_deserialize_exstate = custom_chip_deserialize_exstate,
 };
 
-const inst_vtable_s bbsyn_inst_harmonics_vtable = {
+const inst_vtable_s bbxs__inst_harmonics_vtable = {
     .struct_size = sizeof(harmonics_inst_s),
 
     .param_count = BBXS_HARMONICS_PARAM_COUNT,

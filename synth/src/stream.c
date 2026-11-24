@@ -18,7 +18,7 @@ static inline uint8_t endianness() {
 }
 
 // write primitive type in little-endian
-int bbsyn_stream_write_int(bbxs_writer_f writer, void *userdata,
+int bbxs__stream_write_int(bbxs_writer_f writer, void *userdata,
                            uintptr_t value, size_t int_size) {
     if (endianness() == LITTLE_ENDIAN) {
         return writer(&value, int_size, userdata);
@@ -33,7 +33,7 @@ int bbsyn_stream_write_int(bbxs_writer_f writer, void *userdata,
 }
 
 // read primitive type in little-endian.
-int bbsyn_stream_read_int(bbxs_reader_f reader, void *userdata, void *value,
+int bbxs__stream_read_int(bbxs_reader_f reader, void *userdata, void *value,
                           size_t int_size) {
     if (endianness() == LITTLE_ENDIAN) {
         return reader(value, int_size, userdata);

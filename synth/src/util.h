@@ -71,7 +71,7 @@ static inline double key_to_hz_d(double key) {
 }
 
 // count leading zeroes
-static inline int32_t bbsyn_clz32(int32_t x) {
+static inline int32_t bbxs__clz32(int32_t x) {
     // TODO: intrinstic?
     int tz = 0;
     for (; x != 0; x >>= 1)
@@ -79,8 +79,8 @@ static inline int32_t bbsyn_clz32(int32_t x) {
     return 32 - tz;
 }
 
-static inline int bbsyn_fitting_power_of_two(int x) {
-    return 1 << (32 - bbsyn_clz32(x - 1));
+static inline int bbxs__fitting_power_of_two(int x) {
+    return 1 << (32 - bbxs__clz32(x - 1));
 }
 
 static inline bool is_power_of_two(unsigned int n) {
@@ -94,8 +94,8 @@ typedef struct prng_state {
     uint64_t s[2];
 } prng_state_s;
 
-prng_state_s bbsyn_random_seeded_state(uint64_t seed);
-uint64_t bbsyn_random(prng_state_s *state);
-double bbsyn_frandom(prng_state_s *state);
+prng_state_s bbxs__random_seeded_state(uint64_t seed);
+uint64_t bbxs__random(prng_state_s *state);
+double bbxs__frandom(prng_state_s *state);
 
 #endif

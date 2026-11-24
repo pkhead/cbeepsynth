@@ -188,17 +188,17 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
     filter_coefs_s temp_filter_end_coefs;
     bbxs_complex_s temp_freq_resp;
 
-    bbsyn_filter_ap1ipa(&temp_filter_start_coefs, all_pass_radians_start);
+    bbxs__filter_ap1ipa(&temp_filter_start_coefs, all_pass_radians_start);
     temp_freq_resp =
-        bbsyn_filter_analyze(temp_filter_start_coefs, center_harmonic_start);
+        bbxs__filter_analyze(temp_filter_start_coefs, center_harmonic_start);
     double all_pass_g_start = temp_filter_start_coefs.b[0]; /* same as a[1] */
     double all_pass_phase_delay_start =
         -atan2(temp_freq_resp.imag, temp_freq_resp.real) /
         center_harmonic_start;
 
-    bbsyn_filter_ap1ipa(&temp_filter_end_coefs, all_pass_radians_end);
+    bbxs__filter_ap1ipa(&temp_filter_end_coefs, all_pass_radians_end);
     temp_freq_resp =
-        bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
+        bbxs__filter_analyze(temp_filter_end_coefs, center_harmonic_end);
     double all_pass_g_end = temp_filter_end_coefs.b[0]; /* same as a[1] */
     double all_pass_phase_delay_end =
         -atan2(temp_freq_resp.imag, temp_freq_resp.real) / center_harmonic_end;
@@ -222,9 +222,9 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
             pow(decay_rate_start, STRING_DECAY_RATE);
         const double shelf_gain_end = pow(decay_rate_end, STRING_DECAY_RATE);
 
-        bbsyn_filter_hshelf2(&temp_filter_start_coefs, shelf_radians,
+        bbxs__filter_hshelf2(&temp_filter_start_coefs, shelf_radians,
                              shelf_gain_start, 0.5);
-        bbsyn_filter_hshelf2(&temp_filter_end_coefs, shelf_radians,
+        bbxs__filter_hshelf2(&temp_filter_end_coefs, shelf_radians,
                              shelf_gain_end, 0.5);
     } else {
         double corner_hardness =
@@ -248,16 +248,16 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
         double lp2_gain_start = pow(2.0, -pow(2.0, -pow(corner_hardness, 0.9)));
         double lp2_gain_end = pow(2.0, -pow(2.0, -pow(corner_hardness, 0.9)));
 
-        bbsyn_filter_lp2bw(&temp_filter_start_coefs,
-                           bbsyn_warp_inf_to_nyquist(lp2_cutoff_radians_start),
+        bbxs__filter_lp2bw(&temp_filter_start_coefs,
+                           bbxs__warp_inf_to_nyquist(lp2_cutoff_radians_start),
                            lp2_gain_start);
-        bbsyn_filter_lp2bw(&temp_filter_end_coefs,
-                           bbsyn_warp_inf_to_nyquist(lp2_cutoff_radians_end),
+        bbxs__filter_lp2bw(&temp_filter_end_coefs,
+                           bbxs__warp_inf_to_nyquist(lp2_cutoff_radians_end),
                            lp2_gain_end);
     }
 
     temp_freq_resp =
-        bbsyn_filter_analyze(temp_filter_start_coefs, center_harmonic_start);
+        bbxs__filter_analyze(temp_filter_start_coefs, center_harmonic_start);
     const double sustain_filter_start_a1 = temp_filter_start_coefs.a[1];
     const double sustain_filter_start_a2 = temp_filter_start_coefs.a[2];
     const double sustain_filter_start_b0 =
@@ -271,7 +271,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
         center_harmonic_start;
 
     temp_freq_resp =
-        bbsyn_filter_analyze(temp_filter_end_coefs, center_harmonic_end);
+        bbxs__filter_analyze(temp_filter_end_coefs, center_harmonic_end);
     const double sustain_filter_end_a1 = temp_filter_end_coefs.a[1];
     const double sustain_filter_end_a2 = temp_filter_end_coefs.a[2];
     const double sustain_filter_end_b0 =
@@ -433,7 +433,7 @@ static void pstring_update(pstring_s *self, const picked_inst_s *inst,
 static void picked_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     picked_inst_s *inst = (picked_inst_s *)p_inst;
     *inst = (picked_inst_s){0};
-    bbsyn_inst_init(ctx, &inst->base, BBXS_SYNTH_PICKED_STRING);
+    bbxs__inst_init(ctx, &inst->base, BBXS_SYNTH_PICKED_STRING);
 
     inst->sustain[0] = BBXS_PICKED_STRING_SUSTAIN_MAX;
     inst->sustain[1] = inst->sustain[0];
@@ -444,7 +444,7 @@ static void picked_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
         }
     }
 
-    bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics, 64,
+    bbxs__generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics, 64,
                              inst->impulse_wave);
     memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
 }
@@ -465,7 +465,7 @@ static bbxs_voice_id picked_note_on(bbxs_synth_s *p_inst, int key,
 
     bool continuation;
     bbxs_voice_id id =
-        bbsyn_trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
+        bbxs__trigger_voice(p_inst, GENERIC_LIST(inst->voices), key, velocity,
                             length, &continuation);
 
     if (!continuation) {
@@ -497,7 +497,7 @@ static void picked_note_off(bbxs_synth_s *p_inst, bbxs_voice_id id) {
     assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
     picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bbsyn_release_voice(p_inst, GENERIC_LIST(inst->voices), id);
+    bbxs__release_voice(p_inst, GENERIC_LIST(inst->voices), id);
 }
 
 static void picked_note_all_off(bbxs_synth_s *p_inst) {
@@ -505,7 +505,7 @@ static void picked_note_all_off(bbxs_synth_s *p_inst) {
     assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
     picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bbsyn_release_all_voices(p_inst, GENERIC_LIST(inst->voices));
+    bbxs__release_all_voices(p_inst, GENERIC_LIST(inst->voices));
 }
 
 static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
@@ -523,7 +523,7 @@ static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
     // start off with a buffer size that is big enough for most notes.
     // const int likely_maximum_length = (int) ceil(4 * new /
     // key_to_hz_d(12.0)); int dl_size =
-    // bbsyn_fitting_power_of_two(likely_maximum_length);
+    // bbxs__fitting_power_of_two(likely_maximum_length);
 
     // the min_buffer_length of MIDI E(-1) is 4660; i think the intended value
     // of likelyMaximumLength (16,384) is higher than reasonable. and I should
@@ -533,7 +533,7 @@ static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
     float *dl_alloc =
         bbxs_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
     if (!dl_alloc) {
-        bbsyn_logmsgf(ctx, BBXS_LOG_ERROR,
+        bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
                       "picked string could not allocate delay lines!");
 
         // umm i don't know how the program would recover from this. uhhh.
@@ -542,7 +542,7 @@ static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
         return;
     }
 
-    bbsyn_logmsgf(ctx, BBXS_LOG_DEBUG,
+    bbxs__logmsgf(ctx, BBXS_LOG_DEBUG,
                   "allocated %llu bytes of delay line buffers",
                   (size_t)dl_size * DELAY_LINE_COUNT * sizeof(float));
 
@@ -570,7 +570,7 @@ static void compute_voice(const bbxs_synth_s *const base_inst,
 
     voice_compute_varying_s *const varying = &compute_data->varying;
 
-    const unison_desc_s unison = bbsyn_unison_info[inst->unison_type];
+    const unison_desc_s unison = bbxs__unison_info[inst->unison_type];
 
     double settings_expression_mult = PICKED_BASE_EXPRESSION;
     settings_expression_mult *= unison.expression * unison.voices / 2.0;
@@ -687,7 +687,7 @@ static void picked_tick(bbxs_synth_s *p_inst, const bbxs_tick_ctx_s *tick_ctx) {
     assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
     picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bbsyn_inst_tick(p_inst, tick_ctx,
+    bbxs__inst_tick(p_inst, tick_ctx,
                     &(audio_compute_s){.voice_list = inst->voices,
                                        .sizeof_voice = sizeof(*inst->voices),
                                        .compute_voice = compute_voice,
@@ -709,7 +709,7 @@ static void picked_run(bbxs_synth_s *p_inst, float *samples,
     if (memcmp(inst->harmonics, inst->last_harmonics,
                sizeof(inst->harmonics))) {
         memcpy(inst->last_harmonics, inst->harmonics, sizeof(inst->harmonics));
-        bbsyn_generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics,
+        bbxs__generate_harmonics(&inst->base.ctx->wavetables, inst->harmonics,
                                  64, inst->impulse_wave);
     }
 
@@ -858,7 +858,7 @@ static void picked_run(bbxs_synth_s *p_inst, float *samples,
                 (voice_data[0].fractional_delay_sample +
                  voice_data[1].fractional_delay_sample * unison_sign) *
                 expression;
-            const double sample = bbsyn_apply_filters(
+            const double sample = bbxs__apply_filters(
                 input_sample, init_filter_input1, init_filter_input2,
                 voice->base.note_filters);
             init_filter_input2 = init_filter_input1;
@@ -920,7 +920,7 @@ static void picked_run(bbxs_synth_s *p_inst, float *samples,
         }
 
         voice->base.expression = expression;
-        bbsyn_sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
+        bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = init_filter_input1;
         voice->base.note_filter_input[1] = init_filter_input2;
     }
@@ -941,7 +941,7 @@ static const bbxs_param_info_s picked_param_info[] = {
      .max_value = BBXS_UNISON_COUNT - 1,
      .default_value = BBXS_UNISON_NONE,
 
-     .enum_values = bbsyn_unison_enum_values},
+     .enum_values = bbxs__unison_enum_values},
 
     {
         .type = BBXS_PARAM_DOUBLE,
@@ -1302,7 +1302,7 @@ static const bbxs_envelope_compute_index_e picked_env_targets[] = {
     BBXS_ENV_INDEX_STRING_SUSTAIN,
 };
 
-const inst_vtable_s bbsyn_inst_picked_vtable = {
+const inst_vtable_s bbxs__inst_picked_vtable = {
     .struct_size = sizeof(picked_inst_s),
 
     .param_count = BBXS_PICKED_STRING_PARAM_COUNT,

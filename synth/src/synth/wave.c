@@ -1215,6 +1215,7 @@ const inst_vtable_s bbsyn_inst_custom_chip_vtable = {
     .inst_tick = custom_chip_tick,
     .inst_run = custom_chip_run,
 
+    .exstate_size = sizeof(bpbxsyn_custom_chip_exstate_s),
     .inst_get_exstate = custom_chip_get_exstate,
     .inst_set_exstate = custom_chip_set_exstate
 };

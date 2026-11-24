@@ -22,17 +22,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifndef BBXS_BEEPBOX_SYNTH_H
 #define BBXS_BEEPBOX_SYNTH_H
 
-#ifdef __cplusplus
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-
-#else
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#endif
 
 #ifdef __cplusplus
 extern "C" {

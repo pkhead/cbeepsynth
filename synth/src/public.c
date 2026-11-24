@@ -15,6 +15,7 @@
 #include "envelope.h"
 #include "filtering.h"
 #include "context.h"
+#include "wavetables.h"
 
 #include "synth/synth.h"
 #include "fx/effect.h"
@@ -833,4 +834,35 @@ void bpbxsyn_analyze_freq_response(
     filter_coefs_s coefs = bbsyn_filter_to_coefficients(&temp_group, 0, sample_rate, 1.0, 1.0);
     double corner_rads_per_sample = PI2 * hz / sample_rate;
     *out = bbsyn_filter_analyze(coefs, corner_rads_per_sample);
+}
+
+const char *const *bpbxsyn_get_chip_waveform_names(void) {
+    return bbsyn_chip_waveform_names;
+}
+
+const char *const *bpbxsyn_get_noise_waveform_names(void) {
+    return bbsyn_noise_waveform_names;
+}
+
+void bpbxsyn_get_chip_waveform(bpbxsyn_context_s *ctx, int index,
+                               int integrated,
+                               bpbxsyn_waveform_data_s *data) {
+    wavetable_desc_s *wavetable_list;
+    if (integrated)
+        wavetable_list = ctx->wavetables.chip_wavetables;
+    else
+        wavetable_list = ctx->wavetables.raw_chip_wavetables;
+
+    wavetable_desc_s *desc = &wavetable_list[index];
+    data->expression = desc->expression;
+    data->samples = desc->samples;
+    data->length = desc->length;
+}
+
+void bpbxsyn_get_noise_waveform(bpbxsyn_context_s* ctx, int index,
+                                bpbxsyn_waveform_data_s *data) {
+    noise_wavetable_s *desc = &ctx->wavetables.noise_wavetables[index];
+    data->expression = desc->expression;
+    data->samples = desc->samples;
+    data->length = NOISE_WAVETABLE_LENGTH;
 }

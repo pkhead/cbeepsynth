@@ -604,3 +604,15 @@ bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed) {
 
     #undef RANDOM
 }
+
+const char *bbsyn_chip_waveform_names[BPBXSYN_CHIP_WAVE_COUNT + 1] = {
+    "rounded", "triangle", "square", "1/4 pulse", "1/8 pulse", "sawtooth",
+    "double saw", "double pulse", "spiky", "sine", "flute", "harp",
+    "sharp clarinet", "soft clarinet", "alto sax", "bassoon",
+    "trumpet", "electric guitar", "organ", "pan flute", "glitch", NULL
+};
+
+const char *bbsyn_noise_waveform_names[BPBXSYN_NOISE_COUNT + 1] = {
+    "retro", "white", "clang", "buzz", "hollow", "shine", "deep", "cutter",
+    "metallic", NULL
+};

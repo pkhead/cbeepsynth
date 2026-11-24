@@ -4,6 +4,7 @@
 #include "synth.h"
 #include "../context.h"
 #include "../param_util.h"
+#include "../wavetables.h"
 
 // i feel like noise volume should be halved for pitch channels to be consistent
 // with spectrum and the comment "drums tend to be loud but brief" for some
@@ -289,18 +290,6 @@ void noise_run(bpbxsyn_synth_s *p_inst, float *samples, size_t frame_count) {
 //////////
 // DATA //
 //////////
-static const char *noise_enum_values[] = {
-    "retro",
-    "white",
-    "clang",
-    "buzz",
-    "hollow",
-    "shine",
-    "deep",
-    "cutter",
-    "metallic",
-};
-
 static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
@@ -322,7 +311,7 @@ static const bpbxsyn_param_info_s noise_param_info[BPBXSYN_NOISE_PARAM_COUNT] = 
         .min_value = 0,
         .max_value = BPBXSYN_NOISE_COUNT - 1,
         .default_value = BPBXSYN_NOISE_RETRO,
-        .enum_values = noise_enum_values
+        .enum_values = bbsyn_noise_waveform_names
     },
     {
         .type = BPBXSYN_PARAM_UINT8,

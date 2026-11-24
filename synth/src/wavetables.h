@@ -47,6 +47,9 @@ typedef struct wavetables {
     wavetable_desc_s chip_wavetables[BPBXSYN_CHIP_WAVE_COUNT];
 } wavetables_s;
 
+extern const char *bbsyn_noise_waveform_names[BPBXSYN_NOISE_COUNT + 1];
+extern const char *bbsyn_chip_waveform_names[BPBXSYN_CHIP_WAVE_COUNT + 1];
+
 bool bbsyn_init_wavetables_for_context(bpbxsyn_context_s *ctx, uint64_t seed);
 
 void bbsyn_generate_harmonics(const wavetables_s *wavetables,

@@ -339,6 +339,25 @@ typedef struct {
     double imag;
 } bpbxsyn_complex_s;
 
+typedef struct bpbxsyn_waveform_data {
+    /**
+     * The expression (volume) of the waveform in the range [0, 1].
+     */
+    double expression;
+    /**
+     * Array containing mono samples. The amplitude range of the waveform is not
+     * defined except that 0.0 indicates -inf dBFS.
+     *
+     * Note that there will always be an extra 0.0 as the last sample, and that
+     * this extra sample is reflected in the length field.
+     */
+    float *samples;
+    /**
+     * The number of samples in the waveform.
+     */
+    size_t length;
+} bpbxsyn_waveform_data_s;
+
 typedef struct bpbxsyn_context bpbxsyn_context_s;
 typedef struct bpbxsyn_synth bpbxsyn_synth_s;
 typedef struct bpbxsyn_effect bpbxsyn_effect_s;
@@ -1207,6 +1226,51 @@ BPBXSYN_API double bpbxsyn_linear_gain_to_setting(double gain);
 BPBXSYN_API void bpbxsyn_analyze_freq_response(
     bpbxsyn_filter_type_e filter_type, double freq_setting, double gain_setting,
     double hz, double sample_rate, bpbxsyn_complex_s *out);
+
+/**
+ * @brief Obtain a null-terminated array of chip waveform names.
+ *
+ * @return The array of chip waveform names. The last element will always be
+ *         NULL.
+ */
+BPBXSYN_API const char *const *bpbxsyn_get_chip_waveform_names(void);
+
+/**
+ * @brief Obtain a null-terminated array of noise waveform names.
+ *
+ * @return The array of noise waveform names. The last element will always be
+ *         NULL.
+ */
+BPBXSYN_API const char *const *bpbxsyn_get_noise_waveform_names(void);
+
+/**
+ * @brief Obtain the data for a chip waveform.
+ *
+ * @note This function's behavior is undefined if the index given is invalid.
+ *
+ * @param       ctx        The BeepBox synth context.
+ * @param       index      The chip waveform index.
+ * @param       integrated True if the integrated wave should be fetch, false if
+ *                         it should be the original.
+ * @param [out] data       Pointer to waveform data structure which will be
+ *                         filled.
+ */
+BPBXSYN_API void bpbxsyn_get_chip_waveform(bpbxsyn_context_s *ctx, int index,
+                                           int integrated,
+                                           bpbxsyn_waveform_data_s *data);
+
+/**
+ * @brief Obtain the data for a noise waveform.
+ *
+ * @note This function's behavior is undefined if the index given is invalid.
+ *
+ * @param       ctx        The BeepBox synth context.
+ * @param       index      The noise waveform index.
+ * @param [out] data       Pointer to waveform data structure which will be
+ *                         filled.
+ */
+BPBXSYN_API void bpbxsyn_get_noise_waveform(bpbxsyn_context_s* ctx, int index,
+                                            bpbxsyn_waveform_data_s *data);
 
 #ifdef __cplusplus
 }

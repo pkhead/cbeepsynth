@@ -14,6 +14,7 @@
 #include "../context.h"
 #include "../stream.h"
 #include "../log.h"
+#include "../wavetables.h"
 
 
 #define CHIP_MOD_COUNT 1
@@ -722,13 +723,6 @@ static void harmonics_run(bpbxsyn_synth_s *src_inst, float *samples,
 //  DATA  //
 ////////////
 
-static const char *waveform_enum_values[BPBXSYN_CHIP_WAVE_COUNT] = {
-    "rounded", "triangle", "square", "1/4 pulse", "1/8 pulse", "sawtooth",
-    "double saw", "double pulse", "spiky", "sine", "flute", "harp",
-    "sharp clarinet", "soft clarinet", "alto sax", "bassoon",
-    "trumpet", "electric guitar", "organ", "pan flute", "glitch"
-};
-
 static const bpbxsyn_param_info_s chip_param_info[BPBXSYN_CHIP_PARAM_COUNT] = {
     {
         .type = BPBXSYN_PARAM_UINT8,
@@ -741,7 +735,7 @@ static const bpbxsyn_param_info_s chip_param_info[BPBXSYN_CHIP_PARAM_COUNT] = {
         .max_value = BPBXSYN_CHIP_WAVE_COUNT - 1,
         .default_value = BPBXSYN_CHIP_WAVE_SQUARE,
 
-        .enum_values = waveform_enum_values
+        .enum_values = bbsyn_chip_waveform_names
     },
 
     {

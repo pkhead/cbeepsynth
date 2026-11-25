@@ -198,13 +198,13 @@ void bbxs__generate_spectrum_wave(const wavetables_s *tables,
         static double wave_arr[] = {__VA_ARGS__, 0};                           \
         TRANSFORM(wave_arr, ARRLEN(wave_arr));                                 \
                                                                                \
-        float *raw = bbxs_malloc(ctx, ARRLEN(wave_arr) * sizeof(float));       \
+        float *raw = bbxs__malloc(ctx, ARRLEN(wave_arr) * sizeof(float));      \
         assert(raw);                                                           \
         if (!raw) return false;                                                \
-        for (int i = 0; i < ARRLEN(wave_arr); ++i)                             \
+        for (size_t i = 0; i < ARRLEN(wave_arr); ++i)                          \
             raw[i] = (float)wave_arr[i];                                       \
                                                                                \
-        float *use = bbxs_malloc(ctx, ARRLEN(wave_arr) * sizeof(float));       \
+        float *use = bbxs__malloc(ctx, ARRLEN(wave_arr) * sizeof(float));      \
         assert(use);                                                           \
         if (!use) return false;                                                \
         perform_integral(raw, use, ARRLEN(wave_arr));                          \

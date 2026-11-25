@@ -12,7 +12,7 @@
 #define BIG_ENDIAN 0
 #define LITTLE_ENDIAN 1
 
-static inline uint8_t endianness() {
+static inline uint8_t endianness(void) {
     uint16_t endianness_test_value = 1;
     return ((uint8_t *)&endianness_test_value)[0];
 }

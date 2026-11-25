@@ -9,12 +9,12 @@
 #include "alloc.h"
 #include "log.h"
 
-void *bbxs_malloc(const bbxs_context_s *ctx, size_t size) {
+void *bbxs__malloc(const bbxs_context_s *ctx, size_t size) {
     assert(ctx->alloc.alloc);
     return ctx->alloc.alloc(size, ctx->alloc.userdata);
 }
 
-void bbxs_free(const bbxs_context_s *ctx, void *ptr) {
+void bbxs__free(const bbxs_context_s *ctx, void *ptr) {
     assert(ctx->alloc.free);
     if (ptr) ctx->alloc.free(ptr, ctx->alloc.userdata);
 }

@@ -1302,7 +1302,7 @@ static const bbxs_envelope_compute_index_e picked_env_targets[] = {
     BBXS_ENV_INDEX_STRING_SUSTAIN,
 };
 
-const inst_vtable_s bbxs__inst_picked_vtable = {
+const synth_vtable_s bbxs__synth_picked_vtable = {
     .struct_size = sizeof(picked_inst_s),
 
     .param_count = BBXS_PICKED_STRING_PARAM_COUNT,

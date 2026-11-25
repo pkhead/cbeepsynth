@@ -108,7 +108,7 @@ typedef struct {
                                         bbxs_writer_f writer, void *ud);
     int (*const inst_deserialize_exstate)(bbxs_synth_s *inst,
                                           bbxs_reader_f reader, void *ud);
-} inst_vtable_s;
+} synth_vtable_s;
 // (for c, at least)
 // was using a switch statement cus i was lazy and thought "eh maybe it won't be
 // that bad" then got to the third switch case and was like yeah you know what i
@@ -268,13 +268,13 @@ extern bbxs_param_info_s bbxs__base_param_info[BBXS_BASE_PARAM_COUNT];
 extern size_t bbxs__base_param_offsets[BBXS_BASE_PARAM_COUNT];
 extern const unison_desc_s bbxs__unison_info[BBXS_UNISON_COUNT];
 
-extern const inst_vtable_s bbxs__inst_fm_vtable;
-extern const inst_vtable_s bbxs__inst_chip_vtable;
-extern const inst_vtable_s bbxs__inst_pwm_vtable;
-extern const inst_vtable_s bbxs__inst_harmonics_vtable;
-extern const inst_vtable_s bbxs__inst_spectrum_vtable;
-extern const inst_vtable_s bbxs__inst_noise_vtable;
-extern const inst_vtable_s bbxs__inst_picked_vtable;
-extern const inst_vtable_s bbxs__inst_custom_chip_vtable;
+extern const synth_vtable_s bbxs__synth_fm_vtable;
+extern const synth_vtable_s bbxs__synth_chip_vtable;
+extern const synth_vtable_s bbxs__synth_pwm_vtable;
+extern const synth_vtable_s bbxs__synth_harmonics_vtable;
+extern const synth_vtable_s bbxs__synth_spectrum_vtable;
+extern const synth_vtable_s bbxs__synth_noise_vtable;
+extern const synth_vtable_s bbxs__synth_picked_vtable;
+extern const synth_vtable_s bbxs__synth_custom_chip_vtable;
 
 #endif

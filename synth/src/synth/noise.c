@@ -331,7 +331,7 @@ static const size_t noise_param_addresses[BBXS_NOISE_PARAM_COUNT] = {
     offsetof(noise_inst_s, unison_type),
 };
 
-const inst_vtable_s bbxs__inst_noise_vtable = {
+const synth_vtable_s bbxs__synth_noise_vtable = {
     .struct_size = sizeof(noise_inst_s),
 
     .param_count = BBXS_NOISE_PARAM_COUNT,

@@ -651,7 +651,7 @@ static const size_t spectrum_param_addresses[BBXS_SPECTRUM_PARAM_COUNT] = {
     offsetof(spectrum_inst_s, controls[29]),
 };
 
-const inst_vtable_s bbxs__inst_spectrum_vtable = {
+const synth_vtable_s bbxs__synth_spectrum_vtable = {
     .struct_size = sizeof(spectrum_inst_s),
 
     .param_count = BBXS_SPECTRUM_PARAM_COUNT,

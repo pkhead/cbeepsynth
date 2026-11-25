@@ -705,7 +705,7 @@ static const int algo_associated_carriers[BBXS_FM_ALGORITHM_COUNT][4] = {
 
 static const double carrier_intervals[] = {0.0, 0.04, -0.073, 0.091};
 
-const inst_vtable_s bbxs__inst_fm_vtable = {
+const synth_vtable_s bbxs__synth_fm_vtable = {
     .struct_size = sizeof(fm_inst_s),
 
     .param_count = BBXS_FM_PARAM_COUNT,

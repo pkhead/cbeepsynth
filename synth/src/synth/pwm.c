@@ -265,7 +265,7 @@ static const bbxs_envelope_compute_index_e pwm_env_targets[PWM_MOD_COUNT] = {
     BBXS_ENV_INDEX_PULSE_WIDTH,
 };
 
-const inst_vtable_s bbxs__inst_pwm_vtable = {
+const synth_vtable_s bbxs__synth_pwm_vtable = {
     .struct_size = sizeof(pwm_inst_s),
 
     .param_count = BBXS_PULSE_WIDTH_PARAM_COUNT,

@@ -1153,7 +1153,7 @@ static const size_t harmonics_param_addresses[] = {
     offsetof(harmonics_inst_s, controls[27]),
 };
 
-const inst_vtable_s bbxs__inst_chip_vtable = {
+const synth_vtable_s bbxs__synth_chip_vtable = {
     .struct_size = sizeof(chip_inst_s),
 
     .param_count = BBXS_CHIP_PARAM_COUNT,
@@ -1171,7 +1171,7 @@ const inst_vtable_s bbxs__inst_chip_vtable = {
     .inst_tick = chip_tick,
     .inst_run = chip_run};
 
-const inst_vtable_s bbxs__inst_custom_chip_vtable = {
+const synth_vtable_s bbxs__synth_custom_chip_vtable = {
     .struct_size = sizeof(custom_chip_inst_s),
 
     .param_count = BBXS_CUSTOM_CHIP_PARAM_COUNT,
@@ -1196,7 +1196,7 @@ const inst_vtable_s bbxs__inst_custom_chip_vtable = {
     .inst_deserialize_exstate = custom_chip_deserialize_exstate,
 };
 
-const inst_vtable_s bbxs__inst_harmonics_vtable = {
+const synth_vtable_s bbxs__synth_harmonics_vtable = {
     .struct_size = sizeof(harmonics_inst_s),
 
     .param_count = BBXS_HARMONICS_PARAM_COUNT,
@@ -1212,4 +1212,5 @@ const inst_vtable_s bbxs__inst_harmonics_vtable = {
     .inst_note_all_off = harmonics_note_all_off,
 
     .inst_tick = harmonics_tick,
-    .inst_run = harmonics_run};
+    .inst_run = harmonics_run,
+};

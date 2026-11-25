@@ -19,25 +19,25 @@
 #include "util.h"
 #include "wavetables.h"
 
-static const inst_vtable_s *inst_vtables[BBXS_SYNTH_COUNT] = {
+static const synth_vtable_s *synth_vtables[BBXS_SYNTH_COUNT] = {
     // BBXS_SYNTH_CHIP
-    &bbxs__inst_chip_vtable,
+    &bbxs__synth_chip_vtable,
     // BBXS_SYNTH_FM
-    &bbxs__inst_fm_vtable,
+    &bbxs__synth_fm_vtable,
     // BBXS_SYNTH_NOISE
-    &bbxs__inst_noise_vtable,
+    &bbxs__synth_noise_vtable,
     // BBXS_SYNTH_PULSE_WIDTH
-    &bbxs__inst_pwm_vtable,
+    &bbxs__synth_pwm_vtable,
     // BBXS_SYNTH_HARMONICS
-    &bbxs__inst_harmonics_vtable,
+    &bbxs__synth_harmonics_vtable,
     // BBXS_SYNTH_SPECTRUM
-    &bbxs__inst_spectrum_vtable,
+    &bbxs__synth_spectrum_vtable,
     // BBXS_SYNTH_PICKED_STRING
-    &bbxs__inst_picked_vtable,
+    &bbxs__synth_picked_vtable,
     // BBXS_SYNTH_SUPERSAW
     NULL,
     // BBXS_SYNTH_CUSTOM_CHIP
-    &bbxs__inst_custom_chip_vtable,
+    &bbxs__synth_custom_chip_vtable,
 };
 
 static const effect_vtable_s *effect_vtables[BBXS_EFFECT_COUNT] = {
@@ -132,7 +132,7 @@ void bbxs_set_log_func(bbxs_context_s *ctx, bbxs_log_f log_func,
 }
 
 unsigned int bbxs_synth_param_count(bbxs_synth_type_e type) {
-    const inst_vtable_s *vtable = inst_vtables[type];
+    const synth_vtable_s *vtable = synth_vtables[type];
     assert(vtable);
 
     if (!vtable) return 0;
@@ -143,13 +143,13 @@ const bbxs_param_info_s *bbxs_synth_param_info(bbxs_synth_type_e type,
                                                unsigned int index) {
     if (index < BBXS_BASE_PARAM_COUNT) return &bbxs__base_param_info[index];
 
-    assert(inst_vtables[type]);
-    assert(
-        memcmp(inst_vtables[type]->param_info[index - BBXS_BASE_PARAM_COUNT].id,
-               "\0\0\0\0\0\0\0\0", 8));
-    assert(index - BBXS_BASE_PARAM_COUNT < inst_vtables[type]->param_count);
+    assert(synth_vtables[type]);
+    assert(memcmp(
+        synth_vtables[type]->param_info[index - BBXS_BASE_PARAM_COUNT].id,
+        "\0\0\0\0\0\0\0\0", 8));
+    assert(index - BBXS_BASE_PARAM_COUNT < synth_vtables[type]->param_count);
 
-    return &inst_vtables[type]->param_info[index - BBXS_BASE_PARAM_COUNT];
+    return &synth_vtables[type]->param_info[index - BBXS_BASE_PARAM_COUNT];
 }
 
 uint32_t bbxs_synth_effect_toggle_param(bbxs_synthfx_type_e type) {
@@ -178,7 +178,7 @@ uint32_t bbxs_synth_effect_toggle_param(bbxs_synthfx_type_e type) {
 }
 
 bbxs_synth_s *bbxs_synth_new(bbxs_context_s *ctx, bbxs_synth_type_e type) {
-    const inst_vtable_s *vtable = inst_vtables[type];
+    const synth_vtable_s *vtable = synth_vtables[type];
     assert(vtable);
     if (vtable == NULL) return NULL;
 
@@ -201,7 +201,7 @@ bbxs_synth_s *bbxs_synth_new(bbxs_context_s *ctx, bbxs_synth_type_e type) {
 
 void bbxs_synth_destroy(bbxs_synth_s *inst) {
     if (inst) {
-        const inst_vtable_s *vtable = inst_vtables[inst->type];
+        const synth_vtable_s *vtable = synth_vtables[inst->type];
         assert(vtable);
 
         if (vtable->inst_destroy) {
@@ -213,7 +213,7 @@ void bbxs_synth_destroy(bbxs_synth_s *inst) {
 }
 
 void bbxs_synth_set_sample_rate(bbxs_synth_s *inst, double sample_rate) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     double old_sr = inst->sample_rate;
@@ -263,7 +263,7 @@ static int synth_param_helper(const bbxs_synth_s *inst, uint32_t index,
 
     index -= BBXS_BASE_PARAM_COUNT;
 
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     if (index >= vtable->param_count) return 1;
@@ -418,7 +418,7 @@ void bbxs_synth_clear_envelopes(bbxs_synth_s *inst) {
 }
 
 size_t bbxs_synth_get_exstate_size(bbxs_synth_type_e type) {
-    const inst_vtable_s *vtable = inst_vtables[type];
+    const synth_vtable_s *vtable = synth_vtables[type];
     assert(vtable);
     if (vtable == NULL) return 0;
 
@@ -426,7 +426,7 @@ size_t bbxs_synth_get_exstate_size(bbxs_synth_type_e type) {
 }
 
 size_t bbxs_synth_get_exstate(bbxs_synth_s *inst, void *buffer) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     if (!vtable->inst_get_exstate) return 0;
@@ -436,7 +436,7 @@ size_t bbxs_synth_get_exstate(bbxs_synth_s *inst, void *buffer) {
 }
 
 void bbxs_synth_set_exstate(bbxs_synth_s *inst, const void *buffer) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     if (vtable->inst_set_exstate && buffer)
@@ -446,7 +446,7 @@ void bbxs_synth_set_exstate(bbxs_synth_s *inst, const void *buffer) {
 bbxs_serialize_status_e bbxs_synth_serialize_exstate(bbxs_synth_s *inst,
                                                      bbxs_writer_f writer,
                                                      void *userdata) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     if (vtable->inst_serialize_exstate)
@@ -458,7 +458,7 @@ bbxs_serialize_status_e bbxs_synth_serialize_exstate(bbxs_synth_s *inst,
 bbxs_serialize_status_e bbxs_synth_deserialize_exstate(bbxs_synth_s *inst,
                                                        bbxs_reader_f reader,
                                                        void *userdata) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     if (vtable->inst_deserialize_exstate)
@@ -469,21 +469,21 @@ bbxs_serialize_status_e bbxs_synth_deserialize_exstate(bbxs_synth_s *inst,
 
 bbxs_voice_id bbxs_synth_begin_note(bbxs_synth_s *inst, int key,
                                     double velocity, int32_t length) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     return vtable->inst_note_on(inst, key, velocity, length);
 }
 
 void bbxs_synth_end_note(bbxs_synth_s *inst, bbxs_voice_id id) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     vtable->inst_note_off(inst, id);
 }
 
 void bbxs_synth_end_all_notes(bbxs_synth_s *inst) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
 
     vtable->inst_note_all_off(inst);
@@ -492,14 +492,14 @@ void bbxs_synth_end_all_notes(bbxs_synth_s *inst) {
 void bbxs_synth_stop(bbxs_synth_s *inst) { (void)inst; }
 
 void bbxs_synth_tick(bbxs_synth_s *inst, const bbxs_tick_ctx_s *tick_ctx) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
     vtable->inst_tick(inst, tick_ctx);
 }
 
 void bbxs_synth_run(bbxs_synth_s *inst, float *out_samples,
                     size_t frame_count) {
-    const inst_vtable_s *vtable = inst_vtables[inst->type];
+    const synth_vtable_s *vtable = synth_vtables[inst->type];
     assert(vtable);
     vtable->inst_run(inst, out_samples, frame_count);
 }
@@ -566,7 +566,7 @@ const char **bbxs_envelope_curve_preset_names(void) {
 
 const bbxs_envelope_compute_index_e *
 bbxs_synth_envelope_targets(bbxs_synth_type_e type, int *size) {
-    const inst_vtable_s *vtable = inst_vtables[type];
+    const synth_vtable_s *vtable = synth_vtables[type];
     assert(vtable);
 
     *size = (int)vtable->envelope_target_count;

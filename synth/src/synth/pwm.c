@@ -10,7 +10,6 @@
 // of a square wave is 4/π times the measured square wave amplitude.
 #define BASE_EXPRESSION 0.04725
 #define PWM_MOD_COUNT 1
-#define pulse_width_ratio(x) ((double)(x) / (BBXS_PULSE_WIDTH_RANGE * 2))
 
 typedef struct pwm_voice {
     inst_base_voice_s base;

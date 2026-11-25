@@ -224,6 +224,9 @@ typedef enum bbxs_spectrum_param {
 // Supersaw data //
 ///////////////////
 #define BBXS_SUPERSAW_PARAM_COUNT 5
+#define BBXS_SUPERSAW_DYNAMISM_MAX 6
+#define BBXS_SUPERSAW_SPREAD_MAX 12
+#define BBXS_SUPERSAW_SHAPE_MAX 6
 
 typedef enum bbxs_supersaw_param {
     BBXS_SUPERSAW_PARAM_DYNAMISM = BBXS_BASE_PARAM_COUNT,

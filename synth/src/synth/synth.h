@@ -264,8 +264,6 @@ double bbxs__get_lfo_amplitude(bbxs_vibrato_type_e type, double secs_into_bar);
 #define calc_pitch_expression(pitch)                                           \
     calc_pitch_expression_ex(pitch, EXPRESSION_REFERENCE_PITCH, PITCH_DAMPING)
 
-#define pulse_width_ratio(x) ((double)(x) / (BBXS_PULSE_WIDTH_RANGE * 2))
-
 extern bbxs_param_info_s bbxs__base_param_info[BBXS_BASE_PARAM_COUNT];
 extern size_t bbxs__base_param_offsets[BBXS_BASE_PARAM_COUNT];
 extern const unison_desc_s bbxs__unison_info[BBXS_UNISON_COUNT];

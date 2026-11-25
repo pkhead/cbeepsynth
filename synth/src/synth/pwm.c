@@ -4,11 +4,9 @@
 #include "../param_util.h"
 #include "../util.h"
 #include "synth.h"
+#include "pwm.h"
 
-// It's actually closer to half of this, the synthesized pulse amplitude range
-// is only .5 to -.5, but also note that the fundamental sine partial amplitude
-// of a square wave is 4/π times the measured square wave amplitude.
-#define BASE_EXPRESSION 0.04725
+#define BASE_EXPRESSION PWM_BASE_EXPRESSION
 #define PWM_MOD_COUNT 1
 
 typedef struct pwm_voice {

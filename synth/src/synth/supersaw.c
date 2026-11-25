@@ -5,7 +5,10 @@
 
 #include "../param_util.h"
 #include "../util.h"
+#include "../alloc.h"
+#include "../log.h"
 #include "synth.h"
+#include "pwm.h"
 
 
 // It's actually closer to half of this, the synthesized sawtooth amplitude
@@ -15,6 +18,8 @@
 #define SUPERSAW_VOICE_COUNT 7
 #define SUPERSAW_MOD_COUNT 4
 
+#define DELAY_LINE_COUNT BBXS_SYNTH_MAX_VOICES
+
 typedef struct supersaw_voice {
     inst_base_voice_s base;
 
@@ -22,7 +27,8 @@ typedef struct supersaw_voice {
     int delay_index;
 
     double phases[SUPERSAW_VOICE_COUNT];
-
+    double phase_delta;
+    double phase_delta_scale;
     double dynamism;
     double dynamism_delta;
     double unison_detunes[SUPERSAW_VOICE_COUNT];
@@ -53,6 +59,11 @@ typedef struct supersaw_synth {
     prng_state_s prng_state;
 
     supersaw_voice_s voices[BBXS_SYNTH_MAX_VOICES];
+
+    // TODO: what is a good size for a delay line?
+    // a contiguous array of delay lines of size delay_line_size.
+    float *delay_line_alloc;
+    int delay_line_size;
 } supersaw_synth_s;
 
 static void supersaw_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
@@ -67,6 +78,14 @@ static void supersaw_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
         synth->pulse_width[i] = BBXS_PULSE_WIDTH_MAX;
     }
     synth->aliases = false;
+}
+
+static void supersaw_destroy(bbxs_synth_s *p_inst) {
+    assert(p_inst);
+    assert(p_inst->type == BBXS_SYNTH_SUPERSAW);
+    supersaw_synth_s *inst = (supersaw_synth_s *)p_inst;
+
+    bbxs__free(inst->base.ctx, inst->delay_line_alloc);
 }
 
 static bbxs_voice_id supersaw_note_on(bbxs_synth_s *p_inst, int key,
@@ -102,6 +121,54 @@ static void supersaw_note_all_off(bbxs_synth_s *p_inst) {
     supersaw_synth_s *inst = (supersaw_synth_s *)p_inst;
 
     bbxs__release_all_voices(p_inst, GENERIC_LIST(inst->voices));
+}
+
+static void supersaw_sample_rate_changed(bbxs_synth_s *p_inst, double old,
+                                         double new) {
+    if (new == old) return;
+
+    assert(p_inst);
+    assert(p_inst->type == BBXS_SYNTH_SUPERSAW);
+    supersaw_synth_s *inst = (supersaw_synth_s *)p_inst;
+    const bbxs_context_s *const ctx = inst->base.ctx;
+
+    if (inst->delay_line_alloc) bbxs__free(ctx, inst->delay_line_alloc);
+
+    // The delay line buffer will get reused for other tones so might as well
+    // start off with a buffer size that is big enough for most notes.
+    // const int likely_maximum_length = (int) ceil(4 * new /
+    // key_to_hz_d(12.0)); int dl_size =
+    // bbxs__fitting_power_of_two(likely_maximum_length);
+
+    // the min_buffer_length of MIDI E(-1) is 4660; i think the intended value
+    // of likelyMaximumLength (16,384) is higher than reasonable. and I should
+    // prefer conserving memory.
+    int dl_size = 8192;
+
+    float *dl_alloc =
+        bbxs__malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
+    if (!dl_alloc) {
+        bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
+                      "supersaw could not allocate delay lines!");
+
+        // umm i don't know how the program would recover from this. uhhh.
+        inst->delay_line_alloc = NULL;
+        inst->delay_line_size = 0;
+        return;
+    }
+
+    bbxs__logmsgf(ctx, BBXS_LOG_DEBUG,
+                  "allocated %zu bytes of delay line buffers",
+                  (size_t)dl_size * DELAY_LINE_COUNT * sizeof(float));
+
+    memset(dl_alloc, 0, DELAY_LINE_COUNT * dl_size * sizeof(float));
+
+    inst->delay_line_size = dl_size;
+    inst->delay_line_alloc = dl_alloc;
+    for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
+        inst->voices[i].delay_line = dl_alloc;
+        dl_alloc += dl_size;
+    }
 }
 
 // TODO: don't make base_inst in compute_voice signature a constant
@@ -245,7 +312,6 @@ static void compute_voice(const bbxs_synth_s *const base_inst,
         voice->unison_detunes[i] = pow(2.0, curvedSpread * offset / 12.0);
     }
     
-    double baseShape = voice->shape / BBXS_SUPERSAW_SHAPE_MAX;
     // Saw shape mods
     double useShapeStart = (inst->shape[0] / BBXS_SUPERSAW_SHAPE_MAX) * envc->envelope_starts[BBXS_ENV_INDEX_SUPERSAW_SHAPE];
     double useShapeEnd = (inst->shape[1] / BBXS_SUPERSAW_SHAPE_MAX) * envc->envelope_ends[BBXS_ENV_INDEX_SUPERSAW_SHAPE];
@@ -261,58 +327,39 @@ static void compute_voice(const bbxs_synth_s *const base_inst,
 
     double pulseWidthStart = pulseWidthModStart * envc->envelope_starts[BBXS_ENV_INDEX_PULSE_WIDTH];
     double pulseWidthEnd = pulseWidthModEnd * envc->envelope_ends[BBXS_ENV_INDEX_PULSE_WIDTH];
-    double phaseDeltaStart = (voice->has_prev_phase_delta) ? voice->prev_phase_delta : start_freq * varying->sample_len;
-    double phaseDeltaEnd = start_freq * varying->sample_len * freqEndRatio;
+    double phaseDeltaStart = (voice->has_prev_phase_delta) ? voice->prev_phase_delta : start_freq * sample_len;
+    double phaseDeltaEnd = start_freq * sample_len * freqEndRatio;
     voice->prev_phase_delta = phaseDeltaEnd;
     voice->has_prev_phase_delta = true;
-    const delayLengthStart = pulseWidthStart / phaseDeltaStart;
-    const delayLengthEnd = pulseWidthEnd / phaseDeltaEnd;
-    tone.supersawDelayLength = delayLengthStart;
-    tone.supersawDelayLengthDelta = (delayLengthEnd - delayLengthStart) / roundedSamplesPerTick;
-    const minBufferLength: number = Math.ceil(Math.max(delayLengthStart, delayLengthEnd)) + 2;
+
+    double delayLengthStart = pulseWidthStart / phaseDeltaStart;
+    double delayLengthEnd = pulseWidthEnd / phaseDeltaEnd;
+    voice->delay_length = delayLengthStart;
+    voice->delay_length_delta = (delayLengthEnd - delayLengthStart) / rounded_samples_per_tick;
+    int minBufferLength = (int)ceil(max(delayLengthStart, delayLengthEnd)) + 2;
+    assert(inst->delay_line_size > minBufferLength);
+    (void)minBufferLength;
+    // TODO: what do i do if minBufferLength <= delay_line_size ?
     
-    if (tone.supersawDelayLine == null || tone.supersawDelayLine.length <= minBufferLength) {
-        // The delay line buffer will get reused for other tones so might as well
-        // start off with a buffer size that is big enough for most notes.
-        const likelyMaximumLength: number = Math.ceil(0.5 * this.samplesPerSecond / Instrument.frequencyFromPitch(24));
-        const newDelayLine: Float32Array = new Float32Array(Synth.fittingPowerOfTwo(Math.max(likelyMaximumLength, minBufferLength)));
-        if (!initializeSupersaw && tone.supersawDelayLine != null) {
-            // If the tone has already started but the buffer needs to be reallocated,
-            // transfer the old data to the new buffer.
-            const oldDelayBufferMask: number = (tone.supersawDelayLine.length - 1) >> 0;
-            const startCopyingFromIndex: number = tone.supersawDelayIndex;
-            for (let i: number = 0; i < tone.supersawDelayLine.length; i++) {
-                newDelayLine[i] = tone.supersawDelayLine[(startCopyingFromIndex + i) & oldDelayBufferMask];
-            }
-        }
-        tone.supersawDelayLine = newDelayLine;
-        tone.supersawDelayIndex = tone.supersawDelayLine.length;
-    } else if (initializeSupersaw) {
-        tone.supersawDelayLine.fill(0.0);
-        tone.supersawDelayIndex = tone.supersawDelayLine.length;
+    if (initializeSupersaw) {
+        for (int i = 0; i < inst->delay_line_size; i++)
+            voice->delay_line[i] = 0.0f;
+        voice->delay_index = inst->delay_line_size;
     }
     
-    const pulseExpressionRatio: number = Config.pwmBaseExpression / Config.supersawBaseExpression;
-    supersawExpressionStart *= (1.0 + (pulseExpressionRatio - 1.0) * shapeStart) / Math.sqrt(1.0 + (Config.supersawVoiceCount - 1.0) * dynamismStart * dynamismStart);
-    supersawExpressionEnd *= (1.0 + (pulseExpressionRatio - 1.0) * shapeEnd) / Math.sqrt(1.0 + (Config.supersawVoiceCount - 1.0) * dynamismEnd * dynamismEnd);
+    double pulseExpressionRatio = PWM_BASE_EXPRESSION / BASE_EXPRESSION;
+    supersawExpressionStart *= (1.0 + (pulseExpressionRatio - 1.0) * shapeStart) / sqrt(1.0 + (SUPERSAW_VOICE_COUNT - 1.0) * dynamismStart * dynamismStart);
+    supersawExpressionEnd *= (1.0 + (pulseExpressionRatio - 1.0) * shapeEnd) / sqrt(1.0 + (SUPERSAW_VOICE_COUNT - 1.0) * dynamismEnd * dynamismEnd);
 
-    /*
-    const double expr_start =
-        BASE_EXPRESSION * varying->expr_start * pitch_expression_start;
-    const double expr_end =
-        BASE_EXPRESSION * varying->expr_end * pitch_expression_end;
+    double expressionStart = varying->expr_start * pitch_expression_start * supersawExpressionStart;
+	double expressionEnd = varying->expr_end * pitch_expression_end * supersawExpressionEnd;
 
-    const double start_freq = key_to_hz_d(start_pitch);
-    const double end_freq = key_to_hz_d(end_pitch);
+    voice->base.expression = expressionStart;
+    voice->base.expression_delta = (expressionEnd - expressionStart) / rounded_samples_per_tick;
 
     voice->phase_delta = start_freq * sample_len;
     voice->phase_delta_scale =
         pow(end_freq / start_freq, 1.0 / rounded_samples_per_tick);
-
-    voice->base.expression = expr_start;
-    voice->base.expression_delta =
-        (expr_end - expr_start) / rounded_samples_per_tick;
-    */
 }
 
 static void supersaw_tick(bbxs_synth_s *p_inst,
@@ -340,25 +387,108 @@ static void supersaw_run(bbxs_synth_s *p_inst, float *samples,
     supersaw_synth_s *inst = (supersaw_synth_s *)p_inst;
 
     memset(samples, 0, frame_count * sizeof(float));
+    
+    const int voiceCount = SUPERSAW_VOICE_COUNT;
 
     for (int i = 0; i < BBXS_SYNTH_MAX_VOICES; ++i) {
         supersaw_voice_s *voice = &inst->voices[i];
         if (!voice_is_computing(&voice->base)) continue;
 
+        double phaseDelta = voice->phase_delta;
+		const double phaseDeltaScale = voice->phase_delta_scale;
+		double expression = voice->base.expression;
+		const double expressionDelta = voice->base.expression_delta;
+        double *phases = voice->phases;
+		
+		double dynamism = voice->dynamism;
+		const double dynamismDelta = voice->dynamism_delta;
+		const double *unisonDetunes = voice->unison_detunes;
+		double shape = voice->shape;
+		const double shapeDelta = voice->shape_delta;
+		double delayLength = voice->delay_length;
+		const double delayLengthDelta = voice->delay_length_delta;
+        float *const delayLine = voice->delay_line;
+		const int delayBufferMask = inst->delay_line_size - 1;
+        assert(is_power_of_two(delayBufferMask + 1));
+		int delayIndex = voice->delay_index;
+		delayIndex = (delayIndex & delayBufferMask) + inst->delay_line_size;
+
         double x1 = voice->base.note_filter_input[0];
         double x2 = voice->base.note_filter_input[1];
 
         for (size_t smp = 0; smp < frame_count; ++smp) {
-            // double sample =
-            //     bbxs__apply_filters(x0, x1, x2, voice->base.note_filters);
-            // x2 = x1;
-            // x1 = x0;
+            // The phase initially starts at a zero crossing so apply
+			// the delta before first sample to get a nonzero value.
+			double phase = fmod((phases[0] + phaseDelta), 1.0);
+			double supersawSample = phase - 0.5 * (1.0 + (voiceCount - 1.0) * dynamism);
+			
+			// This is a PolyBLEP, which smooths out discontinuities at any frequency to reduce aliasing. 
+            if (!inst->aliases) {
+                if (phase < phaseDelta) {
+                    double t = phase / phaseDelta;
+                    supersawSample -= (t + t - t * t - 1) * 0.5;
+                } else if (phase > 1.0 - phaseDelta) {
+                    double t = (phase - 1.0) / phaseDelta;
+                    supersawSample -= (t + t + t * t + 1) * 0.5;
+                }
+            }
+			
+			phases[0] = phase;
+			
+			for (int i = 1; i < voiceCount; i++) {
+				const double detunedPhaseDelta = phaseDelta * unisonDetunes[i];
+				// The phase initially starts at a zero crossing so apply
+				// the delta before first sample to get a nonzero value.
+				double phase = fmod((phases[i] + detunedPhaseDelta), 1.0);
+				supersawSample += phase * dynamism;
+				
+				// This is a PolyBLEP, which smooths out discontinuities at any frequency to reduce aliasing. 
+                if (!inst->aliases) {
+                    if (phase < detunedPhaseDelta) {
+                        const double t = phase / detunedPhaseDelta;
+                        supersawSample -= (t + t - t * t - 1) * 0.5 * dynamism;
+                    } else if (phase > 1.0 - detunedPhaseDelta) {
+                        const double t = (phase - 1.0) / detunedPhaseDelta;
+                        supersawSample -= (t + t + t * t + 1) * 0.5 * dynamism;
+                    }
+                }
+				
+				phases[i] = phase;
+            }
 
-            // const double output = sample * expression;
-            // expression += expression_delta;
-
-            // samples[smp] += (float)output;
+            delayLine[delayIndex & delayBufferMask] = supersawSample;
+			const double delaySampleTime = delayIndex - delayLength;
+			const int lowerIndex = (int)delaySampleTime;
+			const int upperIndex = lowerIndex + 1;
+			const double delayRatio = delaySampleTime - lowerIndex;
+			const double prevDelaySample = delayLine[lowerIndex & delayBufferMask];
+			const double nextDelaySample = delayLine[upperIndex & delayBufferMask];
+			const double delaySample = prevDelaySample + (nextDelaySample - prevDelaySample) * delayRatio;
+			delayIndex++;
+			
+			const double x0 = supersawSample - delaySample * shape;
+            double sample =
+                bbxs__apply_filters(x0, x1, x2, voice->base.note_filters);
+            x2 = x1;
+            x1 = x0;
+			
+			phaseDelta *= phaseDeltaScale;
+			dynamism += dynamismDelta;
+			shape += shapeDelta;
+			delayLength += delayLengthDelta;
+			
+			const double output = sample * expression;
+			expression += expressionDelta;
+			
+            samples[smp] = (float)output;
         }
+
+        voice->phase_delta = phaseDelta;
+		voice->base.expression = expression;
+		voice->dynamism = dynamism;
+		voice->shape = shape;
+		voice->delay_length = delayLength;
+		voice->delay_index = delayIndex;
 
         bbxs__sanitize_filters(voice->base.note_filters, FILTER_GROUP_COUNT);
         voice->base.note_filter_input[0] = x1;
@@ -446,9 +576,11 @@ const synth_vtable_s bbxs__synth_supersaw_vtable = {
     .envelope_targets = env_targets,
 
     .inst_init = supersaw_init,
+    .inst_destroy = supersaw_destroy,
     .inst_note_on = supersaw_note_on,
     .inst_note_off = supersaw_note_off,
     .inst_note_all_off = supersaw_note_all_off,
+    .inst_sample_rate_changed = supersaw_sample_rate_changed,
 
     .inst_tick = supersaw_tick,
     .inst_run = supersaw_run,

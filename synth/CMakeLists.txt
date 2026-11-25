@@ -12,6 +12,7 @@ set(SOURCES
     src/synth/spectrum.c
     src/synth/noise.c
     src/synth/picked.c
+    src/synth/supersaw.c
 
     src/fx/volume.c
     src/fx/panning.c

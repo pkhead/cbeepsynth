@@ -71,6 +71,8 @@ static void supersaw_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     *synth = (supersaw_synth_s){0};
     bbxs__inst_init(ctx, (void *)synth, BBXS_SYNTH_SUPERSAW);
 
+    synth->prng_state = bbxs__random_seeded_state(0);
+
     for (int i = 0; i < 2; ++i) {
         synth->dynamism[i] = BBXS_SUPERSAW_DYNAMISM_MAX;
         synth->spread[i] = BBXS_SUPERSAW_SPREAD_MAX / 2.0;
@@ -101,7 +103,10 @@ static bbxs_voice_id supersaw_note_on(bbxs_synth_s *p_inst, int key,
 
     if (!continuation) {
         supersaw_voice_s *voice = &inst->voices[id];
-        *voice = (supersaw_voice_s){.base = voice->base};
+        voice->delay_index = -1;
+        memset(voice->phases, 0, sizeof(voice->phases));
+        voice->has_prev_pitch_expression = false;
+        voice->has_prev_phase_delta = false;
     }
 
     return id;
@@ -351,8 +356,8 @@ static void compute_voice(const bbxs_synth_s *const base_inst,
     supersawExpressionStart *= (1.0 + (pulseExpressionRatio - 1.0) * shapeStart) / sqrt(1.0 + (SUPERSAW_VOICE_COUNT - 1.0) * dynamismStart * dynamismStart);
     supersawExpressionEnd *= (1.0 + (pulseExpressionRatio - 1.0) * shapeEnd) / sqrt(1.0 + (SUPERSAW_VOICE_COUNT - 1.0) * dynamismEnd * dynamismEnd);
 
-    double expressionStart = varying->expr_start * pitch_expression_start * supersawExpressionStart;
-	double expressionEnd = varying->expr_end * pitch_expression_end * supersawExpressionEnd;
+    double expressionStart = BASE_EXPRESSION * varying->expr_start * pitch_expression_start * supersawExpressionStart;
+	double expressionEnd = BASE_EXPRESSION * varying->expr_end * pitch_expression_end * supersawExpressionEnd;
 
     voice->base.expression = expressionStart;
     voice->base.expression_delta = (expressionEnd - expressionStart) / rounded_samples_per_tick;
@@ -480,7 +485,7 @@ static void supersaw_run(bbxs_synth_s *p_inst, float *samples,
 			const double output = sample * expression;
 			expression += expressionDelta;
 			
-            samples[smp] = (float)output;
+            samples[smp] += (float)output;
         }
 
         voice->phase_delta = phaseDelta;

@@ -231,7 +231,7 @@ typedef enum bbxs_spectrum_param {
 typedef enum bbxs_supersaw_param {
     BBXS_SUPERSAW_PARAM_DYNAMISM = BBXS_BASE_PARAM_COUNT,
     BBXS_SUPERSAW_PARAM_SPREAD,
-    BBXS_SUPERSAW_PARAM_BLEND,
+    BBXS_SUPERSAW_PARAM_SHAPE,
     BBXS_SUPERSAW_PARAM_PULSE_WIDTH,
     BBXS_SUPERSAW_PARAM_ALIASES
 } bbxs_supersaw_param_e;

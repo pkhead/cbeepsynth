@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+
 #include "../include/beepbox_synth.h"
 
 #define PI 3.14159265358979323846
@@ -46,21 +47,13 @@ static inline int signf(float v) {
 #undef min
 #undef max
 
-static inline double min(double a, double b) {
-    return a < b ? a : b;
-}
+static inline double min(double a, double b) { return a < b ? a : b; }
 
-static inline double max(double a, double b) {
-    return a > b ? a : b;
-}
+static inline double max(double a, double b) { return a > b ? a : b; }
 
-static inline int mini(int a, int b) {
-    return a < b ? a : b;
-}
+static inline int mini(int a, int b) { return a < b ? a : b; }
 
-static inline int maxi(int a, int b) {
-    return a > b ? a : b;
-}
+static inline int maxi(int a, int b) { return a > b ? a : b; }
 
 static inline float key_to_hz_f(int key) {
     return powf(2.f, (key - 69) / 12.f) * 440.f;

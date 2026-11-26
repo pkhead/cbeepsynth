@@ -12,7 +12,7 @@
 #define NOTE_SLIDE_TICKS 6
 
 enum {
-    ENV_COMPUTER_FLAG_DO_RESET   = (1 << 0),
+    ENV_COMPUTER_FLAG_DO_RESET = (1 << 0),
     ENV_COMPUTER_FLAG_IS_SLIDING = (1 << 1),
 };
 

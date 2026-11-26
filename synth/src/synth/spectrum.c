@@ -1,10 +1,10 @@
 #include <assert.h>
 #include <string.h>
 
+#include "../context.h"
 #include "../param_util.h"
 #include "../util.h"
 #include "../wavetables.h"
-#include "../context.h"
 #include "synth.h"
 
 // Spectrum can be in pitch or noise channels, the expression is doubled for

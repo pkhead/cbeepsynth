@@ -182,18 +182,15 @@ typedef enum bbxs_harmonics_param {
     BBXS_HARMONICS_PARAM_UNISON = BBXS_BASE_PARAM_COUNT,
     BBXS_HARMONICS_PARAM_CONTROL_FIRST,
     BBXS_HARMONICS_PARAM_CONTROL_LAST =
-        BBXS_HARMONICS_PARAM_CONTROL_FIRST +
-        (BBXS_HARMONICS_CONTROL_COUNT - 1)
+        BBXS_HARMONICS_PARAM_CONTROL_FIRST + (BBXS_HARMONICS_CONTROL_COUNT - 1)
 } bbxs_harmonics_param_e;
 
 ////////////////////////
 // Picked String data //
 ////////////////////////
 #define BBXS_PICKED_STRING_SUSTAIN_RANGE 15
-#define BBXS_PICKED_STRING_SUSTAIN_MAX                                      \
-    ((BBXS_PICKED_STRING_SUSTAIN_RANGE - 1))
-#define BBXS_PICKED_STRING_PARAM_COUNT                                      \
-    ((2 + BBXS_HARMONICS_CONTROL_COUNT))
+#define BBXS_PICKED_STRING_SUSTAIN_MAX ((BBXS_PICKED_STRING_SUSTAIN_RANGE - 1))
+#define BBXS_PICKED_STRING_PARAM_COUNT ((2 + BBXS_HARMONICS_CONTROL_COUNT))
 
 typedef enum bbxs_picked_string_param {
     BBXS_PICKED_STRING_PARAM_UNISON = BBXS_BASE_PARAM_COUNT,
@@ -216,8 +213,7 @@ typedef enum bbxs_spectrum_param {
     BBXS_SPECTRUM_PARAM_IS_NOISE_CHANNEL = BBXS_BASE_PARAM_COUNT,
     BBXS_SPECTRUM_PARAM_CONTROL_FIRST,
     BBXS_SPECTRUM_PARAM_CONTROL_LAST =
-        BBXS_SPECTRUM_PARAM_CONTROL_FIRST +
-        (BBXS_SPECTRUM_CONTROL_COUNT - 1)
+        BBXS_SPECTRUM_PARAM_CONTROL_FIRST + (BBXS_SPECTRUM_CONTROL_COUNT - 1)
 } bbxs_spectrum_param_e;
 
 ///////////////////
@@ -243,9 +239,7 @@ typedef enum bbxs_supersaw_param {
 #define BBXS_INSTRUMENT_VOLUME_MIN -25.0
 #define BBXS_INSTRUMENT_VOLUME_MAX 25.0
 
-typedef enum bbxs_volume_param {
-    BBXS_VOLUME_PARAM_VOLUME
-} bbxs_volume_param_e;
+typedef enum bbxs_volume_param { BBXS_VOLUME_PARAM_VOLUME } bbxs_volume_param_e;
 
 /////////////////////////
 // Panning effect data //
@@ -278,7 +272,8 @@ typedef enum bbxs_distortion_param {
 #define BBXS_BITCRUSHER_FREQ_RANGE 14
 #define BBXS_BITCRUSHER_QUANTIZATION_RANGE 8
 #define BBXS_BITCRUSHER_FREQ_MAX (BBXS_BITCRUSHER_FREQ_RANGE - 1)
-#define BBXS_BITCRUSHER_QUANTIZATION_MAX (BBXS_BITCRUSHER_QUANTIZATION_RANGE - 1)
+#define BBXS_BITCRUSHER_QUANTIZATION_MAX                                       \
+    (BBXS_BITCRUSHER_QUANTIZATION_RANGE - 1)
 
 typedef enum bbxs_bitcrusher_param {
     BBXS_BITCRUSHER_PARAM_BIT_QUANTIZATION,
@@ -324,9 +319,7 @@ typedef enum bbxs_eq_param {
 #define BBXS_CHORUS_RANGE 8
 #define BBXS_CHORUS_MAX (BBXS_CHORUS_RANGE - 1)
 
-typedef enum bbxs_chorus_param {
-    BBXS_CHORUS_PARAM_CHORUS
-} bbxs_chorus_param_e;
+typedef enum bbxs_chorus_param { BBXS_CHORUS_PARAM_CHORUS } bbxs_chorus_param_e;
 
 //////////////////////
 // Echo effect data //
@@ -349,9 +342,7 @@ typedef enum bbxs_echo_param {
 #define BBXS_REVERB_RANGE 32
 #define BBXS_REVERB_MAX (BBXS_REVERB_RANGE - 1)
 
-typedef enum bbxs_reverb_param {
-    BBXS_REVERB_PARAM_REVERB
-} bbxs_reverb_param_e;
+typedef enum bbxs_reverb_param { BBXS_REVERB_PARAM_REVERB } bbxs_reverb_param_e;
 
 /////////////////////////
 // Limiter effect data //

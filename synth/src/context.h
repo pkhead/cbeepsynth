@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 #include "../include/beepbox_synth.h"
-#include "wavetables.h"
 #include "util.h"
+#include "wavetables.h"
 
 struct bbxs_context {
     bbxs_allocator_s alloc;

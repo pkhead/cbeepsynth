@@ -265,7 +265,8 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, prng_state_s *prng) {
+bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx,
+                                       prng_state_s *prng) {
     wavetables_s *const wavetables = &ctx->wavetables;
 
     // init sine wavetable

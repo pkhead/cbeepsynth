@@ -1,10 +1,11 @@
+#include "pwm.h"
+
 #include <assert.h>
 #include <string.h>
 
 #include "../param_util.h"
 #include "../util.h"
 #include "synth.h"
-#include "pwm.h"
 
 #define BASE_EXPRESSION PWM_BASE_EXPRESSION
 #define PWM_MOD_COUNT 1

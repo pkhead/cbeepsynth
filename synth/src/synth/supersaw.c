@@ -456,7 +456,7 @@ static void supersaw_run(bbxs_synth_s *p_inst, float *samples,
 				phases[i] = phase;
             }
 
-            delayLine[delayIndex & delayBufferMask] = supersawSample;
+            delayLine[delayIndex & delayBufferMask] = (float)supersawSample;
 			const double delaySampleTime = delayIndex - delayLength;
 			const int lowerIndex = (int)delaySampleTime;
 			const int upperIndex = lowerIndex + 1;

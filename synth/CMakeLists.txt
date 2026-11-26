@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(bpbxsynth VERSION 0.2.0)
+project(bpbxsynth VERSION 0.3.0)
 
 set(SOURCES
     src/public.c

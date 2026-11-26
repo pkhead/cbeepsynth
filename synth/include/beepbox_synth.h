@@ -51,7 +51,7 @@ extern "C" {
 #include "beepbox_instrument_data.h"
 
 #define BBXS_VERSION_MAJOR 0
-#define BBXS_VERSION_MINOR 2
+#define BBXS_VERSION_MINOR 3
 // to get the revision, call bbxs_version
 
 #define BBXS_MAX_ENVELOPE_COUNT 12 // 16 in slarmoo's box

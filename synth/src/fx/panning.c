@@ -53,7 +53,7 @@ static void panning_stop(bbxs_effect_s *p_inst) {
 static void panning_destroy(bbxs_effect_s *p_inst) {
     panning_effect_s *const inst = (panning_effect_s *)p_inst;
     const bbxs_context_s *ctx = inst->base.ctx;
-    bbxs_free(ctx, inst->delay_line);
+    bbxs__free(ctx, inst->delay_line);
 }
 
 static void panning_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
@@ -62,11 +62,11 @@ static void panning_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     const bbxs_context_s *ctx = inst->base.ctx;
     if (old_sr == new_sr) return;
 
-    bbxs_free(ctx, inst->delay_line);
+    bbxs__free(ctx, inst->delay_line);
 
     inst->delay_line_size =
         bbxs__fitting_power_of_two((int)ceil(new_sr * PAN_DELAY_SECS_MAX));
-    inst->delay_line = bbxs_malloc(ctx, inst->delay_line_size * sizeof(float));
+    inst->delay_line = bbxs__malloc(ctx, inst->delay_line_size * sizeof(float));
     inst->delay_buffer_mask = inst->delay_line_size - 1;
 
     if (!inst->delay_line)

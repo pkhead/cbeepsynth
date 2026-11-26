@@ -102,8 +102,8 @@ static void echo_destroy(bbxs_effect_s *p_inst) {
     const bbxs_context_s *ctx = inst->base.ctx;
 
     for (int i = 0; i < 2; ++i) {
-        bbxs_free(ctx, inst->delay_lines[i][0]);
-        bbxs_free(ctx, inst->delay_lines[i][1]);
+        bbxs__free(ctx, inst->delay_lines[i][0]);
+        bbxs__free(ctx, inst->delay_lines[i][1]);
         inst->delay_lines[i][0] = NULL;
         inst->delay_lines[i][1] = NULL;
     }
@@ -121,12 +121,12 @@ static void echo_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     inst->delay_line_capacity = delay_line_capacity;
 
     for (int i = 0; i < 2; ++i) {
-        bbxs_free(ctx, inst->delay_lines[i][0]);
-        bbxs_free(ctx, inst->delay_lines[i][1]);
+        bbxs__free(ctx, inst->delay_lines[i][0]);
+        bbxs__free(ctx, inst->delay_lines[i][1]);
 
         size_t alloc_size = (size_t)delay_line_capacity * sizeof(float);
-        inst->delay_lines[i][0] = bbxs_malloc(ctx, alloc_size);
-        inst->delay_lines[i][1] = bbxs_malloc(ctx, alloc_size);
+        inst->delay_lines[i][0] = bbxs__malloc(ctx, alloc_size);
+        inst->delay_lines[i][1] = bbxs__malloc(ctx, alloc_size);
         inst->delay_line_dirty = true;
 
         if (!inst->delay_lines[i][0])
@@ -138,8 +138,8 @@ static void echo_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
                           "could not allocate echo delay_lines[%i].R", i);
 
         if (!inst->delay_lines[i][0] || !inst->delay_lines[i][1]) {
-            bbxs_free(ctx, inst->delay_lines[i][0]);
-            bbxs_free(ctx, inst->delay_lines[i][1]);
+            bbxs__free(ctx, inst->delay_lines[i][0]);
+            bbxs__free(ctx, inst->delay_lines[i][1]);
             inst->delay_lines[i][0] = NULL;
             inst->delay_lines[i][1] = NULL;
         } else {

@@ -50,7 +50,7 @@ static void reverb_destroy(bbxs_effect_s *p_inst) {
     reverb_effect_s *const inst = (reverb_effect_s *)p_inst;
     const bbxs_context_s *ctx = inst->base.ctx;
 
-    bbxs_free(ctx, inst->delay_line);
+    bbxs__free(ctx, inst->delay_line);
 }
 
 static void reverb_stop(bbxs_effect_s *p_inst) {
@@ -68,7 +68,7 @@ static void reverb_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     reverb_effect_s *const inst = (reverb_effect_s *)p_inst;
     const bbxs_context_s *ctx = inst->base.ctx;
 
-    bbxs_free(ctx, inst->delay_line);
+    bbxs__free(ctx, inst->delay_line);
 
     // good ratios:    0.555235 + 0.618033 + 0.818 +   1.0 = 2.991268
     // Delay lengths:  3041     + 3385     + 4481  +  5477 = 16384 = 2^14
@@ -80,7 +80,7 @@ static void reverb_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
 
     inst->delay_line_size = size;
     size_t alloc_size = (size_t)inst->delay_line_size * sizeof(float);
-    inst->delay_line = bbxs_malloc(ctx, alloc_size);
+    inst->delay_line = bbxs__malloc(ctx, alloc_size);
     memset(inst->delay_line, 0, alloc_size);
 
     if (!inst->delay_line) {

@@ -79,7 +79,7 @@ static void chorus_destroy(bbxs_effect_s *p_inst) {
     chorus_effect_s *const inst = (chorus_effect_s *)p_inst;
     const bbxs_context_s *ctx = inst->base.ctx;
 
-    bbxs_free(ctx, inst->delay_line_alloc);
+    bbxs__free(ctx, inst->delay_line_alloc);
     inst->delay_line_alloc = NULL;
     inst->delay_line[0] = NULL;
     inst->delay_line[1] = NULL;
@@ -92,7 +92,7 @@ static void chorus_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
     if (old_sr == new_sr) return;
 
     // reallocate/resize delay line
-    bbxs_free(ctx, inst->delay_line_alloc);
+    bbxs__free(ctx, inst->delay_line_alloc);
 
     inst->delay_line_size =
         bbxs__fitting_power_of_two((int)(new_sr * chorus_max_delay()));
@@ -100,7 +100,7 @@ static void chorus_sample_rate_changed(bbxs_effect_s *p_inst, double old_sr,
 
     inst->delay_line_alloc_size = (size_t)inst->delay_line_size * 2;
     inst->delay_line_alloc =
-        bbxs_malloc(ctx, inst->delay_line_alloc_size * sizeof(float));
+        bbxs__malloc(ctx, inst->delay_line_alloc_size * sizeof(float));
 
     assert(inst->delay_line_alloc);
     if (!inst->delay_line_alloc) {

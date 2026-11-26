@@ -123,11 +123,11 @@ void bbxs_context_destroy(bbxs_context_s *ctx) {
     if (!ctx) return;
 
     for (int i = 0; i < BBXS_CHIP_WAVE_COUNT; ++i) {
-        bbxs_free(ctx, ctx->wavetables.raw_chip_wavetables[i].samples);
-        bbxs_free(ctx, ctx->wavetables.chip_wavetables[i].samples);
+        bbxs__free(ctx, ctx->wavetables.raw_chip_wavetables[i].samples);
+        bbxs__free(ctx, ctx->wavetables.chip_wavetables[i].samples);
     }
 
-    bbxs_free(ctx, ctx);
+    bbxs__free(ctx, ctx);
 }
 
 void bbxs_set_log_func(bbxs_context_s *ctx, bbxs_log_f log_func,
@@ -199,7 +199,7 @@ bbxs_synth_s *bbxs_synth_new(bbxs_context_s *ctx, bbxs_synth_type_e type) {
     assert(vtable->param_count == 0 || vtable->param_addresses);
     assert(vtable->envelope_target_count == 0 || vtable->envelope_targets);
 
-    bbxs_synth_s *inst = bbxs_malloc(ctx, vtable->struct_size);
+    bbxs_synth_s *inst = bbxs__malloc(ctx, vtable->struct_size);
     if (inst) vtable->inst_init(ctx, inst);
     return inst;
 }
@@ -213,7 +213,7 @@ void bbxs_synth_destroy(bbxs_synth_s *inst) {
             vtable->inst_destroy(inst);
         }
 
-        bbxs_free(inst->ctx, inst);
+        bbxs__free(inst->ctx, inst);
     }
 }
 
@@ -611,7 +611,7 @@ bbxs_effect_s *bbxs_effect_new(bbxs_context_s *ctx,
     assert(vtable->param_count == 0 || vtable->param_info);
     assert(vtable->param_count == 0 || vtable->param_addresses);
 
-    bbxs_effect_s *inst = bbxs_malloc(ctx, vtable->struct_size);
+    bbxs_effect_s *inst = bbxs__malloc(ctx, vtable->struct_size);
     if (inst) vtable->effect_init(ctx, inst);
     return inst;
 }
@@ -623,7 +623,7 @@ void bbxs_effect_destroy(bbxs_effect_s *effect) {
     assert(vtable);
     if (vtable->effect_destroy) vtable->effect_destroy(effect);
 
-    bbxs_free(effect->ctx, effect);
+    bbxs__free(effect->ctx, effect);
 }
 
 bbxs_effect_type_e bbxs_effect_type(const bbxs_effect_s *effect) {

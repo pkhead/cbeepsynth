@@ -454,7 +454,7 @@ static void picked_destroy(bbxs_synth_s *p_inst) {
     assert(p_inst->type == BBXS_SYNTH_PICKED_STRING);
     picked_inst_s *inst = (picked_inst_s *)p_inst;
 
-    bbxs_free(inst->base.ctx, inst->delay_line_alloc);
+    bbxs__free(inst->base.ctx, inst->delay_line_alloc);
 }
 
 static bbxs_voice_id picked_note_on(bbxs_synth_s *p_inst, int key,
@@ -517,7 +517,7 @@ static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
     picked_inst_s *inst = (picked_inst_s *)p_inst;
     const bbxs_context_s *const ctx = inst->base.ctx;
 
-    if (inst->delay_line_alloc) bbxs_free(ctx, inst->delay_line_alloc);
+    if (inst->delay_line_alloc) bbxs__free(ctx, inst->delay_line_alloc);
 
     // The delay line buffer will get reused for other tones so might as well
     // start off with a buffer size that is big enough for most notes.
@@ -531,7 +531,7 @@ static void picked_sample_rate_changed(bbxs_synth_s *p_inst, double old,
     int dl_size = 8192;
 
     float *dl_alloc =
-        bbxs_malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
+        bbxs__malloc(ctx, DELAY_LINE_COUNT * dl_size * sizeof(float));
     if (!dl_alloc) {
         bbxs__logmsgf(ctx, BBXS_LOG_ERROR,
                       "picked string could not allocate delay lines!");

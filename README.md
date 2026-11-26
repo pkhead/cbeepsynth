@@ -9,9 +9,9 @@ This project is structured such that the synth library can be used independently
 ## To Be Implemented:
 ### Synth
 - Instruments:
-    - Custom chip
     - FM6
-    - Supersaw
+- Slarmoo's extended envelope system
+    - ADSR envelope type
 
 ### Song
 - Loading BeepBox/JummBox song URL data into a song structure.

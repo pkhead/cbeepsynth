@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <string.h>
-#include <time.h>
 
 #include "../context.h"
 #include "../param_util.h"
@@ -50,7 +49,7 @@ static void noise_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     bbxs__inst_init(ctx, p_inst, BBXS_SYNTH_NOISE);
 
     inst->noise_type = BBXS_NOISE_RETRO;
-    inst->prng_state = bbxs__random_seeded_state((uint64_t)clock());
+    inst->prng_state = bbxs__random_seeded_state(bbxs__random(&ctx->prng));
 }
 
 static bbxs_voice_id noise_note_on(bbxs_synth_s *p_inst, int key,

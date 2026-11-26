@@ -80,7 +80,7 @@ static void std_free(void *ptr, void *ud) {
 #endif
 
 bbxs_context_s *bbxs_context_new(const bbxs_allocator_s *p_alloc,
-                                 uint64_t wavetable_init_seed) {
+                                 uint64_t random_seed) {
     bbxs_context_s *ctx = NULL;
     bbxs_allocator_s alloc;
 
@@ -104,9 +104,14 @@ bbxs_context_s *bbxs_context_new(const bbxs_allocator_s *p_alloc,
     ctx = alloc.alloc(sizeof(bbxs_context_s), alloc.userdata);
     if (!ctx) return NULL;
 
+    // apparently, doing *ctx = (bbxs_context_s){0} in a debug build allocates
+    // stack space for the zero-initialized struct. which then creates a stack
+    // overflow. amazing. is just this an MSVC thing?
+    memset(ctx, 0, sizeof(bbxs_context_s));
     ctx->alloc = alloc;
+    ctx->prng = bbxs__random_seeded_state(random_seed);
 
-    if (!bbxs__init_wavetables_for_context(ctx, wavetable_init_seed)) {
+    if (!bbxs__init_wavetables_for_context(ctx, &ctx->prng)) {
         bbxs_context_destroy(ctx);
         return NULL;
     }

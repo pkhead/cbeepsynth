@@ -1,11 +1,10 @@
 #include <assert.h>
 #include <string.h>
-#include <time.h> // for seeding the prng TODO: remove this dependency
 
-#include "../context.h"
 #include "../param_util.h"
 #include "../util.h"
 #include "../wavetables.h"
+#include "../context.h"
 #include "synth.h"
 
 // Spectrum can be in pitch or noise channels, the expression is doubled for
@@ -72,7 +71,7 @@ static void spectrum_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     bbxs__generate_spectrum_wave(&inst->base.ctx->wavetables, inst->controls,
                                  8.0, inst->wave);
 
-    inst->prng_state = bbxs__random_seeded_state((uint64_t)clock());
+    inst->prng_state = bbxs__random_seeded_state(bbxs__random(&ctx->prng));
 }
 
 static bbxs_voice_id spectrum_note_on(bbxs_synth_s *p_inst, int key,

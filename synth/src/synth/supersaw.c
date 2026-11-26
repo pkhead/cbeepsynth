@@ -71,7 +71,7 @@ static void supersaw_init(bbxs_context_s *ctx, bbxs_synth_s *p_inst) {
     *synth = (supersaw_synth_s){0};
     bbxs__inst_init(ctx, (void *)synth, BBXS_SYNTH_SUPERSAW);
 
-    synth->prng_state = bbxs__random_seeded_state(0);
+    synth->prng_state = bbxs__random_seeded_state(bbxs__random(&ctx->prng));
 
     for (int i = 0; i < 2; ++i) {
         synth->dynamism[i] = BBXS_SUPERSAW_DYNAMISM_MAX;

@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #include "../include/beepbox_synth.h"
+#include "util.h"
 
 // SINE_WAVE_LENGTH must be a power of 2!
 // add an extra element to the wavetable in case
@@ -51,7 +52,7 @@ typedef struct wavetables {
 extern const char *bbxs__noise_waveform_names[BBXS_NOISE_COUNT + 1];
 extern const char *bbxs__chip_waveform_names[BBXS_CHIP_WAVE_COUNT + 1];
 
-bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed);
+bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, prng_state_s *prng);
 
 void bbxs__generate_harmonics(const wavetables_s *wavetables,
                               uint8_t controls[BBXS_HARMONICS_CONTROL_COUNT],

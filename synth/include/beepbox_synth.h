@@ -443,11 +443,11 @@ BBXS_API void bbxs_version(uint32_t *major, uint32_t *minor,
  *   - bbxs_effect_set_sample_rate
  *
  * @param alloc Pointer to the allocator.
- * @param wavetable_init_seed Seed for the noise wavetable PRNG.
+ * @param random_seed Initial seed for the PRNG.
  * @return Pointer to the newly created bbxs_context struct.
  * */
 BBXS_API bbxs_context_s *bbxs_context_new(const bbxs_allocator_s *alloc,
-                                          uint64_t wavetable_init_seed);
+                                          uint64_t random_seed);
 
 /**
  * @brief Destroy a context.

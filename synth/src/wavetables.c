@@ -265,7 +265,7 @@ static void perform_integral(float *wave, float *new_wave, size_t length) {
     }
 }
 
-bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
+bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, prng_state_s *prng) {
     wavetables_s *const wavetables = &ctx->wavetables;
 
     // init sine wavetable
@@ -383,8 +383,7 @@ bool bbxs__init_wavetables_for_context(bbxs_context_s *ctx, uint64_t seed) {
     // clang-format on
 
     // generate noise wavetables
-    prng_state_s prng_state = bbxs__random_seeded_state(seed);
-#define RANDOM() (float)(bbxs__frandom(&prng_state))
+#define RANDOM() (float)(bbxs__frandom(prng))
 
     // there is an extra 0 at the end of each wavetable.
     // This is just for interpolation purposes.

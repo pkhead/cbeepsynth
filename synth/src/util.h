@@ -88,7 +88,6 @@ static inline bool is_power_of_two(unsigned int n) {
 }
 
 // random number generator: xorshift128+
-// implementation taken from the code snippet in this paper
 // https://vigna.di.unimi.it/ftp/papers/xorshiftplus.pdf
 typedef struct prng_state {
     uint64_t s[2];

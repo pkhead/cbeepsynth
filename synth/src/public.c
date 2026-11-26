@@ -35,7 +35,7 @@ static const synth_vtable_s *synth_vtables[BBXS_SYNTH_COUNT] = {
     // BBXS_SYNTH_PICKED_STRING
     &bbxs__synth_picked_vtable,
     // BBXS_SYNTH_SUPERSAW
-    NULL,
+    &bbxs__synth_supersaw_vtable,
     // BBXS_SYNTH_CUSTOM_CHIP
     &bbxs__synth_custom_chip_vtable,
 };

@@ -276,5 +276,6 @@ extern const synth_vtable_s bbxs__synth_spectrum_vtable;
 extern const synth_vtable_s bbxs__synth_noise_vtable;
 extern const synth_vtable_s bbxs__synth_picked_vtable;
 extern const synth_vtable_s bbxs__synth_custom_chip_vtable;
+extern const synth_vtable_s bbxs__synth_supersaw_vtable;
 
 #endif
